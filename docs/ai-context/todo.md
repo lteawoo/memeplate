@@ -1,31 +1,23 @@
-memeplate 개발 TODO (Fabric.js 기반)
+# Memeplate 개발 TODO
 
-1단계: 환경 구성 및 기본 레이아웃
-[x] Project Init: Vite + React + Tailwind CSS 세팅
-[x] Main UI: Ant Design Layout 기반 고도화된 편집기 레이아웃 구현
-[x] Main UI: 반응형 디자인 및 Empty State 고도화
-[x] Main UI: 아이콘 교체(MDI) 및 패딩/레이아웃 폴리싱
-[ ] Main UI: 템플릿 앨범형 그리드(Masonry) 레이아웃 구현
+## 1단계: UI 구조 리팩토링 [Completed]
+- [x] **Layout 구조 변경**: `Sider` 내부를 `Toolbar`(아이콘)와 `Panel`(속성)로 분할
+- [x] **State 관리**: `activeTool` 상태 신설 및 탭 전환 로직 대체
+- [x] **Design**: 툴바 아이콘 스타일링 (Active 상태 강조, 툴팁 적용)
 
-2단계: Fabric.js 편집기 핵심 구현
-[x] Canvas Init: useRef를 이용해 Fabric Canvas 인스턴스 초기화 및 메모리 해제(Cleanup) 로직 작성
-[x] Image Drop: 배경 이미지 업로드 및 URL 로드, 컨테이너 비례 크기 최적화
-[x] Meme Text: 
-  - [x] 클릭 시 캔버스 중앙에 편집 가능한 텍스트(fabric.IText) 추가
-  - [x] 밈 표준 스타일 적용 (Impact 폰트 + 흰색 글씨 + 검정색 두꺼운 외곽선)
-[x] Object Control: 텍스트 드래그, 크기 조절, 회전 기능 활성화
+## 2단계: 신규 도구 구현 [Completed]
+- [x] **도형(Shapes) 도구**
+  - [x] 사각형/원형 추가 버튼 구현
+  - [x] 도형 색상 변경 (ColorPicker)
+- [x] **지우개(Eraser) 도구**
+  - [x] Fabric.js `EraserBrush` 활성화
+  - [x] 지우개 크기 슬라이더 구현
+  - [x] 지우개 모드 toggle 로직 (DrawingMode)
+- [x] **스포이드(Eyedropper) 도구**
+  - [x] ColorPicker 옆에 스포이드 버튼 배치
+  - [x] Canvas `getImageData` 또는 `EyeDropper API` 연동
+  - [x] 추출한 색상을 현재 선택된 객체(텍스트/도형)에 적용
 
-3단계: 편집 디테일 및 기능 확장
-[x] Text Styling UI: 탭 메뉴를 통한 폰트 크기, 색상, 외곽선 두께 조절 패널
-[x] Delete Action: Delete/Backspace 키 및 UI 버튼을 통한 객체 삭제 로직
-[ ] Sticker Support: 간단한 이모지나 스티커 이미지를 캔버스 위에 추가하는 기능
-[ ] Layer Control: 객체의 앞/뒤 순서를 조절하는 기능
-
-4단계: 이미지 생성 및 공유
-[x] Image Export: canvas.toDataURL()을 이용해 편집된 결과물을 이미지로 추출
-[x] Download: 생성된 이미지를 브라우저에서 바로 다운로드
-[ ] Clipboard: 추출된 이미지를 클립보드에 바로 복사하는 기능 (선택 사항)
-
-5단계: 데이터 연결 및 배포
-[ ] Mock Data: 템플릿 이미지 경로와 태그가 담긴 templates.json 작성
-[ ] Deployment: Vercel 등을 통한 배포 및 모바일 브라우저 동작 테스트
+## 3단계: 기능 안정화 및 테스트
+- [ ] 각 도구 간 전환 시 캔버스 상태(Selection, DrawingMode) 동기화 처리
+- [ ] Playwright E2E 테스트 (도구 전환 및 UI 렌더링 확인)

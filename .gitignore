@@ -41,5 +41,3 @@ test-results/
 playwright-report/
 blob-report/
 .playwright-mcp/
-docs/ai-context/test-data/*.png
-!docs/ai-context/test-data/keep.gitkeep
