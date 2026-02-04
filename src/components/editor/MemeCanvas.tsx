@@ -1,0 +1,63 @@
+import React from 'react';
+import { Layout, Typography, Tag, theme } from 'antd';
+import Icon from '@mdi/react';
+import { mdiImage } from '@mdi/js';
+
+const { Content } = Layout;
+const { Title, Text } = Typography;
+
+interface MemeCanvasProps {
+  canvasRef: React.RefObject<HTMLCanvasElement | null>;
+  containerRef: React.RefObject<HTMLDivElement | null>;
+  hasBackground: boolean;
+}
+
+const MemeCanvas: React.FC<MemeCanvasProps> = ({ canvasRef, containerRef, hasBackground }) => {
+  const { token } = theme.useToken();
+
+  return (
+    <Content 
+      className="relative flex flex-col items-center justify-center bg-slate-50 p-12" 
+      ref={containerRef}
+      style={{ height: 'calc(100vh - 64px)' }}
+    >
+      {/* Canvas Container */}
+      <div 
+        className={`
+          relative transition-all duration-300 ease-in-out
+          ${hasBackground ? 'shadow-2xl opacity-100 scale-100' : 'opacity-0 scale-95 hidden'}
+        `}
+        style={{ fontSize: 0 }}
+      >
+         <canvas ref={canvasRef} />
+      </div>
+
+      {/* Empty State */}
+      {!hasBackground && (
+        <div 
+          className="flex flex-col items-center justify-center w-full max-w-2xl h-96 border-4 border-dashed rounded-3xl transition-all duration-300 group hover:border-blue-400 hover:bg-blue-50/30"
+          style={{ borderColor: token.colorBorderSecondary }}
+        >
+          <div className="text-center p-8 transition-transform duration-300 group-hover:scale-105">
+            <div 
+              className="w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm flex items-center justify-center"
+              style={{ backgroundColor: token.colorFillSecondary }}
+            >
+                                <Icon path={mdiImage} size={2} color={token.colorPrimary} />
+                              </div>
+                              <Title level={3} className="mb-2 text-gray-700">나만의 Memeplate를 만들어보세요</Title>
+                              <Text type="secondary" className="block mb-8 text-lg">              배경 탭에서 이미지를 업로드하여 시작하세요
+            </Text>
+            
+            <div className="flex gap-2 justify-center">
+              <Tag color="default" className="px-3 py-1 text-xs">JPG</Tag>
+              <Tag color="default" className="px-3 py-1 text-xs">PNG</Tag>
+            </div>
+          </div>
+        </div>
+      )}
+    </Content>
+  );
+};
+
+export default MemeCanvas;

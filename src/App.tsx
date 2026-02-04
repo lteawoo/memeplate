@@ -1,20 +1,25 @@
 import React from 'react';
-import MemeEditor from './components/MemeEditor';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { ConfigProvider } from 'antd';
+import HomePage from './pages/HomePage';
+import EditorPage from './pages/EditorPage';
 
 const App: React.FC = () => {
   return (
     <ConfigProvider
       theme={{
         token: {
-          colorPrimary: '#1677ff',
-          borderRadius: 6,
+          colorPrimary: '#2563eb', // Blue-600 (Tailwind)
+          borderRadius: 12,
         },
       }}
     >
-      <div className="App">
-        <MemeEditor />
-      </div>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/create" element={<EditorPage />} />
+        </Routes>
+      </BrowserRouter>
     </ConfigProvider>
   );
 };
