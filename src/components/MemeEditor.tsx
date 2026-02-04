@@ -28,8 +28,8 @@ import {
   mdiShape,
   mdiEraser,
   mdiEyedropper,
-  mdiSquare,
-  mdiCircle,
+  mdiRectangleOutline,
+  mdiCircleOutline,
   mdiBrush
 } from '@mdi/js';
 
@@ -93,13 +93,23 @@ const MemeEditor: React.FC = () => {
           setFontSize(selected.fontSize || 40);
           setStrokeWidth(selected.strokeWidth || 3);
         } 
-        // Shape Handling
+        // Shape Handling (Single)
         else if (selected instanceof fabric.Rect || selected instanceof fabric.Circle) {
           setIsTextSelected(false);
           setIsShapeSelected(true);
           setActiveTool('shapes'); // Auto-switch to Shapes tool
           
           setColor(selected.fill as string);
+        }
+        // Multi-selection Handling (Group)
+        else if (selected.type === 'activeSelection') {
+             // Check if it contains shapes or texts or mixed
+             // For simplicity, if it's not text-only, we treat it as generic/shapes for deletion/color
+             setIsTextSelected(false);
+             setIsShapeSelected(true);
+             // Don't auto-switch tool aggressively on multi-select to avoid jumping, 
+             // but if we are in 'background', maybe switch to 'shapes' or 'text'
+             if (activeTool === 'background') setActiveTool('shapes');
         }
       } else {
         setIsTextSelected(false);
@@ -260,6 +270,7 @@ const MemeEditor: React.FC = () => {
       cornerColor: token.colorPrimary,
       cornerStyle: 'circle',
       transparentCorners: false,
+      uniformScaling: false, // Allow free resizing (aspect ratio change)
     };
 
     if (type === 'rect') {
@@ -285,9 +296,15 @@ const MemeEditor: React.FC = () => {
   // Common Modifications (Color, Size, etc.)
   // --------------------------------------------------------------------------
   const updateProperty = (key: string, value: any) => {
-    if (!activeObject || !fabricRef.current) return;
-    activeObject.set(key as any, value);
-    fabricRef.current.renderAll();
+    if (!fabricRef.current) return;
+    
+    const activeObjects = fabricRef.current.getActiveObjects();
+    if (activeObjects.length > 0) {
+        activeObjects.forEach(obj => {
+            obj.set(key as any, value);
+        });
+        fabricRef.current.renderAll();
+    }
 
     if (key === 'fill') setColor(value);
     if (key === 'fontSize') setFontSize(value);
@@ -296,9 +313,12 @@ const MemeEditor: React.FC = () => {
 
   const deleteActiveObject = () => {
     if (!fabricRef.current) return;
-    const active = fabricRef.current.getActiveObject();
-    if (active) {
-      fabricRef.current.remove(active);
+    const activeObjects = fabricRef.current.getActiveObjects();
+    
+    if (activeObjects.length > 0) {
+      activeObjects.forEach(obj => {
+          fabricRef.current?.remove(obj);
+      });
       fabricRef.current.discardActiveObject();
       fabricRef.current.renderAll();
     }
@@ -496,7 +516,7 @@ const MemeEditor: React.FC = () => {
                     onClick={() => addShape('rect')}
                     disabled={!hasBackground}
                 >
-                    <Icon path={mdiSquare} size={1.5} className="text-slate-500" />
+                    <Icon path={mdiRectangleOutline} size={1.5} className="text-slate-500" />
                     <span className="text-xs text-slate-500">사각형</span>
                 </Button>
                 <Button 
@@ -504,7 +524,7 @@ const MemeEditor: React.FC = () => {
                     onClick={() => addShape('circle')}
                     disabled={!hasBackground}
                 >
-                    <Icon path={mdiCircle} size={1.5} className="text-slate-500" />
+                    <Icon path={mdiCircleOutline} size={1.5} className="text-slate-500" />
                     <span className="text-xs text-slate-500">원형</span>
                 </Button>
              </div>
