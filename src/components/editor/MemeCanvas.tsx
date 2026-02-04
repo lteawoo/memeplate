@@ -17,9 +17,8 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({ canvasRef, containerRef, hasBac
 
   return (
     <Content 
-      className="relative flex flex-col items-center justify-center bg-slate-50 p-12" 
+      className="flex-1 relative flex flex-col items-center justify-center bg-slate-50 p-4 md:p-12" 
       ref={containerRef}
-      style={{ height: 'calc(100vh - 64px)' }}
     >
       {/* Canvas Container */}
       <div 

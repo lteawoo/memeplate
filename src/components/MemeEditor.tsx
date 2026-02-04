@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as fabric from 'fabric';
-import { Layout, theme } from 'antd';
+import { Layout, message } from 'antd';
 
 import MainHeader from './layout/MainHeader';
 import EditorLayout from './editor/EditorLayout';
@@ -10,19 +10,19 @@ import MemeCanvas from './editor/MemeCanvas';
 
 declare global {
   interface Window {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     EyeDropper: any;
   }
 }
 
-const { Sider } = Layout;
-
 const MemeEditor: React.FC = () => {
-  const { token } = theme.useToken();
+  const [messageApi, contextHolder] = message.useMessage();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fabricRef = useRef<fabric.Canvas | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const [activeTool, setActiveTool] = useState<ToolType>('background');
+  const [activeTool, setActiveTool] = useState<ToolType>(null);
+  const [isPanelOpen, setIsPanelOpen] = useState(false); // Closed by default on entry
   
   // Selection State
   const [activeObject, setActiveObject] = useState<fabric.Object | null>(null);
@@ -30,361 +30,233 @@ const MemeEditor: React.FC = () => {
   const [isShapeSelected, setIsShapeSelected] = useState(false);
 
   // Property State
-  const [color, setColor] = useState('#ffffff'); // Text or Shape fill
+  const [color, setColor] = useState('#ffffff'); 
   const [fontSize, setFontSize] = useState(40);
   const [strokeWidth, setStrokeWidth] = useState(3);
-  
-  // Brush State
   const [brushSize, setBrushSize] = useState(10);
-  
-  // Background State
   const [bgUrl, setBgUrl] = useState('');
   const [hasBackground, setHasBackground] = useState(false);
 
   // --------------------------------------------------------------------------
-  // Canvas Initialization
+  // Canvas & Logic (Keep previous logic)
   // --------------------------------------------------------------------------
   useEffect(() => {
     if (!canvasRef.current) return;
-
     const canvas = new fabric.Canvas(canvasRef.current, {
-      width: 600,
-      height: 600,
-      backgroundColor: '#ffffff',
-      preserveObjectStacking: true,
+      width: 600, height: 600, backgroundColor: '#ffffff', preserveObjectStacking: true,
     });
-
     fabricRef.current = canvas;
-
     const handleSelection = () => {
       const selected = canvas.getActiveObject();
       setActiveObject(selected || null);
-
       if (selected) {
+        setIsPanelOpen(true); // Auto-open on selection
         if (selected instanceof fabric.IText) {
-          setIsTextSelected(true);
-          setIsShapeSelected(false);
-          setActiveTool('text');
-          
-          setColor(selected.fill as string);
-          setFontSize(selected.fontSize || 40);
-          setStrokeWidth(selected.strokeWidth || 3);
+          setIsTextSelected(true); setIsShapeSelected(false); setActiveTool('text');
+          setColor(selected.fill as string); setFontSize(selected.fontSize || 40); setStrokeWidth(selected.strokeWidth || 3);
         } 
         else if (selected instanceof fabric.Rect || selected instanceof fabric.Circle) {
-          setIsTextSelected(false);
-          setIsShapeSelected(true);
-          setActiveTool('shapes');
-          
+          setIsTextSelected(false); setIsShapeSelected(true); setActiveTool('shapes');
           setColor(selected.fill as string);
         }
-        else if (selected.type === 'activeSelection') {
-             setIsTextSelected(false);
-             setIsShapeSelected(true);
-             if (activeTool === 'background') setActiveTool('shapes');
-        }
-      } else {
-        setIsTextSelected(false);
-        setIsShapeSelected(false);
       }
     };
-
     canvas.on('selection:created', handleSelection);
     canvas.on('selection:updated', handleSelection);
-    canvas.on('selection:cleared', handleSelection);
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.key === 'Delete' || e.key === 'Backspace') && canvas.getActiveObject()) {
-        const active = canvas.getActiveObject();
-        if (active && active instanceof fabric.IText && (active as any).isEditing) return;
-        
-        if (active) {
-          canvas.remove(active);
-          canvas.discardActiveObject();
-          canvas.renderAll();
-        }
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-
-    return () => {
-      canvas.dispose();
-      fabricRef.current = null;
-      window.removeEventListener('keydown', handleKeyDown);
-    };
+    return () => { canvas.dispose(); fabricRef.current = null; };
   }, []);
 
-  // --------------------------------------------------------------------------
-  // Tool Switching Logic
-  // --------------------------------------------------------------------------
   useEffect(() => {
     if (!fabricRef.current) return;
     const canvas = fabricRef.current;
-
     if (activeTool === 'brush') {
       canvas.isDrawingMode = true;
       const brush = new fabric.PencilBrush(canvas);
-      brush.width = brushSize;
-      brush.color = color;
+      brush.width = brushSize; brush.color = color;
       canvas.freeDrawingBrush = brush;
-    } else {
-      canvas.isDrawingMode = false;
-    }
+    } else { canvas.isDrawingMode = false; }
   }, [activeTool, brushSize, color]);
-
-  // --------------------------------------------------------------------------
-  // Background Functions
-  // --------------------------------------------------------------------------
-  const fitCanvasToContainer = (canvas: fabric.Canvas, imgObj?: fabric.Image) => {
-    if (!containerRef.current) return;
-
-    const containerPadding = 128; 
-    const containerWidth = containerRef.current.clientWidth - containerPadding;
-    const containerHeight = containerRef.current.clientHeight - containerPadding;
-
-    if (!imgObj) return;
-
-    const ratio = Math.min(containerWidth / imgObj.width!, containerHeight / imgObj.height!);
-    const newWidth = imgObj.width! * ratio;
-    const newHeight = imgObj.height! * ratio;
-
-    canvas.setDimensions({ width: newWidth, height: newHeight });
-    
-    imgObj.set({
-      scaleX: ratio,
-      scaleY: ratio,
-      originX: 'left',
-      originY: 'top',
-    });
-    
-    canvas.backgroundImage = imgObj;
-    canvas.renderAll();
-  };
 
   const setBackgroundImage = (url: string) => {
     if (!fabricRef.current) return;
-
     fabric.FabricImage.fromURL(url, { crossOrigin: 'anonymous' }).then((img) => {
       const canvas = fabricRef.current!;
-      fitCanvasToContainer(canvas, img);
-      setHasBackground(true);
-      setBgUrl(url); 
-      setActiveTool('background');
-    }).catch(() => {
-      alert('이미지를 불러오는데 실패했습니다. URL을 확인해주세요.');
+      const containerPadding = window.innerWidth < 768 ? 32 : 128; 
+      const ratio = Math.min((containerRef.current!.clientWidth - containerPadding) / img.width!, (containerRef.current!.clientHeight - containerPadding) / img.height!);
+      canvas.setDimensions({ width: img.width! * ratio, height: img.height! * ratio });
+      img.set({ scaleX: ratio, scaleY: ratio, originX: 'left', originY: 'top' });
+      canvas.backgroundImage = img; canvas.renderAll();
+      setHasBackground(true); setBgUrl(url); setActiveTool('background');
     });
   };
 
-  const handleImageUpload = (info: any) => {
-    const file = info.file.originFileObj;
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const url = e.target?.result as string;
-      setBackgroundImage(url);
-    };
-    reader.readAsDataURL(file);
-  };
-
-  // --------------------------------------------------------------------------
-  // Text Functions
-  // --------------------------------------------------------------------------
-  const addText = () => {
-    if (!fabricRef.current) return;
-
-    const text = new fabric.IText('TOP TEXT', {
-      left: fabricRef.current.width! / 2,
-      top: 100,
-      fontFamily: 'Impact, Arial Black, sans-serif',
-      fontSize: 50,
-      fill: '#ffffff',
-      stroke: '#000000',
-      strokeWidth: 3,
-      fontWeight: 'bold',
-      originX: 'center',
-      originY: 'center',
-      cornerColor: token.colorPrimary,
-      cornerStyle: 'circle',
-      transparentCorners: false,
-      padding: 10,
-    });
-
-    fabricRef.current.add(text);
-    fabricRef.current.setActiveObject(text);
-    fabricRef.current.renderAll();
-    setActiveTool('text');
-  };
-
-  // --------------------------------------------------------------------------
-  // Shape Functions
-  // --------------------------------------------------------------------------
-  const addShape = (type: 'rect' | 'circle') => {
-    if (!fabricRef.current) return;
-    const canvas = fabricRef.current;
-    const center = {
-      left: canvas.width! / 2,
-      top: canvas.height! / 2
-    };
-    
-    let shape;
-    const commonProps = {
-      left: center.left,
-      top: center.top,
-      fill: color, 
-      originX: 'center' as const,
-      originY: 'center' as const,
-      cornerColor: token.colorPrimary,
-      cornerStyle: 'circle' as const,
-      transparentCorners: false,
-      uniformScaling: false,
-    };
-
-    if (type === 'rect') {
-      shape = new fabric.Rect({
-        ...commonProps,
-        width: 100,
-        height: 100,
-      });
+  const handleToolClick = (tool: ToolType) => {
+    if (activeTool === tool && window.innerWidth < 768) {
+      setIsPanelOpen(!isPanelOpen); // Toggle folding on mobile
     } else {
-      shape = new fabric.Circle({
-        ...commonProps,
-        radius: 50,
-      });
+      setActiveTool(tool);
+      setIsPanelOpen(true);
     }
-
-    fabricRef.current.add(shape);
-    fabricRef.current.setActiveObject(shape);
-    fabricRef.current.renderAll();
-    setActiveTool('shapes');
   };
 
   // --------------------------------------------------------------------------
-  // Common Modifications
+  // Common Functions (addText, addShape, updateProperty, etc. - mapped to props)
   // --------------------------------------------------------------------------
-  const updateProperty = (key: string, value: any) => {
-    if (!fabricRef.current) return;
-    
-    const activeObjects = fabricRef.current.getActiveObjects();
-    if (activeObjects.length > 0) {
-        activeObjects.forEach(obj => {
-            obj.set(key as any, value);
-        });
-        fabricRef.current.renderAll();
-    }
-
-    if (key === 'fill') setColor(value);
-    if (key === 'fontSize') setFontSize(value);
-    if (key === 'strokeWidth') setStrokeWidth(value);
-  };
-
-  const deleteActiveObject = () => {
-    if (!fabricRef.current) return;
-    const activeObjects = fabricRef.current.getActiveObjects();
-    
-    if (activeObjects.length > 0) {
-      activeObjects.forEach(obj => {
-          fabricRef.current?.remove(obj);
-      });
-      fabricRef.current.discardActiveObject();
+  const panelProps = {
+    activeTool, hasBackground, bgUrl, setBgUrl,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    handleImageUpload: (info: any) => {
+      const file = info.file.originFileObj;
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => setBackgroundImage(e.target?.result as string);
+        reader.readAsDataURL(file);
+      }
+    },
+    setBackgroundImage,
+    addText: () => {
+      if (!fabricRef.current) return;
+      const text = new fabric.IText('TOP TEXT', { left: fabricRef.current.width!/2, top: 100, fontFamily: 'Impact', fontSize: 50, fill: '#ffffff', stroke: '#000000', strokeWidth: 3, originX: 'center', originY: 'center' });
+      fabricRef.current.add(text); fabricRef.current.setActiveObject(text); fabricRef.current.renderAll();
+    },
+    isTextSelected, color, 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    updateProperty: (key: string, value: any) => {
+      if (!fabricRef.current) return;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      fabricRef.current.getActiveObjects().forEach(obj => obj.set(key as any, value));
       fabricRef.current.renderAll();
-    }
-  };
-
-  const activateEyedropper = async () => {
-    if (!window.EyeDropper) {
-        alert("이 브라우저는 스포이드 API를 지원하지 않습니다. (Chrome/Edge 권장)");
-        return;
-    }
-    
-    try {
-        const eyeDropper = new window.EyeDropper();
-        const result = await eyeDropper.open();
-        const pickedColor = result.sRGBHex;
-        
-        setColor(pickedColor);
-        if (activeObject) {
-            updateProperty('fill', pickedColor);
+      if (key === 'fill') setColor(value);
+      if (key === 'fontSize') setFontSize(value);
+      if (key === 'strokeWidth') setStrokeWidth(value);
+    },
+    activateEyedropper: async () => {
+      if (!window.EyeDropper) return;
+      const result = await new window.EyeDropper().open();
+      setColor(result.sRGBHex);
+      if (activeObject) {
+         fabricRef.current?.getActiveObjects().forEach(obj => obj.set('fill', result.sRGBHex));
+         fabricRef.current?.renderAll();
+      }
+    },
+    fontSize, activeObject, strokeWidth,
+    deleteActiveObject: () => {
+      fabricRef.current?.getActiveObjects().forEach(obj => fabricRef.current?.remove(obj));
+      fabricRef.current?.discardActiveObject(); fabricRef.current?.renderAll();
+    },
+    addShape: (type: 'rect' | 'circle') => {
+      if (!fabricRef.current) return;
+      const common = { left: fabricRef.current.width!/2, top: fabricRef.current.height!/2, fill: color, originX: 'center' as const, originY: 'center' as const };
+      const shape = type === 'rect' ? new fabric.Rect({...common, width: 100, height: 100}) : new fabric.Circle({...common, radius: 50});
+      fabricRef.current.add(shape); fabricRef.current.setActiveObject(shape); fabricRef.current.renderAll();
+    },
+    isShapeSelected, brushSize, setBrushSize, setColor,
+    downloadImage: async (format: 'png' | 'jpg' | 'webp' | 'pdf') => {
+      if (!fabricRef.current) return;
+      
+      const canvas = fabricRef.current;
+      
+      if (format === 'pdf') {
+        try {
+          messageApi.loading('PDF 생성 중...');
+          const { default: jsPDF } = await import('jspdf');
+          // High quality multiplier for clearer PDF
+          const imgData = canvas.toDataURL({ format: 'png', multiplier: 2 });
+          const pdf = new jsPDF({
+            orientation: canvas.width! > canvas.height! ? 'landscape' : 'portrait',
+            unit: 'px',
+            format: [canvas.width!, canvas.height!]
+          });
+          pdf.addImage(imgData, 'PNG', 0, 0, canvas.width!, canvas.height!);
+          pdf.save(`meme-${Date.now()}.pdf`);
+          messageApi.success('PDF 다운로드 완료');
+        } catch (error) {
+          console.error(error);
+          messageApi.error('PDF 생성에 실패했습니다');
         }
-    } catch (e) {
-        console.log('Eyedropper canceled');
+      } else {
+        const mimeType = format === 'jpg' ? 'jpeg' : format;
+        const link = document.createElement('a'); 
+        link.download = `meme-${Date.now()}.${format}`;
+        link.href = canvas.toDataURL({ format: mimeType, multiplier: 2 }); 
+        link.click();
+        messageApi.success('이미지 다운로드 시작');
+      }
+    },
+    copyToClipboard: async () => {
+      if (!fabricRef.current) return;
+      try {
+        const canvas = fabricRef.current;
+        const dataURL = canvas.toDataURL({ format: 'png', multiplier: 2 });
+        const blob = await (await fetch(dataURL)).blob();
+        await navigator.clipboard.write([
+            new ClipboardItem({ [blob.type]: blob })
+        ]);
+        messageApi.success('클립보드에 복사되었습니다');
+      } catch (err) {
+        console.error('Failed to copy: ', err);
+        messageApi.error('복사에 실패했습니다');
+      }
     }
-  };
-
-  const downloadImage = () => {
-    if (!fabricRef.current) return;
-    const dataURL = fabricRef.current.toDataURL({
-      format: 'png',
-      multiplier: 2,
-    });
-    const link = document.createElement('a');
-    link.download = `meme-${Date.now()}.png`;
-    link.href = dataURL;
-    link.click();
   };
 
   return (
-    <Layout className="h-screen overflow-hidden bg-white">
+    <Layout className="h-screen overflow-hidden bg-white relative">
+      {contextHolder}
       <MainHeader />
       
-      <EditorLayout
-        sidebar={
-          <Sider 
-            width={420} 
-            theme="light" 
-            className="border-r border-slate-200 z-10 !bg-white"
-            style={{ display: 'flex', flexDirection: 'column' }}
-          >
-            <div className="flex flex-row h-full w-full">
-              <MemeToolbar activeTool={activeTool} setActiveTool={setActiveTool} />
-
-              <MemePropertyPanel 
-                activeTool={activeTool}
-                hasBackground={hasBackground}
-                bgUrl={bgUrl}
-                setBgUrl={setBgUrl}
-                handleImageUpload={handleImageUpload}
-                setBackgroundImage={setBackgroundImage}
-                addText={addText}
-                isTextSelected={isTextSelected}
-                color={color}
-                updateProperty={updateProperty}
-                activateEyedropper={activateEyedropper}
-                fontSize={fontSize}
-                activeObject={activeObject}
-                strokeWidth={strokeWidth}
-                deleteActiveObject={deleteActiveObject}
-                addShape={addShape}
-                isShapeSelected={isShapeSelected}
-                brushSize={brushSize}
-                setBrushSize={setBrushSize}
-                setColor={setColor}
-                downloadImage={downloadImage}
-              />
+      <div className="flex-1 flex overflow-hidden relative">
+        <EditorLayout
+          sidebar={
+            <div className="flex flex-col md:flex-row h-auto md:h-full w-full bg-white border-t md:border-t-0 md:border-r border-slate-200 order-2 md:order-1 shrink-0 md:w-[420px] relative z-20">
+              {/* Desktop Toolbar & Panel */}
+              <div className="hidden md:flex flex-row h-full w-full">
+                <MemeToolbar activeTool={activeTool} setActiveTool={handleToolClick} />
+                <div className="flex-1 overflow-hidden">
+                    <MemePropertyPanel {...panelProps} />
+                </div>
+              </div>
             </div>
-          </Sider>
-        }
-      >
-        <MemeCanvas 
-          canvasRef={canvasRef} 
-          containerRef={containerRef} 
-          hasBackground={hasBackground} 
-        />
-      </EditorLayout>
+          }
+        >
+          <div 
+            className="flex-1 flex flex-col overflow-hidden order-1 md:order-2 relative"
+            onClick={(e) => {
+              if ((e.target as HTMLElement).tagName.toLowerCase() === 'canvas') return;
+              if (window.innerWidth < 768) setIsPanelOpen(false);
+            }}
+          >
+              <MemeCanvas canvasRef={canvasRef} containerRef={containerRef} hasBackground={hasBackground} />
+          </div>
+        </EditorLayout>
 
-      <style>{`
-        .ant-layout-sider-children {
-            display: flex;
-            flex-direction: row;
-        }
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 6px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background-color: #e2e8f0;
-          border-radius: 10px;
-        }
-      `}</style>
+        {/* Mobile Integrated Bottom UI - Fixed to the Screen Bottom, Outside of EditorLayout */}
+        <div 
+          className="md:hidden fixed bottom-0 left-0 right-0 z-[9999]" 
+          onClick={(e) => e.stopPropagation()}
+        >
+            {/* Panel Area */}
+            <div 
+              className={`bg-white border-t border-slate-200 shadow-[0_-10px_20px_-5px_rgba(0,0,0,0.1)] transition-all duration-300 ease-in-out rounded-t-3xl overflow-hidden ${isPanelOpen ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-full pointer-events-none'}`}
+              style={{ height: '45vh' }}
+            >
+                <div 
+                  className="h-10 flex items-center justify-center bg-white cursor-pointer border-b border-slate-50"
+                  onClick={() => setIsPanelOpen(false)}
+                >
+                  <div className="w-12 h-1.5 bg-slate-200 rounded-full"></div>
+                </div>
+                <div className="overflow-y-auto" style={{ height: 'calc(45vh - 40px)' }}>
+                    <MemePropertyPanel {...panelProps} />
+                </div>
+            </div>
+
+            {/* Toolbar Area */}
+            <div className="bg-white border-t border-slate-100 relative z-10" style={{ height: '80px' }}>
+                <MemeToolbar activeTool={activeTool} setActiveTool={handleToolClick} />
+            </div>
+        </div>
+      </div>
     </Layout>
   );
 };

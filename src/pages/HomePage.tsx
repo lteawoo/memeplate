@@ -6,7 +6,7 @@ import Icon from '@mdi/react';
 import { mdiPlus } from '@mdi/js';
 
 const { Content } = Layout;
-const { Title, Text } = Typography;
+const { Title } = Typography;
 
 const HomePage: React.FC = () => {
   const navigate = useNavigate();

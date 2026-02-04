@@ -25,12 +25,47 @@
 - [ ] Playwright E2E 테스트 (도구 전환 및 UI 렌더링 확인)
 - [ ] 단축키(Undo/Redo) 지원 검토
 
-## 4단계: 코드 리팩토링 및 컴포넌트 분리
-- [ ] **레이아웃 및 구조 분리**: `MemeEditor.tsx`의 거대한 `return` 문을 주요 레이아웃 단위(`EditorLayout`, `MainHeader`, `EditorSider`, `CanvasArea`)로 분할
-- [ ] **로직 분리 (Custom Hooks)**: Fabric.js 캔버스 초기화, 객체 조작, 도구별 기능 로직을 `useMemeCanvas` 등의 훅으로 추출
-- [ ] **컴포넌트 단위 분리**:
-  - [ ] `MemeToolbar`: 좌측 세로 아이콘 툴바 영역
-  - [ ] `MemePanelContainer`: 선택된 도구에 따른 속성 패널(Background, Text, Shapes, Brush) 분리
-  - [ ] `MemeCanvas`: 캔버스 렌더링 및 Empty State 영역
-- [ ] **공통 UI 컴포넌트 정리**: `MemeColorPicker` 등을 별도 파일로 분리하여 재사용성 확보
+## 4단계: 코드 리팩토링 및 컴포넌트 분리 [Completed]
 
+- [x] **레이아웃 및 구조 분리**: `MemeEditor.tsx`의 거대한 `return` 문을 주요 레이아웃 단위(`EditorLayout`, `MainHeader`, `EditorSider`, `CanvasArea`)로 분할
+
+- [x] **컴포넌트 단위 분리**:
+
+  - [x] `MemeToolbar`: 좌측 세로 아이콘 툴바 영역 (모바일 대응 완료)
+
+  - [x] `MemePropertyPanel`: 선택된 도구에 따른 속성 패널 분리
+
+  - [x] `MemeCanvas`: 캔버스 렌더링 및 Empty State 영역
+
+- [x] **공통 UI 컴포넌트 정리**: `MemeColorPicker` 등을 별도 파일로 분리하여 재사용성 확보
+
+
+
+## 5단계: 모바일 최적화 및 UX 개선 [Completed]
+
+- [x] **반응형 레이아웃**: 모바일/데스크탑 분기 처리 (`flex-col` vs `flex-row`)
+
+- [x] **네비게이션**: 모바일 헤더 햄버거 메뉴 구현
+
+- [x] **하단 탭바 & 폴딩 UI**: 모바일 환경에서 툴바 하단 배치 및 **일체형 폴딩(Expansion)** UI 구현 (시각적 검증 완료)
+
+- [x] **사용성 개선**: 캔버스 터치 시 패널 자동 닫힘 및 초기 진입 시 패널 숨김 처리 (시각적 검증 완료)
+
+- [x] **캔버스 최적화**: 모바일 화면 너비에 맞춘 캔버스 리사이징 로직 추가
+
+
+
+## 6단계: 기능 고도화 및 테스트
+- [x] AI 실행 환경 가이드 작성 (AGENTS.md)
+- [x] **공유/내보내기 UX 개선**:
+  - [x] '공유' 탭 신설 및 다운로드 버튼 이동
+  - [x] 상단 헤더 버전 정보 제거 (Minimal Design)
+  - [x] **내보내기 옵션 확장**: PNG, JPG, WEBP, PDF 포맷 선택 지원
+  - [x] **클립보드 지원**: 이미지 복사 기능 추가
+  - [x] **사용성 개선 (Fix)**: 
+    - [x] 캔버스 내부 조작 시에는 패널 유지
+    - [x] 캔버스 외부(배경) 터치 시에는 패널 닫힘 (Robust Interaction)
+  - [x] **UI 단순화**: 불필요한 설명 텍스트 제거하고 즉시 기능 제공
+- [ ] 레이어 순서(Z-index) 관리 기능 추가
+- [ ] Playwright E2E 테스트 (도구 전환 및 UI 렌더링 확인)
+- [ ] 단축키(Undo/Redo) 지원 검토

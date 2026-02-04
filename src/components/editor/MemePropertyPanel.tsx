@@ -9,7 +9,7 @@ import {
   Typography, 
   Tooltip, 
   Empty,
-  Tag
+  Segmented
 } from 'antd';
 import Icon from '@mdi/react';
 import { 
@@ -17,12 +17,13 @@ import {
   mdiLinkVariant, 
   mdiPlus, 
   mdiDelete, 
-  mdiDownload,
-  mdiRectangle,
-  mdiCircle,
-  mdiBrush,
-  mdiOpacity,
-  mdiEyedropper
+  mdiDownload, 
+  mdiRectangle, 
+  mdiCircle, 
+  mdiBrush, 
+  mdiOpacity, 
+  mdiEyedropper, 
+  mdiContentCopy 
 } from '@mdi/js';
 import { ToolType } from './MemeToolbar';
 import * as fabric from 'fabric';
@@ -30,15 +31,17 @@ import * as fabric from 'fabric';
 const { Title, Text } = Typography;
 
 interface MemePropertyPanelProps {
-  activeTool: ToolType;
+  activeTool: ToolType | null;
   hasBackground: boolean;
   bgUrl: string;
   setBgUrl: (url: string) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   handleImageUpload: (info: any) => void;
   setBackgroundImage: (url: string) => void;
   addText: () => void;
   isTextSelected: boolean;
   color: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   updateProperty: (key: string, value: any) => void;
   activateEyedropper: () => void;
   fontSize: number;
@@ -50,7 +53,8 @@ interface MemePropertyPanelProps {
   brushSize: number;
   setBrushSize: (size: number) => void;
   setColor: (color: string) => void;
-  downloadImage: () => void;
+  downloadImage: (format: 'png' | 'jpg' | 'webp' | 'pdf') => void;
+  copyToClipboard: () => void;
 }
 
 const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
@@ -75,8 +79,11 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
     brushSize,
     setBrushSize,
     setColor,
-    downloadImage
+    downloadImage,
+    copyToClipboard
   } = props;
+
+  const [downloadFormat, setDownloadFormat] = React.useState<'png' | 'jpg' | 'webp' | 'pdf'>('png');
 
   const MemeColorPicker = ({ value, onChange, label, height = "h-12" }: { 
     value: string, 
@@ -107,6 +114,8 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
   );
 
   const renderPanelContent = () => {
+    if (!activeTool) return <Empty description="도구를 선택하여 편집을 시작하세요" />;
+    
     switch(activeTool) {
       case 'background':
         return (
@@ -375,31 +384,65 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
              </div>
           </div>
         );
+
+      case 'share':
+        return (
+          <div className="flex flex-col gap-6 w-full">
+            <Title level={4} className="m-0 !font-black tracking-tighter">내보내기</Title>
+            
+            <div className="flex flex-col gap-4">
+               <div className="bg-slate-50 p-2 rounded-2xl border border-slate-100">
+                 <Segmented 
+                    options={[
+                        { label: 'PNG', value: 'png' },
+                        { label: 'JPG', value: 'jpg' },
+                        { label: 'WEBP', value: 'webp' },
+                        { label: 'PDF', value: 'pdf' },
+                    ]}
+                    value={downloadFormat}
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    onChange={(val) => setDownloadFormat(val as any)}
+                    block
+                    size="large"
+                    className="bg-transparent"
+                 />
+               </div>
+
+               <Button 
+                  type="primary" 
+                  icon={<Icon path={mdiDownload} size={1} />} 
+                  onClick={() => downloadImage(downloadFormat)}
+                  size="large"
+                  block
+                  className="h-16 text-lg font-bold shadow-lg shadow-blue-500/20 rounded-2xl border-none bg-blue-600 hover:bg-blue-500"
+                  disabled={!hasBackground}
+               >
+                  다운로드
+               </Button>
+                  
+               <Button 
+                  icon={<Icon path={mdiContentCopy} size={0.9} />} 
+                  onClick={copyToClipboard}
+                  size="large"
+                  block
+                  className="h-16 text-lg font-bold rounded-2xl bg-white border border-slate-200 text-slate-600 hover:text-slate-800 hover:border-slate-300"
+                  disabled={!hasBackground}
+               >
+                  클립보드 복사
+               </Button>
+            </div>
+          </div>
+        );
     }
   };
 
   return (
     <div className="flex-1 h-full flex flex-col bg-white overflow-hidden">
       {/* Content Area */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar px-10 py-10">
+      <div className="flex-1 overflow-y-auto custom-scrollbar px-6 py-6 md:px-10 md:py-10">
         <div className="w-full max-w-full">
           {renderPanelContent()}
         </div>
-      </div>
-
-      {/* Footer Area */}
-      <div className="px-10 pb-10 pt-6 border-t border-slate-100">
-        <Button 
-          type="primary" 
-          icon={<Icon path={mdiDownload} size={1} />} 
-          onClick={downloadImage}
-          size="large"
-          block
-          className="h-16 text-lg font-black shadow-xl shadow-blue-500/20 rounded-2xl flex items-center justify-center gap-2"
-          disabled={!hasBackground}
-        >
-          이미지 다운로드
-        </Button>
       </div>
     </div>
   );

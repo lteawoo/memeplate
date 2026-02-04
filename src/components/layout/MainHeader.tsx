@@ -1,16 +1,24 @@
-import React from 'react';
-import { Layout, Typography, Space } from 'antd';
+import React, { useState } from 'react';
+import { Layout, Typography, Button, Drawer } from 'antd';
 import { Link, useLocation } from 'react-router-dom';
+import Icon from '@mdi/react';
+import { mdiMenu } from '@mdi/js';
 
 const { Header } = Layout;
-const { Title, Text } = Typography;
+const { Title } = Typography;
 
 const MainHeader: React.FC = () => {
   const location = useLocation();
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+
+  const navLinks = [
+    { to: '/', label: '홈' },
+    { to: '/create', label: 'Memeplate 생성' },
+  ];
 
   return (
     <Header 
-      className="flex items-center justify-between px-8 border-b border-slate-200 z-20 relative"
+      className="flex items-center justify-between px-4 md:px-8 border-b border-slate-200 z-30 relative"
       style={{ height: 64, background: '#ffffff', lineHeight: '64px' }}
     >
       <div className="flex items-center gap-10">
@@ -20,26 +28,50 @@ const MainHeader: React.FC = () => {
           </Title>
         </Link>
 
-        <nav className="flex items-center gap-6">
-          <Link 
-            to="/" 
-            className={`text-sm font-bold no-underline transition-colors ${location.pathname === '/' ? 'text-blue-600' : 'text-slate-500 hover:text-slate-800'}`}
-          >
-            홈
-          </Link>
-          <Link 
-            to="/create" 
-            className={`text-sm font-bold no-underline transition-colors ${location.pathname === '/create' ? 'text-blue-600' : 'text-slate-500 hover:text-slate-800'}`}
-          >
-            Memeplate 생성
-          </Link>
+        {/* Desktop Navigation */}
+        <nav className="hidden md:flex items-center gap-6">
+          {navLinks.map(link => (
+            <Link 
+              key={link.to}
+              to={link.to} 
+              className={`text-sm font-bold no-underline transition-colors ${location.pathname === link.to ? 'text-blue-600' : 'text-slate-500 hover:text-slate-800'}`}
+            >
+              {link.label}
+            </Link>
+          ))}
         </nav>
       </div>
       
-      <div className="flex items-center">
-         {/* 필요한 경우 우측 메뉴 추가 (예: 로그인 등) */}
-         <Text type="secondary" className="text-xs font-bold uppercase tracking-widest">v1.0.0</Text>
+      <div className="flex items-center gap-4">
+        {/* Mobile Hamburger Menu */}
+        <Button 
+          type="text" 
+          className="md:hidden flex items-center justify-center p-0" 
+          icon={<Icon path={mdiMenu} size={1.2} />} 
+          onClick={() => setIsDrawerOpen(true)}
+        />
       </div>
+
+      <Drawer
+        title="메뉴"
+        placement="right"
+        onClose={() => setIsDrawerOpen(false)}
+        open={isDrawerOpen}
+        width={250}
+      >
+        <div className="flex flex-col gap-4">
+          {navLinks.map(link => (
+            <Link 
+              key={link.to}
+              to={link.to} 
+              onClick={() => setIsDrawerOpen(false)}
+              className={`text-lg font-bold no-underline ${location.pathname === link.to ? 'text-blue-600' : 'text-slate-900'}`}
+            >
+              {link.label}
+            </Link>
+          ))}
+        </div>
+      </Drawer>
     </Header>
   );
 };
