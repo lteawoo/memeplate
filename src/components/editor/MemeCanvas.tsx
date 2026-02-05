@@ -31,6 +31,7 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
     <Content 
       className="flex-1 relative flex flex-col items-center justify-center bg-slate-50 p-4 md:p-12" 
       ref={containerRef}
+      style={{ touchAction: 'none' }}
     >
       {/* Undo/Redo Controls */}
       {hasBackground && (
@@ -83,13 +84,8 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
                                 <Icon path={mdiImage} size={2} color={token.colorPrimary} />
                               </div>
                               <Title level={3} className="mb-2 text-gray-700">나만의 Memeplate를 만들어보세요</Title>
-                              <Text type="secondary" className="block mb-8 text-lg">              배경 탭에서 이미지를 업로드하여 시작하세요
+                              <Text type="secondary" className="block mb-8 text-lg">              이미지 탭에서 이미지를 업로드하여 시작하세요
             </Text>
-            
-            <div className="flex gap-2 justify-center">
-              <Tag color="default" className="px-3 py-1 text-xs">JPG</Tag>
-              <Tag color="default" className="px-3 py-1 text-xs">PNG</Tag>
-            </div>
           </div>
         </div>
       )}

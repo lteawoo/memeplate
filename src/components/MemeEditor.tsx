@@ -20,6 +20,7 @@ const MemeEditor: React.FC = () => {
   
   // Selection State
   const [activeObject, setActiveObject] = useState<fabric.Object | null>(null);
+  const [layers, setLayers] = useState<fabric.Object[]>([]);
   const [isTextSelected, setIsTextSelected] = useState(false);
   const [isShapeSelected, setIsShapeSelected] = useState(false);
 
@@ -107,8 +108,20 @@ const MemeEditor: React.FC = () => {
     if (!canvasRef.current) return;
     const canvas = new fabric.Canvas(canvasRef.current, {
       width: 600, height: 600, backgroundColor: '#ffffff', preserveObjectStacking: true,
+      targetFindTolerance: 15, // Allow slightly imprecise clicks
     });
     fabricRef.current = canvas;
+
+    // Enhance Mobile UX
+    fabric.Object.prototype.set({
+        transparentCorners: false,
+        cornerColor: '#ffffff',
+        cornerStrokeColor: '#3b82f6',
+        borderColor: '#3b82f6',
+        cornerSize: 12,
+        padding: 20, // Increased hit area for easier selection
+        cornerStyle: 'circle'
+    });
 
     // Initial Save
     const initialJson = JSON.stringify(canvas.toJSON());
@@ -119,7 +132,11 @@ const MemeEditor: React.FC = () => {
       const selected = canvas.getActiveObject();
       setActiveObject(selected || null);
       if (selected) {
-        setIsPanelOpen(true); // Auto-open on selection
+        // Auto-open on selection ONLY on desktop
+        if (window.innerWidth >= 768) {
+             setIsPanelOpen(true); 
+        }
+        
         if (selected instanceof fabric.IText) {
           setIsTextSelected(true); setIsShapeSelected(false); setActiveTool('text');
           setColor(selected.fill as string); setFontSize(selected.fontSize || 40); setStrokeWidth(selected.strokeWidth || 3);
@@ -128,16 +145,34 @@ const MemeEditor: React.FC = () => {
           setIsTextSelected(false); setIsShapeSelected(true); setActiveTool('shapes');
           setColor(selected.fill as string);
         }
+      } else {
+        // Handle Deselection
+        setIsTextSelected(false);
+        setIsShapeSelected(false);
+        setActiveObject(null);
       }
     };
 
+    const handleUpdate = () => {
+        saveHistory();
+        setLayers([...canvas.getObjects()]);
+    }
+
+    // Close panel on canvas interaction (Mobile)
+    canvas.on('mouse:down', () => {
+        if (window.innerWidth < 768) {
+            setIsPanelOpen(false);
+        }
+    });
+
     canvas.on('selection:created', handleSelection);
     canvas.on('selection:updated', handleSelection);
+    canvas.on('selection:cleared', handleSelection);
     
-    // History Events
-    canvas.on('object:added', saveHistory);
-    canvas.on('object:modified', saveHistory);
-    canvas.on('object:removed', saveHistory);
+    // History Events & Layer Updates
+    canvas.on('object:added', handleUpdate);
+    canvas.on('object:modified', handleUpdate);
+    canvas.on('object:removed', handleUpdate);
 
     return () => { canvas.dispose(); fabricRef.current = null; };
   }, []);
@@ -179,7 +214,34 @@ const MemeEditor: React.FC = () => {
   // --------------------------------------------------------------------------
   // Common Functions (addText, addShape, updateProperty, etc. - mapped to props)
   // --------------------------------------------------------------------------
+  const updateLayers = () => {
+    if (fabricRef.current) {
+        setLayers([...fabricRef.current.getObjects()]);
+    }
+  };
+
+  const moveLayer = (direction: 'front' | 'forward' | 'backward' | 'back') => {
+    if (!fabricRef.current || !activeObject) return;
+    const canvas = fabricRef.current;
+    switch(direction) {
+        case 'front': canvas.bringObjectToFront(activeObject); break;
+        case 'forward': canvas.bringObjectForward(activeObject); break;
+        case 'backward': canvas.sendObjectBackwards(activeObject); break;
+        case 'back': canvas.sendObjectToBack(activeObject); break;
+    }
+    canvas.renderAll();
+    saveHistory();
+    updateLayers();
+  };
+
+  const selectLayer = (obj: fabric.Object) => {
+    if (!fabricRef.current) return;
+    fabricRef.current.setActiveObject(obj);
+    fabricRef.current.renderAll();
+  };
+
   const panelProps = {
+    layers, moveLayer, selectLayer,
     activeTool, hasBackground, bgUrl, setBgUrl,
     handleImageUpload: (info: UploadChangeParam<UploadFile>) => {
       const file = info.file.originFileObj;

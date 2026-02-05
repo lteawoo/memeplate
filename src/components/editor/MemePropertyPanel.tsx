@@ -24,7 +24,15 @@ import {
   mdiBrush, 
   mdiOpacity, 
   mdiEyedropper, 
-  mdiContentCopy 
+  mdiContentCopy,
+  mdiLayers,
+  mdiArrowUp,
+  mdiArrowDown,
+  mdiArrowCollapseUp,
+  mdiArrowCollapseDown,
+  mdiShape,
+  mdiFormatColorText,
+  mdiImage
 } from '@mdi/js';
 import { ToolType } from './MemeToolbar';
 import * as fabric from 'fabric';
@@ -56,6 +64,9 @@ interface MemePropertyPanelProps {
   setColor: (color: string) => void;
   downloadImage: (format: FormatType) => void;
   copyToClipboard: () => void;
+  layers: fabric.Object[];
+  moveLayer: (direction: 'front' | 'forward' | 'backward' | 'back') => void;
+  selectLayer: (obj: fabric.Object) => void;
 }
 
 const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
@@ -81,7 +92,10 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
     setBrushSize,
     setColor,
     downloadImage,
-    copyToClipboard
+    copyToClipboard,
+    layers,
+    moveLayer,
+    selectLayer
   } = props;
 
   const [downloadFormat, setDownloadFormat] = React.useState<FormatType>('png');
@@ -118,10 +132,66 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
     if (!activeTool) return <Empty description="도구를 선택하여 편집을 시작하세요" />;
     
     switch(activeTool) {
+      case 'layers':
+        return (
+          <div className="flex flex-col gap-6 w-full">
+            <Title level={4} className="m-0 !font-black tracking-tighter">레이어 관리</Title>
+            <div className="flex flex-col gap-2">
+                {[...layers].reverse().map((obj, index) => {
+                    const isSelected = activeObject === obj;
+                    let icon = mdiShape;
+                    let name = '도형';
+                    if (obj instanceof fabric.IText) { 
+                        icon = mdiFormatColorText; 
+                        name = (obj as fabric.IText).text?.substring(0, 10) || '텍스트'; 
+                    } else if (obj instanceof fabric.Image) { 
+                        icon = mdiImage; 
+                        name = '이미지'; 
+                    }
+                    
+                    return (
+                        <div 
+                            key={index}
+                            className={`
+                                flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer group
+                                ${isSelected ? 'border-blue-500 bg-blue-50 shadow-sm' : 'border-slate-100 bg-white hover:border-blue-200'}
+                            `}
+                            onClick={() => selectLayer(obj)}
+                        >
+                            <div className="flex items-center gap-3 overflow-hidden">
+                                <Icon path={icon} size={0.8} className={isSelected ? 'text-blue-600' : 'text-slate-400'} />
+                                <span className={`text-sm font-bold truncate ${isSelected ? 'text-blue-700' : 'text-slate-600'}`}>{name}</span>
+                            </div>
+                            {isSelected && (
+                                <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                                    <Tooltip title="맨 앞으로">
+                                        <Button size="small" type="text" icon={<Icon path={mdiArrowCollapseUp} size={0.6} />} onClick={() => moveLayer('front')} />
+                                    </Tooltip>
+                                    <Tooltip title="앞으로">
+                                        <Button size="small" type="text" icon={<Icon path={mdiArrowUp} size={0.6} />} onClick={() => moveLayer('forward')} />
+                                    </Tooltip>
+                                    <Tooltip title="뒤로">
+                                        <Button size="small" type="text" icon={<Icon path={mdiArrowDown} size={0.6} />} onClick={() => moveLayer('backward')} />
+                                    </Tooltip>
+                                    <Tooltip title="맨 뒤로">
+                                        <Button size="small" type="text" icon={<Icon path={mdiArrowCollapseDown} size={0.6} />} onClick={() => moveLayer('back')} />
+                                    </Tooltip>
+                                </div>
+                            )}
+                        </div>
+                    )
+                })}
+                {layers.length === 0 && (
+                    <Empty description="레이어가 없습니다" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                )}
+            </div>
+          </div>
+        );
+
       case 'background':
         return (
           <div className="flex flex-col gap-8 w-full">
-            <Title level={5} className="m-0">배경 설정</Title>
+            <Title level={5} className="m-0">이미지 설정</Title>
             <div>
               <Text strong className="block mb-3 text-slate-700">이미지 업로드</Text>
               <Upload.Dragger
@@ -389,7 +459,7 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
       case 'share':
         return (
           <div className="flex flex-col gap-6 w-full">
-            <Title level={4} className="m-0 !font-black tracking-tighter">내보내기</Title>
+            <Title level={4} className="m-0 !font-black tracking-tighter">공유</Title>
             
             <div className="flex flex-col gap-4">
                <div className="bg-slate-50 p-2 rounded-2xl border border-slate-100">
