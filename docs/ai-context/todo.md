@@ -19,11 +19,14 @@
   - [x] ColorPicker 옆에 스포이드 버튼 배치
   - [x] EyeDropper API 연동을 통한 색상 추출 및 적용
 
-## 3단계: 기능 고도화 및 테스트
+## 3단계: 기능 고도화 및 테스트 [In Progress]
 - [x] 각 도구 간 전환 시 캔버스 상태(Selection, DrawingMode) 동기화 처리
+- [x] **Undo/Redo (실행 취소/다시 실행) 기능**
+  - [x] History Stack 로직 (JSON 기반)
+  - [x] 키보드 단축키 연결
+  - [x] UI 버튼 구현 (Floating Control)
 - [ ] 레이어 순서(Z-index) 관리 기능 추가
 - [ ] Playwright E2E 테스트 (도구 전환 및 UI 렌더링 확인)
-- [ ] 단축키(Undo/Redo) 지원 검토
 
 ## 4단계: 코드 리팩토링 및 컴포넌트 분리 [Completed]
 
@@ -72,4 +75,4 @@
   - [x] **UI 단순화**: 불필요한 설명 텍스트 제거하고 즉시 기능 제공
 - [ ] 레이어 순서(Z-index) 관리 기능 추가
 - [ ] Playwright E2E 테스트 (도구 전환 및 UI 렌더링 확인)
-- [ ] 단축키(Undo/Redo) 지원 검토
+- [x] **Undo/Redo 지원**: Ctrl+Z/Y 단축키 및 버튼 추가

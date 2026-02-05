@@ -36,9 +36,13 @@
 - [x] **코드 품질 개선 (Refactoring)**
   - [x] **Lint & Type Safety**: ESLint 9 Flat Config 도입 및 `any` 타입 제거 (Strict Typing 적용)
   - [x] **Component Optimization**: `MemeToolbar` 내부 컴포넌트 정의 분리
+- [x] **편집 기능 고도화 (New)**
+  - [x] **Undo/Redo (실행 취소/다시 실행)**:
+    - [x] History 스택 관리 로직 구현 (Canvas `toJSON`)
+    - [x] 단축키 지원 (`Ctrl+Z`, `Ctrl+Y` / `Shift+Z`)
+    - [x] 캔버스 상단 플로팅 컨트롤 UI 추가
 - [x] **AI 실행 환경 가이드 작성 (AGENTS.md)**
      
      ## 다음 작업
  - [ ] Playwright를 이용한 E2E 테스트 코드 작성 및 검증
  - [ ] 레이어 순서 조절 (Bring to front/Send to back) 기능 추가
- - [ ] 단축키(Ctrl+Z/Y)를 통한 Undo/Redo 기능 검토

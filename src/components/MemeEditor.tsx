@@ -285,7 +285,7 @@ const MemeEditor: React.FC = () => {
             <div className="flex flex-col md:flex-row h-auto md:h-full w-full bg-white border-t md:border-t-0 md:border-r border-slate-200 order-2 md:order-1 shrink-0 md:w-[420px] relative z-20">
               {/* Desktop Toolbar & Panel */}
               <div className="hidden md:flex flex-row h-full w-full">
-                <MemeToolbar activeTool={activeTool} setActiveTool={handleToolClick} />
+                <MemeToolbar activeTool={activeTool} setActiveTool={handleToolClick} hasBackground={hasBackground} />
                 <div className="flex-1 overflow-hidden">
                     <MemePropertyPanel {...panelProps} />
                 </div>
@@ -335,7 +335,7 @@ const MemeEditor: React.FC = () => {
 
             {/* Toolbar Area */}
             <div className="bg-white border-t border-slate-100 relative z-10" style={{ height: '80px' }}>
-                <MemeToolbar activeTool={activeTool} setActiveTool={handleToolClick} />
+                <MemeToolbar activeTool={activeTool} setActiveTool={handleToolClick} hasBackground={hasBackground} />
             </div>
         </div>
       </div>
