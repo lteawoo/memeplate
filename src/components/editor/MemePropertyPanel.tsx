@@ -11,6 +11,7 @@ import {
   Empty,
   Segmented
 } from 'antd';
+import type { UploadChangeParam, UploadFile } from 'antd/es/upload';
 import Icon from '@mdi/react';
 import { 
   mdiCloudUpload, 
@@ -30,19 +31,19 @@ import * as fabric from 'fabric';
 
 const { Title, Text } = Typography;
 
+type FormatType = 'png' | 'jpg' | 'webp' | 'pdf';
+
 interface MemePropertyPanelProps {
   activeTool: ToolType | null;
   hasBackground: boolean;
   bgUrl: string;
   setBgUrl: (url: string) => void;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  handleImageUpload: (info: any) => void;
+  handleImageUpload: (info: UploadChangeParam<UploadFile>) => void;
   setBackgroundImage: (url: string) => void;
   addText: () => void;
   isTextSelected: boolean;
   color: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  updateProperty: (key: string, value: any) => void;
+  updateProperty: (key: string, value: string | number) => void;
   activateEyedropper: () => void;
   fontSize: number;
   activeObject: fabric.Object | null;
@@ -53,7 +54,7 @@ interface MemePropertyPanelProps {
   brushSize: number;
   setBrushSize: (size: number) => void;
   setColor: (color: string) => void;
-  downloadImage: (format: 'png' | 'jpg' | 'webp' | 'pdf') => void;
+  downloadImage: (format: FormatType) => void;
   copyToClipboard: () => void;
 }
 
@@ -83,7 +84,7 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
     copyToClipboard
   } = props;
 
-  const [downloadFormat, setDownloadFormat] = React.useState<'png' | 'jpg' | 'webp' | 'pdf'>('png');
+  const [downloadFormat, setDownloadFormat] = React.useState<FormatType>('png');
 
   const MemeColorPicker = ({ value, onChange, label, height = "h-12" }: { 
     value: string, 
@@ -400,8 +401,7 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
                         { label: 'PDF', value: 'pdf' },
                     ]}
                     value={downloadFormat}
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    onChange={(val) => setDownloadFormat(val as any)}
+                    onChange={(val) => setDownloadFormat(val as FormatType)}
                     block
                     size="large"
                     className="bg-transparent"

@@ -42,11 +42,11 @@ const MainHeader: React.FC = () => {
         </nav>
       </div>
       
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 md:hidden">
         {/* Mobile Hamburger Menu */}
         <Button 
           type="text" 
-          className="md:hidden flex items-center justify-center p-0" 
+          className="flex items-center justify-center p-0" 
           icon={<Icon path={mdiMenu} size={1.2} />} 
           onClick={() => setIsDrawerOpen(true)}
         />
@@ -57,15 +57,15 @@ const MainHeader: React.FC = () => {
         placement="right"
         onClose={() => setIsDrawerOpen(false)}
         open={isDrawerOpen}
-        width={250}
+        width={280}
       >
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-6 pt-8 px-2">
           {navLinks.map(link => (
             <Link 
               key={link.to}
               to={link.to} 
               onClick={() => setIsDrawerOpen(false)}
-              className={`text-lg font-bold no-underline ${location.pathname === link.to ? 'text-blue-600' : 'text-slate-900'}`}
+              className={`text-xl font-black no-underline transition-colors ${location.pathname === link.to ? 'text-blue-600' : 'text-slate-800 hover:text-blue-500'}`}
             >
               {link.label}
             </Link>

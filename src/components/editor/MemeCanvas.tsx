@@ -1,7 +1,7 @@
 import React from 'react';
-import { Layout, Typography, Tag, theme } from 'antd';
+import { Layout, Typography, Tag, theme, Button, Tooltip } from 'antd';
 import Icon from '@mdi/react';
-import { mdiImage } from '@mdi/js';
+import { mdiImage, mdiUndo, mdiRedo } from '@mdi/js';
 
 const { Content } = Layout;
 const { Title, Text } = Typography;
@@ -10,9 +10,21 @@ interface MemeCanvasProps {
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
   containerRef: React.RefObject<HTMLDivElement | null>;
   hasBackground: boolean;
+  undo?: () => void;
+  redo?: () => void;
+  canUndo?: boolean;
+  canRedo?: boolean;
 }
 
-const MemeCanvas: React.FC<MemeCanvasProps> = ({ canvasRef, containerRef, hasBackground }) => {
+const MemeCanvas: React.FC<MemeCanvasProps> = ({ 
+  canvasRef, 
+  containerRef, 
+  hasBackground,
+  undo,
+  redo,
+  canUndo,
+  canRedo
+}) => {
   const { token } = theme.useToken();
 
   return (
@@ -20,6 +32,32 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({ canvasRef, containerRef, hasBac
       className="flex-1 relative flex flex-col items-center justify-center bg-slate-50 p-4 md:p-12" 
       ref={containerRef}
     >
+      {/* Undo/Redo Controls */}
+      {hasBackground && (
+        <div className="absolute top-6 right-6 md:top-8 md:right-8 z-10 flex gap-2">
+            <Tooltip title="실행 취소 (Ctrl+Z)">
+                <Button 
+                    shape="circle" 
+                    icon={<Icon path={mdiUndo} size={0.8} />} 
+                    onClick={undo} 
+                    disabled={!canUndo}
+                    size="large"
+                    className="shadow-md border-none bg-white/90 backdrop-blur-sm"
+                />
+            </Tooltip>
+            <Tooltip title="다시 실행 (Ctrl+Y)">
+                <Button 
+                    shape="circle" 
+                    icon={<Icon path={mdiRedo} size={0.8} />} 
+                    onClick={redo} 
+                    disabled={!canRedo}
+                    size="large"
+                    className="shadow-md border-none bg-white/90 backdrop-blur-sm"
+                />
+            </Tooltip>
+        </div>
+      )}
+
       {/* Canvas Container */}
       <div 
         className={`
