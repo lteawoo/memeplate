@@ -67,6 +67,7 @@ interface MemePropertyPanelProps {
   layers: fabric.Object[];
   moveLayer: (direction: 'front' | 'forward' | 'backward' | 'back') => void;
   selectLayer: (obj: fabric.Object) => void;
+  editMode: 'base' | 'template';
 }
 
 const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
@@ -95,10 +96,23 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
     copyToClipboard,
     layers,
     moveLayer,
-    selectLayer
+    selectLayer,
+    editMode
   } = props;
 
   const [downloadFormat, setDownloadFormat] = React.useState<FormatType>('png');
+
+  const ModeBadge = () => (
+    <div className="flex items-center gap-2 mb-4">
+      <div className={`
+        px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-sm
+        ${editMode === 'base' ? 'bg-slate-100 text-slate-600 border border-slate-200' : 'bg-blue-600 text-white border border-blue-500'}
+      `}>
+        {editMode === 'base' ? 'Base Mode' : 'Meme Mode'}
+      </div>
+      <div className="h-px bg-slate-100 flex-1"></div>
+    </div>
+  );
 
   const MemeColorPicker = ({ value, onChange, label, height = "h-12" }: { 
     value: string, 
@@ -191,6 +205,7 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
       case 'background':
         return (
           <div className="flex flex-col gap-8 w-full">
+            <ModeBadge />
             <Title level={5} className="m-0">이미지 설정</Title>
             <div>
               <Text strong className="block mb-3 text-slate-700">이미지 업로드</Text>
@@ -242,6 +257,7 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
       case 'text':
         return (
           <div className="flex flex-col gap-10 w-full">
+            <ModeBadge />
             <Title level={4} className="m-0 !font-black tracking-tighter">텍스트 편집</Title>
             <Button 
               type="primary" 
@@ -330,6 +346,7 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
       case 'shapes':
         return (
           <div className="flex flex-col gap-10 w-full">
+             <ModeBadge />
              <Title level={4} className="m-0 !font-black tracking-tighter">도형도구</Title>
              <div className="flex flex-col gap-4">
                 <button 
@@ -422,6 +439,7 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
       case 'brush':
         return (
           <div className="flex flex-col gap-8 w-full">
+             <ModeBadge />
              <Title level={4} className="m-0 !font-black tracking-tighter">브러쉬</Title>
              <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
                 <div className="flex items-center gap-3 mb-1">
@@ -459,6 +477,7 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
       case 'share':
         return (
           <div className="flex flex-col gap-6 w-full">
+            <ModeBadge />
             <Title level={4} className="m-0 !font-black tracking-tighter">공유</Title>
             
             <div className="flex flex-col gap-4">

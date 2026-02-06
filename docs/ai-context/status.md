@@ -37,14 +37,19 @@
 - [x] **코드 품질 개선 (Refactoring)**
   - [x] **Lint & Type Safety**: ESLint 9 Flat Config 도입 및 `any` 타입 제거 (Strict Typing 적용)
   - [x] **Component Optimization**: `MemeToolbar` 내부 컴포넌트 정의 분리
-  - [x] **편집 기능 고도화 (New)**
+  - [x] **편집 모드 이원화 (Edit Mode Separation)**:
+    - [x] **Base 모드**: 이미지 업로드, 도형 추가, 브러쉬 등 기본 에셋 준비 단계
+    - [x] **Meme 모드**: 텍스트 편집 및 결과물 공유 등 실제 밈 생성 단계
+    - [x] **레이어 잠금**: Meme 모드에서는 텍스트 외 다른 레이어 조작을 제한하여 실수 방지
+    - [x] **UI/UX**: 모드별 툴바 아이콘 분리 및 속성 패널 내 모드 표시(Badge) 구현
+- [x] **편집 기능 고도화 (New)**
   - [x] **Undo/Redo (실행 취소/다시 실행)**:
     - [x] History 스택 관리 로직 구현 (Canvas `toJSON`)
     - [x] 단축키 지원 (`Ctrl+Z`, `Ctrl+Y` / `Shift+Z`)
     - [x] 캔버스 상단 플로팅 컨트롤 UI 추가
   - [x] **레이어 관리 (Layer Management)**:
     - [x] **레이어 순서 변경**: 맨 앞으로/맨 뒤로, 한 단계 앞/뒤 이동 구현 (`bringObjectToFront` 등)
-    - [x] **UI 시각화**: 캔버스 객체 목록을 패널에 표시 및 드래그 앤 드롭(UI만) 또는 버튼 클릭으로 순서 제어
+    - [x] **UI 시각화**: 캔버스 객체 목록을 패널에 표시 및 버튼 클릭으로 순서 제어
     - [x] **명칭 변경**: '배경(Background)' → '**이미지(Image)**'로 용어 통일
 - [x] **모바일 사용성 개선 (Mobile UX)**:
   - [x] **터치 인터랙션 최적화**: 캔버스 영역 `touch-action: none` 적용으로 스크롤 간섭 제거
