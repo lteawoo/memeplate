@@ -201,7 +201,7 @@ const MemeEditor: React.FC = () => {
     if (!fabricRef.current) return;
     fabric.FabricImage.fromURL(url, { crossOrigin: 'anonymous' }).then((img) => {
       const canvas = fabricRef.current!;
-      const containerPadding = window.innerWidth < 768 ? 32 : 128; 
+      const containerPadding = window.innerWidth < 768 ? 32 : 80; 
       const ratio = Math.min((containerRef.current!.clientWidth - containerPadding) / img.width!, (containerRef.current!.clientHeight - containerPadding) / img.height!);
       canvas.setDimensions({ width: img.width! * ratio, height: img.height! * ratio });
       img.set({ scaleX: ratio, scaleY: ratio, originX: 'left', originY: 'top' });
@@ -442,7 +442,7 @@ const MemeEditor: React.FC = () => {
       <div className="flex-1 flex overflow-hidden relative">
         <EditorLayout
           sidebar={
-            <div className="flex flex-col md:flex-row h-auto md:h-full w-full bg-white border-t md:border-t-0 md:border-r border-slate-200 order-2 md:order-1 shrink-0 md:w-[448px] relative z-20">
+            <div className="flex flex-col md:flex-row h-auto md:h-full w-full bg-white border-t md:border-t-0 md:border-r border-slate-200 order-2 md:order-1 shrink-0 md:w-[400px] relative z-20">
               {/* Desktop Toolbar & Panel */}
               <div className="hidden md:flex flex-row h-full w-full">
                 <MemeToolbar 

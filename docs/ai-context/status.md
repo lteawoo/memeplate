@@ -88,5 +88,9 @@
 - [x] **Build Fix**: `vite.config.ts`의 잘못된 플러그인 임포트 수정 (`react-swc` -> `react`)
 - [x] **Runtime Fix**: `verbatimModuleSyntax` 설정에 따른 `import type` 명시 (ToolType 관련 오류 수정)
 - [x] **TypeScript 최적화**: `tsconfig.json` 설정을 현대적인 Vite 환경(`Bundler` 해설 등)에 맞게 고도화 및 `import type` 규격 준수 (Issue #8)
+- [x] **레이아웃 밀도 최적화 (완료)**:
+  - [x] 과도하게 넓은 여백(Margin/Padding) 전방위 축소 (`p-12` -> `p-8`, `px-8` -> `px-6`)
+  - [x] 에디터 사이드바 너비 최적화 (`448px` -> `400px`) 및 캔버스 영역 확대
+  - [x] 8px 그리드 시스템 기반의 짜임새 있는 UI 리듬 구현
 
 ## 다음 작업

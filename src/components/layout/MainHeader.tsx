@@ -18,7 +18,7 @@ const MainHeader: React.FC = () => {
 
   return (
     <Header 
-      className="flex items-center justify-between px-4 md:px-8 border-b border-slate-200 z-30 relative"
+      className="flex items-center justify-between px-4 md:px-6 border-b border-slate-200 z-30 relative"
       style={{ height: 64, background: '#ffffff', lineHeight: '64px' }}
     >
       <div className="flex items-center gap-10">

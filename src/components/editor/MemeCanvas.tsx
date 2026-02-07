@@ -29,7 +29,7 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
 
   return (
     <Content 
-      className="flex-1 relative flex flex-col items-center justify-center bg-slate-50 p-4 md:p-12" 
+      className="flex-1 relative flex flex-col items-center justify-center bg-slate-50 p-4 md:p-8" 
       ref={containerRef}
       style={{ touchAction: 'none' }}
     >

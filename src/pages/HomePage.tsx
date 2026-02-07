@@ -14,12 +14,12 @@ const HomePage: React.FC = () => {
   return (
     <Layout className="h-screen bg-white">
       <MainHeader />
-      <Content className="flex flex-col items-center justify-center p-12">
+      <Content className="flex flex-col items-center justify-center p-8">
         <div className="text-center max-w-2xl">
           <Title level={1} className="!text-6xl !font-black tracking-tighter mb-6">
             Hello World!
           </Title>
-          <Title level={3} className="text-slate-500 mb-12 font-medium">
+          <Title level={3} className="text-slate-500 mb-8 font-medium">
             쉽고 빠르게 나만의 Memeplate를 만들어보세요.
           </Title>
           

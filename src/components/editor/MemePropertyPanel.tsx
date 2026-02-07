@@ -395,7 +395,7 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
     return (
     <div className="flex-1 h-full flex flex-col bg-white overflow-hidden">
       {/* 1. Property Section (Scrollable) */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar px-4 py-8 md:px-8 md:py-8">
+      <div className="flex-1 overflow-y-auto custom-scrollbar px-4 py-6 md:px-6 md:py-6">
         <div className="w-full max-w-full animate-in fade-in slide-in-from-top-4 duration-500">
           {renderPanelContent()}
         </div>
@@ -405,7 +405,7 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
       {showLayers && (
         <div className="h-[42%] flex flex-col bg-slate-50 border-t-2 border-slate-100 shadow-[0_-10px_20px_-5px_rgba(0,0,0,0.05)] animate-in slide-in-from-bottom-8 duration-500">
           {/* Header */}
-          <div className="px-4 py-4 md:px-8 flex items-center justify-between bg-white border-b border-slate-100 sticky top-0 z-10">
+          <div className="px-4 py-4 md:px-6 flex items-center justify-between bg-white border-b border-slate-100 sticky top-0 z-10">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-slate-900 rounded-lg shadow-lg shadow-slate-900/10">
                 <Icon path={mdiLayers} size={0.7} className="text-white" />
@@ -426,7 +426,7 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
           </div>
 
           {/* Layer List (Scrollable) */}
-          <div className="flex-1 overflow-y-auto custom-scrollbar px-4 py-6 md:px-8">
+          <div className="flex-1 overflow-y-auto custom-scrollbar px-4 py-6 md:px-6">
             <div className="flex flex-col gap-3 pb-4">
               {[...layers].reverse().map((obj, index) => {
                 const isSelected = activeObject === obj;
