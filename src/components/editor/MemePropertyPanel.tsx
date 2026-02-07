@@ -28,7 +28,8 @@ import {
   mdiShape,
   mdiFormatColorText,
   mdiImage,
-  mdiClose
+  mdiClose,
+  mdiLayers
 } from '@mdi/js';
 import { ToolType } from './MemeToolbar';
 import * as fabric from 'fabric';
