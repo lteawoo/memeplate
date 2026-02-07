@@ -15,6 +15,8 @@ export type ToolType = 'background' | 'text' | 'shapes' | 'brush' | 'layers' | '
 interface MemeToolbarProps {
   activeTool: ToolType;
   setActiveTool: (tool: ToolType) => void;
+  showLayers: boolean;
+  setShowLayers: (show: boolean) => void;
   hasBackground: boolean;
   editMode: 'base' | 'template';
   setEditMode: (mode: 'base' | 'template') => void;
@@ -58,16 +60,24 @@ const SidebarItem: React.FC<SidebarItemProps> = ({ icon, label, isActive, onClic
   </button>
 );
 
-const MemeToolbar: React.FC<MemeToolbarProps> = ({ activeTool, setActiveTool, hasBackground, editMode, setEditMode }) => {
+const MemeToolbar: React.FC<MemeToolbarProps> = ({ 
+  activeTool, 
+  setActiveTool, 
+  showLayers,
+  setShowLayers,
+  hasBackground, 
+  editMode, 
+  setEditMode 
+}) => {
   return (
     <div className="w-full md:w-24 h-24 md:h-full border-t md:border-t-0 md:border-r border-slate-100 bg-white md:bg-slate-50/10 flex flex-row md:flex-col items-center justify-start py-4 md:py-6 gap-4 md:gap-4 px-2 md:px-4 shrink-0 z-20">
       {/* Mode Switcher Tabs */}
-      <div className="flex flex-row md:flex-col w-auto md:w-full gap-2 bg-slate-200/40 p-2 rounded-2xl">
+      <div className="flex flex-row md:flex-col w-auto md:w-full gap-2 bg-slate-200/40 p-2 rounded-2xl shrink-0">
         <button 
           type="button"
           onClick={() => setEditMode('base')}
           className={`
-            px-6 md:px-0 md:w-full py-2 md:py-4 rounded-xl flex flex-col items-center justify-center transition-all
+            px-4 md:px-0 md:w-full py-2 md:py-4 rounded-xl flex flex-col items-center justify-center transition-all
             border-none outline-none cursor-pointer active:scale-95
             ${editMode === 'base' ? 'bg-white text-blue-600 shadow-sm ring-1 ring-black/5' : 'bg-transparent text-slate-500 hover:bg-white/40'}
           `}
@@ -78,7 +88,7 @@ const MemeToolbar: React.FC<MemeToolbarProps> = ({ activeTool, setActiveTool, ha
           type="button"
           onClick={() => setEditMode('template')}
           className={`
-            px-6 md:px-0 md:w-full py-2 md:py-4 rounded-xl flex flex-col items-center justify-center transition-all
+            px-4 md:px-0 md:w-full py-2 md:py-4 rounded-xl flex flex-col items-center justify-center transition-all
             border-none outline-none cursor-pointer active:scale-95
             ${editMode === 'template' ? 'bg-white text-blue-600 shadow-sm ring-1 ring-black/5' : 'bg-transparent text-slate-500 hover:bg-white/40'}
           `}
@@ -87,7 +97,8 @@ const MemeToolbar: React.FC<MemeToolbarProps> = ({ activeTool, setActiveTool, ha
         </button>
       </div>
 
-      <div className="flex flex-row md:flex-col w-auto md:w-full gap-2 bg-slate-200/40 p-2 rounded-2xl">
+      {/* Main Tools Group */}
+      <div className="flex flex-row md:flex-col w-auto md:w-full gap-2 bg-slate-200/40 p-2 rounded-2xl overflow-x-auto no-scrollbar">
         {editMode === 'base' ? (
           <>
             <SidebarItem 
@@ -129,12 +140,15 @@ const MemeToolbar: React.FC<MemeToolbarProps> = ({ activeTool, setActiveTool, ha
             />
           </>
         )}
-        
+      </div>
+
+      {/* Persistent Tools Group (Layers) */}
+      <div className="flex flex-row md:flex-col w-auto md:w-full gap-2 bg-slate-800 p-2 rounded-2xl md:mt-auto">
         <SidebarItem 
           icon={mdiLayers} 
           label="레이어" 
-          isActive={activeTool === 'layers'} 
-          onClick={() => setActiveTool('layers')} 
+          isActive={showLayers} 
+          onClick={() => setShowLayers(!showLayers)} 
           disabled={!hasBackground} 
         />
       </div>

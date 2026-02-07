@@ -27,11 +27,13 @@ const MemeEditor: React.FC = () => {
 
   // Property State
   const [color, setColor] = useState('#ffffff'); 
+  const [opacity, setOpacity] = useState(1);
   const [fontSize, setFontSize] = useState(40);
   const [strokeWidth, setStrokeWidth] = useState(3);
   const [brushSize, setBrushSize] = useState(10);
   const [bgUrl, setBgUrl] = useState('');
   const [hasBackground, setHasBackground] = useState(false);
+  const [showLayers, setShowLayers] = useState(false);
 
   // History State
   const [history, setHistory] = useState<string[]>([]);
@@ -141,11 +143,15 @@ const MemeEditor: React.FC = () => {
         
         if (selected instanceof fabric.IText) {
           setIsTextSelected(true); setIsShapeSelected(false); setActiveTool('text');
-          setColor(selected.fill as string); setFontSize(selected.fontSize || 40); setStrokeWidth(selected.strokeWidth || 3);
+          setColor(selected.fill as string); 
+          setFontSize(selected.fontSize || 40); 
+          setStrokeWidth(selected.strokeWidth || 3);
+          setOpacity(selected.opacity ?? 1);
         } 
         else if (selected instanceof fabric.Rect || selected instanceof fabric.Circle) {
           setIsTextSelected(false); setIsShapeSelected(true); setActiveTool('shapes');
           setColor(selected.fill as string);
+          setOpacity(selected.opacity ?? 1);
         }
       } else {
         // Handle Deselection
@@ -229,8 +235,12 @@ const MemeEditor: React.FC = () => {
           obj.set({ selectable: false, evented: false });
         }
       } else {
-        // base 모드: 모든 레이어 편집 가능
-        obj.set({ selectable: true, evented: true });
+        // base 모드: 텍스트 제외하고 편집 가능 (사용자 요청 반영)
+        if (obj instanceof fabric.IText) {
+          obj.set({ selectable: false, evented: false });
+        } else {
+          obj.set({ selectable: true, evented: true });
+        }
       }
     });
 
@@ -276,7 +286,13 @@ const MemeEditor: React.FC = () => {
 
   const panelProps = {
     layers, moveLayer, selectLayer,
+    showLayers, 
+    setShowLayers: (show: boolean) => {
+        setShowLayers(show);
+        if (show) setIsPanelOpen(true);
+    },
     activeTool, hasBackground, bgUrl, setBgUrl,
+    opacity, // Trigger re-render in panel when opacity changes
     handleImageUpload: (info: UploadChangeParam<UploadFile>) => {
       const file = info.file.originFileObj;
       if (file) {
@@ -310,6 +326,7 @@ const MemeEditor: React.FC = () => {
       if (key === 'fill') setColor(value as string);
       if (key === 'fontSize') setFontSize(value as number);
       if (key === 'strokeWidth') setStrokeWidth(value as number);
+      if (key === 'opacity') setOpacity(value as number);
     },
     activateEyedropper: async () => {
       if (!window.EyeDropper) {
@@ -420,6 +437,11 @@ const MemeEditor: React.FC = () => {
                 <MemeToolbar 
                   activeTool={activeTool} 
                   setActiveTool={handleToolClick} 
+                  showLayers={showLayers}
+                  setShowLayers={(show) => {
+                    setShowLayers(show);
+                    if (show) setIsPanelOpen(true);
+                  }}
                   hasBackground={hasBackground} 
                   editMode={editMode} 
                   setEditMode={toggleEditMode}
@@ -474,11 +496,16 @@ const MemeEditor: React.FC = () => {
             {/* Toolbar Area */}
             <div className="bg-white border-t border-slate-100 relative z-10" style={{ height: '80px' }}>
                 <MemeToolbar 
-                    activeTool={activeTool} 
-                    setActiveTool={handleToolClick} 
-                    hasBackground={hasBackground} 
-                    editMode={editMode} 
-                    setEditMode={toggleEditMode}
+                  activeTool={activeTool} 
+                  setActiveTool={handleToolClick} 
+                  showLayers={showLayers}
+                  setShowLayers={(show) => {
+                    setShowLayers(show);
+                    if (show) setIsPanelOpen(true);
+                  }}
+                  hasBackground={hasBackground} 
+                  editMode={editMode} 
+                  setEditMode={toggleEditMode}
                 />
             </div>
         </div>
