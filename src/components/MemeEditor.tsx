@@ -280,8 +280,19 @@ const MemeEditor: React.FC = () => {
 
   const selectLayer = (obj: fabric.Object) => {
     if (!fabricRef.current) return;
-    fabricRef.current.setActiveObject(obj);
-    fabricRef.current.renderAll();
+    
+    // Auto-switch to Template (Meme) mode if selecting Text in Base mode
+    if (obj instanceof fabric.IText && editMode === 'base') {
+      toggleEditMode('template');
+      // After mode switch, we need to defer selection slightly to ensure state update
+      setTimeout(() => {
+        fabricRef.current?.setActiveObject(obj);
+        fabricRef.current?.renderAll();
+      }, 0);
+    } else {
+      fabricRef.current.setActiveObject(obj);
+      fabricRef.current.renderAll();
+    }
   };
 
   const panelProps = {
