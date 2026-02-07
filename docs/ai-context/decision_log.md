@@ -9,6 +9,10 @@
   - `MemePropertyPanel`: `flex-col` 구조를 도입하여 상단은 속성(Scrollable), 하단은 레이어(Fixed Height 40%)로 분리.
   - `MemeEditor`: 모바일 패널 내부의 중복 스크롤을 제거하여 리팩토링된 패널 레이아웃이 정상 동작하도록 수정.
 
+## [2026-02-07] Vite 설정 오류 수정
+- **결정**: `vite.config.ts`에서 실제로 설치되지 않은 `@vitejs/plugin-react-swc` 대신 `package.json`에 명시된 `@vitejs/plugin-react`를 사용하도록 수정함.
+- **이유**: 잘못된 플러그인 참조로 인한 빌드 환경의 불일치 해결.
+
 ## [2026-02-07] 도형 속성 단순화 및 컬러피커 컴포넌트 분리
 - **결정**: '도형(Shapes)' 도구에서 불투명도와 외곽선 두께 조절 기능을 제거하고, `MemePropertyPanel.tsx`에 내장되어 있던 `MemeColorPicker`를 독립 컴포넌트로 분리함.
 - **이유**: 
