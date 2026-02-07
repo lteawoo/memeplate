@@ -86,6 +86,7 @@
     - [x] **레이어 섹션 고도화**: 레이어 관리 영역을 속성 패널 하단에 완전히 독립된 고정 섹션으로 분리 및 디자인 개선
     - [x] **Lint Pass**: 미사용 변수 정리 및 ESLint 규칙 준수 확인 (Issue #7)
 - [x] **Build Fix**: `vite.config.ts`의 잘못된 플러그인 임포트 수정 (`react-swc` -> `react`)
-- [x] **TypeScript 최적화**: `tsconfig.json` 설정을 현대적인 Vite 환경(`Bundler` 해설 등)에 맞게 고도화
+- [x] **Runtime Fix**: `verbatimModuleSyntax` 설정에 따른 `import type` 명시 (ToolType 관련 오류 수정)
+- [x] **TypeScript 최적화**: `tsconfig.json` 설정을 현대적인 Vite 환경(`Bundler` 해설 등)에 맞게 고도화 및 `import type` 규격 준수 (Issue #8)
 
 ## 다음 작업

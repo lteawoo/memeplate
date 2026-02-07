@@ -31,7 +31,7 @@ import {
   mdiClose,
   mdiLayers
 } from '@mdi/js';
-import { ToolType } from './MemeToolbar';
+import type { ToolType } from './MemeToolbar';
 import * as fabric from 'fabric';
 import MemeColorPicker from './MemeColorPicker';
 

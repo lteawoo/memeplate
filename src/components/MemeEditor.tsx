@@ -5,7 +5,7 @@ import type { UploadChangeParam, UploadFile } from 'antd/es/upload';
 
 import MainHeader from './layout/MainHeader';
 import EditorLayout from './editor/EditorLayout';
-import MemeToolbar, { ToolType } from './editor/MemeToolbar';
+import MemeToolbar, { type ToolType } from './editor/MemeToolbar';
 import MemePropertyPanel from './editor/MemePropertyPanel';
 import MemeCanvas from './editor/MemeCanvas';
 
