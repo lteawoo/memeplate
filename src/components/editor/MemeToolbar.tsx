@@ -143,7 +143,7 @@ const MemeToolbar: React.FC<MemeToolbarProps> = ({
       </div>
 
       {/* Persistent Tools Group (Layers) */}
-      <div className="flex flex-row md:flex-col w-auto md:w-full gap-2 bg-slate-800 p-2 rounded-2xl md:mt-auto">
+      <div className="flex flex-row md:flex-col w-auto md:w-full gap-2 bg-slate-200/40 p-2 rounded-2xl">
         <SidebarItem 
           icon={mdiLayers} 
           label="레이어" 
