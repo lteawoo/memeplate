@@ -488,7 +488,7 @@ const MemeEditor: React.FC = () => {
                 >
                   <div className="w-12 h-1.5 bg-slate-200 rounded-full"></div>
                 </div>
-                <div className="overflow-y-auto" style={{ height: 'calc(45vh - 40px)' }}>
+                <div className="h-full overflow-hidden" style={{ height: 'calc(45vh - 40px)' }}>
                     <MemePropertyPanel {...panelProps} editMode={editMode} />
                 </div>
             </div>

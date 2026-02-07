@@ -394,85 +394,89 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
 
     return (
     <div className="flex-1 h-full flex flex-col bg-white overflow-hidden">
-      {/* Content Area */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar px-8 py-8 md:px-12 md:py-12">
-        <div className="w-full max-w-full flex flex-col gap-10">
-          {/* Tool Properties */}
-          <div className="animate-in fade-in slide-in-from-top-4 duration-500">
-            {renderPanelContent()}
-          </div>
-
-          {/* Layers Section (Persistent UI) */}
-          {showLayers && (
-            <div className="mt-4 animate-in fade-in slide-in-from-bottom-6 duration-500">
-                <div className="flex items-center justify-between mb-8">
-                  <Divider className="flex-1 my-0 border-slate-100">
-                      <div className="flex items-center gap-2 px-4 py-1.5 bg-slate-50 rounded-full border border-slate-100">
-                          <Icon path={mdiLayers} size={0.6} className="text-slate-400" />
-                          <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Layers Management</span>
-                      </div>
-                  </Divider>
-                  <Button 
-                    type="text" 
-                    size="small" 
-                    icon={<Icon path={mdiClose} size={0.6} />} 
-                    onClick={() => setShowLayers(false)}
-                    className="text-slate-300 hover:text-slate-500"
-                  />
-                </div>
-                
-                <div className="flex flex-col gap-3">
-                    {[...layers].reverse().map((obj, index) => {
-                        const isSelected = activeObject === obj;
-                        let icon = mdiShape;
-                        let name = '도형';
-                        if (obj instanceof fabric.IText) { 
-                            icon = mdiFormatColorText; 
-                            name = (obj as fabric.IText).text?.substring(0, 10) || '텍스트'; 
-                        } else if (obj instanceof fabric.Image || obj.type === 'image') { 
-                            icon = mdiImage; 
-                            name = '이미지'; 
-                        }
-                        
-                        return (
-                            <div 
-                                key={index}
-                                className={`
-                                    flex items-center justify-between p-4 rounded-2xl border transition-all cursor-pointer group
-                                    ${isSelected ? 'border-blue-500 bg-blue-50/50 shadow-sm' : 'border-slate-100 bg-white hover:border-blue-200'}
-                                `}
-                                onClick={() => selectLayer(obj)}
-                            >
-                                <div className="flex items-center gap-4 overflow-hidden">
-                                    <div className={`p-2 rounded-lg ${isSelected ? 'bg-blue-100' : 'bg-slate-100'}`}>
-                                        <Icon path={icon} size={0.7} className={isSelected ? 'text-blue-600' : 'text-slate-400'} />
-                                    </div>
-                                    <span className={`text-sm font-bold truncate ${isSelected ? 'text-blue-700' : 'text-slate-600'}`}>{name}</span>
-                                </div>
-                                {isSelected && (
-                                    <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                                        <Tooltip title="앞으로">
-                                            <Button size="small" type="text" icon={<Icon path={mdiArrowUp} size={0.6} />} onClick={() => moveLayer('forward')} />
-                                        </Tooltip>
-                                        <Tooltip title="뒤로">
-                                            <Button size="small" type="text" icon={<Icon path={mdiArrowDown} size={0.6} />} onClick={() => moveLayer('backward')} />
-                                        </Tooltip>
-                                        <Tooltip title="삭제">
-                                            <Button size="small" type="text" danger icon={<Icon path={mdiDelete} size={0.6} />} onClick={deleteActiveObject} />
-                                        </Tooltip>
-                                    </div>
-                                )}
-                            </div>
-                        )
-                    })}
-                    {layers.length === 0 && (
-                        <Empty description="레이어가 없습니다" image={Empty.PRESENTED_IMAGE_SIMPLE} />
-                    )}
-                </div>
-            </div>
-          )}
+      {/* 1. Property Section (Scrollable) */}
+      <div className="flex-1 overflow-y-auto custom-scrollbar px-8 py-8 md:px-12 md:py-10">
+        <div className="w-full max-w-full animate-in fade-in slide-in-from-top-4 duration-500">
+          {renderPanelContent()}
         </div>
       </div>
+
+      {/* 2. Layer Management Section (Fixed/Separated) */}
+      {showLayers && (
+        <div className="h-[40%] flex flex-col bg-slate-50/50 border-t border-slate-100 animate-in slide-in-from-bottom-8 duration-500">
+          {/* Header */}
+          <div className="px-8 py-4 md:px-10 flex items-center justify-between bg-white/80 backdrop-blur-sm border-b border-slate-50 sticky top-0 z-10">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-blue-50 rounded-lg">
+                <Icon path={mdiLayers} size={0.7} className="text-blue-600" />
+              </div>
+              <span className="text-xs font-black uppercase tracking-widest text-slate-600">Layers</span>
+              <span className="px-2 py-0.5 bg-slate-200 rounded text-[10px] font-bold text-slate-500">{layers.length}</span>
+            </div>
+            <Button 
+              type="text" 
+              size="small" 
+              icon={<Icon path={mdiClose} size={0.6} />} 
+              onClick={() => setShowLayers(false)}
+              className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg"
+            />
+          </div>
+
+          {/* Layer List (Scrollable) */}
+          <div className="flex-1 overflow-y-auto custom-scrollbar px-8 py-6 md:px-10">
+            <div className="flex flex-col gap-3 pb-4">
+              {[...layers].reverse().map((obj, index) => {
+                const isSelected = activeObject === obj;
+                let icon = mdiShape;
+                let name = '도형';
+                if (obj instanceof fabric.IText) { 
+                  icon = mdiFormatColorText; 
+                  name = (obj as fabric.IText).text?.substring(0, 10) || '텍스트'; 
+                } else if (obj instanceof fabric.Image || obj.type === 'image') { 
+                  icon = mdiImage; 
+                  name = '이미지'; 
+                }
+                
+                return (
+                  <div 
+                    key={index}
+                    className={`
+                      flex items-center justify-between p-4 rounded-2xl border transition-all cursor-pointer group
+                      ${isSelected ? 'border-blue-500 bg-white shadow-md ring-4 ring-blue-500/5' : 'border-slate-100 bg-white hover:border-blue-200 shadow-sm hover:shadow-md'}
+                    `}
+                    onClick={() => selectLayer(obj)}
+                  >
+                    <div className="flex items-center gap-4 overflow-hidden">
+                      <div className={`p-2 rounded-xl transition-colors ${isSelected ? 'bg-blue-600 text-white' : 'bg-slate-50 text-slate-400'}`}>
+                        <Icon path={icon} size={0.7} />
+                      </div>
+                      <span className={`text-sm font-bold truncate ${isSelected ? 'text-blue-900' : 'text-slate-600'}`}>{name}</span>
+                    </div>
+                    {isSelected && (
+                      <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                        <Tooltip title="앞으로">
+                          <Button size="small" type="text" icon={<Icon path={mdiArrowUp} size={0.6} />} onClick={() => moveLayer('forward')} className="hover:bg-blue-50 hover:text-blue-600" />
+                        </Tooltip>
+                        <Tooltip title="뒤로">
+                          <Button size="small" type="text" icon={<Icon path={mdiArrowDown} size={0.6} />} onClick={() => moveLayer('backward')} className="hover:bg-blue-50 hover:text-blue-600" />
+                        </Tooltip>
+                        <Tooltip title="삭제">
+                          <Button size="small" type="text" danger icon={<Icon path={mdiDelete} size={0.6} />} onClick={deleteActiveObject} className="hover:bg-red-50" />
+                        </Tooltip>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+              {layers.length === 0 && (
+                <div className="py-12">
+                  <Empty description="레이어가 없습니다" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
