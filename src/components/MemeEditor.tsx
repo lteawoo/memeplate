@@ -312,12 +312,30 @@ const MemeEditor: React.FC = () => {
       if (key === 'strokeWidth') setStrokeWidth(value as number);
     },
     activateEyedropper: async () => {
-      if (!window.EyeDropper) return;
-      const result = await new window.EyeDropper().open();
-      setColor(result.sRGBHex);
-      if (activeObject) {
-         fabricRef.current?.getActiveObjects().forEach(obj => obj.set('fill', result.sRGBHex));
-         fabricRef.current?.renderAll();
+      if (!window.EyeDropper) {
+        messageApi.warning('이 브라우저는 스포이드 기능을 지원하지 않습니다.');
+        return;
+      }
+      
+      // 스포이드 활성 시 브러쉬 모드 잠시 해제 (간섭 방지)
+      const wasDrawing = fabricRef.current?.isDrawingMode;
+      if (wasDrawing) fabricRef.current!.isDrawingMode = false;
+
+      try {
+        const result = await new window.EyeDropper().open();
+        if (result.sRGBHex) {
+          setColor(result.sRGBHex);
+          if (activeObject) {
+             fabricRef.current?.getActiveObjects().forEach(obj => obj.set('fill', result.sRGBHex));
+             fabricRef.current?.renderAll();
+          }
+          messageApi.success('색상이 추출되었습니다.');
+        }
+      } catch (e) {
+        console.log('Eyedropper cancelled or failed', e);
+      } finally {
+        // 원래 상태로 복구
+        if (wasDrawing) fabricRef.current!.isDrawingMode = true;
       }
     },
     fontSize, activeObject, strokeWidth,
