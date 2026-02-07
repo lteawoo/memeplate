@@ -1,5 +1,5 @@
 import React from 'react';
-import { Tooltip } from 'antd';
+
 import Icon from '@mdi/react';
 import { 
   mdiImage, 
@@ -29,54 +29,65 @@ interface SidebarItemProps {
 }
 
 const SidebarItem: React.FC<SidebarItemProps> = ({ icon, label, isActive, onClick, disabled }) => (
-  <Tooltip title={label} placement="right">
-      <button
-          onClick={disabled ? undefined : onClick}
-          disabled={disabled}
-          className={`
-              w-full md:aspect-square flex flex-col items-center justify-center gap-1 md:gap-2
-              transition-all duration-300 rounded-xl md:rounded-2xl py-2 md:py-0
-              ${disabled 
-                  ? 'text-slate-300 cursor-not-allowed opacity-50' 
-                  : isActive 
-                      ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' 
-                      : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600'}
-          `}
-      >
-          <Icon path={icon} size={1} className="md:w-7 md:h-7" />
-          <span className={`text-[10px] md:text-[11px] font-bold ${isActive ? 'text-white' : ''}`}>{label}</span>
-      </button>
-  </Tooltip>
+  <button
+    type="button"
+    onClick={disabled ? undefined : onClick}
+    disabled={disabled}
+    className={`
+      w-20 md:w-full py-4 md:py-4 flex flex-col items-center justify-center gap-2
+      transition-all duration-300 rounded-xl relative
+      border-none outline-none cursor-pointer active:scale-95
+      ${disabled 
+          ? 'bg-transparent text-slate-300 cursor-not-allowed opacity-50' 
+          : isActive 
+              ? 'bg-white text-blue-600 shadow-sm ring-1 ring-black/5' 
+              : 'bg-transparent text-slate-500 hover:bg-white/40 hover:text-slate-700'}
+    `}
+  >
+    <Icon 
+      path={icon} 
+      size={1.1} 
+      className={`transition-all duration-300 ${isActive ? 'scale-110' : 'opacity-70'}`} 
+    />
+    <span className={`
+      text-[10px] font-black uppercase tracking-tighter transition-colors duration-300
+      ${isActive ? 'text-blue-600' : 'text-slate-500'}
+    `}>
+      {label}
+    </span>
+  </button>
 );
 
 const MemeToolbar: React.FC<MemeToolbarProps> = ({ activeTool, setActiveTool, hasBackground, editMode, setEditMode }) => {
   return (
-    <div className="w-full md:w-24 h-24 md:h-full border-t md:border-t-0 md:border-r border-slate-100 bg-white md:bg-slate-50/50 flex flex-row md:flex-col items-center justify-around md:justify-start py-2 md:py-4 gap-1 md:gap-4 px-2 md:shadow-[inset_-1px_0_0_0_rgba(0,0,0,0.05)] shrink-0 z-20">
+    <div className="w-full md:w-24 h-24 md:h-full border-t md:border-t-0 md:border-r border-slate-100 bg-white md:bg-slate-50/10 flex flex-row md:flex-col items-center justify-start py-4 md:py-6 gap-4 md:gap-4 px-2 md:px-4 shrink-0 z-20">
       {/* Mode Switcher Tabs */}
-      <div className="flex flex-row md:flex-col w-auto md:w-full gap-1 mb-0 md:mb-2 bg-slate-200/50 p-1 rounded-xl">
+      <div className="flex flex-row md:flex-col w-auto md:w-full gap-2 bg-slate-200/40 p-2 rounded-2xl">
         <button 
+          type="button"
           onClick={() => setEditMode('base')}
           className={`
-            px-3 md:px-0 md:w-full py-2 md:py-3 rounded-lg flex flex-col items-center justify-center transition-all
-            ${editMode === 'base' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400 hover:bg-white/50'}
+            px-6 md:px-0 md:w-full py-2 md:py-4 rounded-xl flex flex-col items-center justify-center transition-all
+            border-none outline-none cursor-pointer active:scale-95
+            ${editMode === 'base' ? 'bg-white text-blue-600 shadow-sm ring-1 ring-black/5' : 'bg-transparent text-slate-500 hover:bg-white/40'}
           `}
         >
-          <span className="text-[10px] font-black uppercase tracking-tighter">Base</span>
+          <span className="text-[11px] font-black uppercase tracking-tighter">Base</span>
         </button>
         <button 
+          type="button"
           onClick={() => setEditMode('template')}
           className={`
-            px-3 md:px-0 md:w-full py-2 md:py-3 rounded-lg flex flex-col items-center justify-center transition-all
-            ${editMode === 'template' ? 'bg-blue-600 text-white shadow-md shadow-blue-200' : 'text-slate-400 hover:bg-white/50'}
+            px-6 md:px-0 md:w-full py-2 md:py-4 rounded-xl flex flex-col items-center justify-center transition-all
+            border-none outline-none cursor-pointer active:scale-95
+            ${editMode === 'template' ? 'bg-white text-blue-600 shadow-sm ring-1 ring-black/5' : 'bg-transparent text-slate-500 hover:bg-white/40'}
           `}
         >
-          <span className="text-[10px] font-black uppercase tracking-tighter">Meme</span>
+          <span className="text-[11px] font-black uppercase tracking-tighter">Meme</span>
         </button>
       </div>
 
-      <div className="w-8 h-px bg-slate-200 mx-auto hidden md:block my-2"></div>
-
-      <div className="flex flex-row md:flex-col items-center gap-1 md:gap-4">
+      <div className="flex flex-row md:flex-col w-auto md:w-full gap-2 bg-slate-200/40 p-2 rounded-2xl">
         {editMode === 'base' ? (
           <>
             <SidebarItem 
@@ -119,8 +130,6 @@ const MemeToolbar: React.FC<MemeToolbarProps> = ({ activeTool, setActiveTool, ha
           </>
         )}
         
-        <div className="w-8 h-px bg-slate-200 mx-auto hidden md:block my-2"></div>
-
         <SidebarItem 
           icon={mdiLayers} 
           label="레이어" 

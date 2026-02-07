@@ -22,7 +22,7 @@ const MainHeader: React.FC = () => {
       style={{ height: 64, background: '#ffffff', lineHeight: '64px' }}
     >
       <div className="flex items-center gap-10">
-        <Link to="/" className="flex items-center gap-3 no-underline">
+        <Link to="/" className="flex items-center gap-4 no-underline">
           <Title level={4} style={{ margin: 0, fontWeight: 900, letterSpacing: '-0.8px', color: '#0f172a' }}>
             Memeplate
           </Title>

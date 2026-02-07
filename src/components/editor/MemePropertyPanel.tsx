@@ -25,7 +25,6 @@ import {
   mdiOpacity, 
   mdiEyedropper, 
   mdiContentCopy,
-  mdiLayers,
   mdiArrowUp,
   mdiArrowDown,
   mdiArrowCollapseUp,
@@ -37,7 +36,7 @@ import {
 import { ToolType } from './MemeToolbar';
 import * as fabric from 'fabric';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 type FormatType = 'png' | 'jpg' | 'webp' | 'pdf';
 
@@ -96,23 +95,10 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
     copyToClipboard,
     layers,
     moveLayer,
-    selectLayer,
-    editMode
+    selectLayer
   } = props;
 
   const [downloadFormat, setDownloadFormat] = React.useState<FormatType>('png');
-
-  const ModeBadge = () => (
-    <div className="flex items-center gap-2 mb-4">
-      <div className={`
-        px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-sm
-        ${editMode === 'base' ? 'bg-slate-100 text-slate-600 border border-slate-200' : 'bg-blue-600 text-white border border-blue-500'}
-      `}>
-        {editMode === 'base' ? 'Base Mode' : 'Meme Mode'}
-      </div>
-      <div className="h-px bg-slate-100 flex-1"></div>
-    </div>
-  );
 
   const MemeColorPicker = ({ value, onChange, label, height = "h-12" }: { 
     value: string, 
@@ -121,7 +107,7 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
     height?: string
   }) => (
     <div>
-      <div className="flex justify-between items-center mb-3">
+      <div className="flex justify-between items-center mb-4">
           <Text type="secondary" className="text-xs font-bold text-slate-500 uppercase tracking-wider">{label}</Text>
           <Tooltip title="스포이드 (색상 추출)">
               <Button 
@@ -137,20 +123,18 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
           onChange={(c) => onChange(c.toHexString())} 
           showText
           size="large"
-          className={`w-full ${height} rounded-xl border-slate-200 flex items-center justify-center gap-3`}
+          className={`w-full ${height} rounded-xl border-slate-200 flex items-center justify-center gap-4`}
       />
     </div>
   );
-
   const renderPanelContent = () => {
     if (!activeTool) return <Empty description="도구를 선택하여 편집을 시작하세요" />;
     
     switch(activeTool) {
       case 'layers':
         return (
-          <div className="flex flex-col gap-6 w-full">
-            <Title level={4} className="m-0 !font-black tracking-tighter">레이어 관리</Title>
-            <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-8 w-full">
+            <div className="flex flex-col gap-4">
                 {[...layers].reverse().map((obj, index) => {
                     const isSelected = activeObject === obj;
                     let icon = mdiShape;
@@ -167,28 +151,28 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
                         <div 
                             key={index}
                             className={`
-                                flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer group
+                                flex items-center justify-between p-4 rounded-xl border transition-all cursor-pointer group
                                 ${isSelected ? 'border-blue-500 bg-blue-50 shadow-sm' : 'border-slate-100 bg-white hover:border-blue-200'}
                             `}
                             onClick={() => selectLayer(obj)}
                         >
-                            <div className="flex items-center gap-3 overflow-hidden">
-                                <Icon path={icon} size={0.8} className={isSelected ? 'text-blue-600' : 'text-slate-400'} />
+                            <div className="flex items-center gap-4 overflow-hidden">
+                                <Icon path={icon} size={0.85} className={isSelected ? 'text-blue-600' : 'text-slate-400'} />
                                 <span className={`text-sm font-bold truncate ${isSelected ? 'text-blue-700' : 'text-slate-600'}`}>{name}</span>
                             </div>
                             {isSelected && (
-                                <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                                <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                                     <Tooltip title="맨 앞으로">
-                                        <Button size="small" type="text" icon={<Icon path={mdiArrowCollapseUp} size={0.6} />} onClick={() => moveLayer('front')} />
+                                        <Button size="small" type="text" icon={<Icon path={mdiArrowCollapseUp} size={0.65} />} onClick={() => moveLayer('front')} />
                                     </Tooltip>
                                     <Tooltip title="앞으로">
-                                        <Button size="small" type="text" icon={<Icon path={mdiArrowUp} size={0.6} />} onClick={() => moveLayer('forward')} />
+                                        <Button size="small" type="text" icon={<Icon path={mdiArrowUp} size={0.65} />} onClick={() => moveLayer('forward')} />
                                     </Tooltip>
                                     <Tooltip title="뒤로">
-                                        <Button size="small" type="text" icon={<Icon path={mdiArrowDown} size={0.6} />} onClick={() => moveLayer('backward')} />
+                                        <Button size="small" type="text" icon={<Icon path={mdiArrowDown} size={0.65} />} onClick={() => moveLayer('backward')} />
                                     </Tooltip>
                                     <Tooltip title="맨 뒤로">
-                                        <Button size="small" type="text" icon={<Icon path={mdiArrowCollapseDown} size={0.6} />} onClick={() => moveLayer('back')} />
+                                        <Button size="small" type="text" icon={<Icon path={mdiArrowCollapseDown} size={0.65} />} onClick={() => moveLayer('back')} />
                                     </Tooltip>
                                 </div>
                             )}
@@ -205,10 +189,8 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
       case 'background':
         return (
           <div className="flex flex-col gap-8 w-full">
-            <ModeBadge />
-            <Title level={5} className="m-0">이미지 설정</Title>
             <div>
-              <Text strong className="block mb-3 text-slate-700">이미지 업로드</Text>
+              <Text strong className="block mb-4 text-slate-700">이미지 업로드</Text>
               <Upload.Dragger
                 accept="image/*"
                 showUploadList={false}
@@ -224,14 +206,14 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
               </Upload.Dragger>
             </div>
             
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-4">
                <div className="h-px bg-slate-200 flex-1"></div>
                <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">또는</span>
                <div className="h-px bg-slate-200 flex-1"></div>
             </div>
             
             <div>
-              <Text strong className="block mb-3 text-slate-700">외부 URL 로드</Text>
+              <Text strong className="block mb-4 text-slate-700">외부 URL 로드</Text>
               <div className="flex flex-col gap-2">
                 <Input 
                   prefix={<Icon path={mdiLinkVariant} size={0.8} className="text-slate-400" />}
@@ -243,7 +225,7 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
                 />
                 <Button 
                   onClick={() => bgUrl && setBackgroundImage(bgUrl)}
-                  className="h-12 rounded-xl font-bold text-base mt-1"
+                  className="h-12 rounded-xl font-bold text-base mt-2"
                   type="primary"
                   block
                 >
@@ -257,15 +239,13 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
       case 'text':
         return (
           <div className="flex flex-col gap-10 w-full">
-            <ModeBadge />
-            <Title level={4} className="m-0 !font-black tracking-tighter">텍스트 편집</Title>
             <Button 
               type="primary" 
               icon={<Icon path={mdiPlus} size={1.2} />} 
               onClick={addText} 
               block
               disabled={!hasBackground}
-              className="h-20 text-xl font-extrabold rounded-[1.5rem] shadow-xl shadow-blue-500/20 flex items-center justify-center gap-3 border-none bg-blue-600 hover:bg-blue-500"
+              className="h-20 text-xl font-extrabold rounded-[1.5rem] shadow-xl shadow-blue-500/20 flex items-center justify-center gap-4 border-none bg-blue-600 hover:bg-blue-500"
             >
               텍스트 추가
             </Button>
@@ -282,7 +262,7 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
                   />
 
                   <div>
-                    <div className="flex justify-between items-center mb-3">
+                    <div className="flex justify-between items-center mb-4">
                       <Text type="secondary" className="text-xs font-bold text-slate-500 uppercase">글자 크기</Text>
                       <Text className="text-xs font-mono bg-slate-100 px-2 py-0.5 rounded text-slate-600">{fontSize}px</Text>
                     </div>
@@ -314,7 +294,7 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
                   </div>
 
                   <div>
-                    <div className="flex justify-between items-center mb-3">
+                    <div className="flex justify-between items-center mb-4">
                       <Text type="secondary" className="text-xs font-bold text-slate-500 uppercase">외곽선 두께</Text>
                       <Text className="text-xs font-mono bg-slate-100 px-2 py-0.5 rounded text-slate-600">{strokeWidth}px</Text>
                     </div>
@@ -332,7 +312,7 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
                     icon={<Icon path={mdiDelete} size={0.8} />} 
                     onClick={deleteActiveObject}
                     block
-                    className="flex items-center justify-center gap-1"
+                    className="flex items-center justify-center gap-2"
                   >
                     선택 삭제
                   </Button>
@@ -346,11 +326,9 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
       case 'shapes':
         return (
           <div className="flex flex-col gap-10 w-full">
-             <ModeBadge />
-             <Title level={4} className="m-0 !font-black tracking-tighter">도형도구</Title>
              <div className="flex flex-col gap-4">
                 <button 
-                    className="h-24 w-full flex flex-row items-center justify-start gap-5 px-6 rounded-2xl border-2 border-slate-100 bg-slate-50 hover:border-blue-500 hover:bg-white hover:shadow-xl hover:shadow-blue-500/10 transition-all duration-300 group disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                    className="h-24 w-full flex flex-row items-center justify-start gap-6 px-6 rounded-2xl border-2 border-slate-100 bg-slate-50 hover:border-blue-500 hover:bg-white hover:shadow-xl hover:shadow-blue-500/10 transition-all duration-300 group disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer outline-none"
                     onClick={() => addShape('rect')}
                     disabled={!hasBackground}
                 >
@@ -362,7 +340,7 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
                     </div>
                 </button>
                 <button 
-                    className="h-24 w-full flex flex-row items-center justify-start gap-5 px-6 rounded-2xl border-2 border-slate-100 bg-slate-50 hover:border-blue-500 hover:bg-white hover:shadow-xl hover:shadow-blue-500/10 transition-all duration-300 group disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                    className="h-24 w-full flex flex-row items-center justify-start gap-6 px-6 rounded-2xl border-2 border-slate-100 bg-slate-50 hover:border-blue-500 hover:bg-white hover:shadow-xl hover:shadow-blue-500/10 transition-all duration-300 group disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer outline-none"
                     onClick={() => addShape('circle')}
                     disabled={!hasBackground}
                 >
@@ -439,10 +417,8 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
       case 'brush':
         return (
           <div className="flex flex-col gap-8 w-full">
-             <ModeBadge />
-             <Title level={4} className="m-0 !font-black tracking-tighter">브러쉬</Title>
              <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
-                <div className="flex items-center gap-3 mb-1">
+                <div className="flex items-center gap-4 mb-2">
                    <Icon path={mdiBrush} size={1} className="text-blue-500" />
                    <Text strong className="text-slate-700">브러쉬 모드</Text>
                 </div>
@@ -476,9 +452,7 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
 
       case 'share':
         return (
-          <div className="flex flex-col gap-6 w-full">
-            <ModeBadge />
-            <Title level={4} className="m-0 !font-black tracking-tighter">공유</Title>
+          <div className="flex flex-col gap-8 w-full">
             
             <div className="flex flex-col gap-4">
                <div className="bg-slate-50 p-2 rounded-2xl border border-slate-100">
@@ -528,7 +502,7 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
   return (
     <div className="flex-1 h-full flex flex-col bg-white overflow-hidden">
       {/* Content Area */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar px-6 py-6 md:px-10 md:py-10">
+      <div className="flex-1 overflow-y-auto custom-scrollbar px-8 py-8 md:px-12 md:py-12">
         <div className="w-full max-w-full">
           {renderPanelContent()}
         </div>
