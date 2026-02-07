@@ -1,5 +1,5 @@
 import React from 'react';
-import { Layout, Typography, Tag, theme, Button, Tooltip } from 'antd';
+import { Layout, Typography, theme, Button, Tooltip } from 'antd';
 import Icon from '@mdi/react';
 import { mdiImage, mdiUndo, mdiRedo } from '@mdi/js';
 

@@ -3,7 +3,6 @@ import {
   Button, 
   Input, 
   Slider, 
-  ColorPicker, 
   Upload, 
   Divider, 
   Typography, 
@@ -23,7 +22,6 @@ import {
   mdiCircle, 
   mdiBrush, 
   mdiOpacity, 
-  mdiEyedropper, 
   mdiContentCopy,
   mdiArrowUp,
   mdiArrowDown,
@@ -35,6 +33,7 @@ import {
 } from '@mdi/js';
 import { ToolType } from './MemeToolbar';
 import * as fabric from 'fabric';
+import MemeColorPicker from './MemeColorPicker';
 
 const { Text } = Typography;
 
@@ -100,33 +99,6 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
 
   const [downloadFormat, setDownloadFormat] = React.useState<FormatType>('png');
 
-  const MemeColorPicker = ({ value, onChange, label, height = "h-12" }: { 
-    value: string, 
-    onChange: (color: string) => void, 
-    label: string,
-    height?: string
-  }) => (
-    <div>
-      <div className="flex justify-between items-center mb-4">
-          <Text type="secondary" className="text-xs font-bold text-slate-500 uppercase tracking-wider">{label}</Text>
-          <Tooltip title="스포이드 (색상 추출)">
-              <Button 
-                  type="text" 
-                  size="small"
-                  icon={<Icon path={mdiEyedropper} size={0.7} />} 
-                  onClick={activateEyedropper}
-              />
-          </Tooltip>
-      </div>
-      <ColorPicker 
-          value={value} 
-          onChange={(c) => onChange(c.toHexString())} 
-          showText
-          size="large"
-          className={`w-full ${height} rounded-xl border-slate-200 flex items-center justify-center gap-4`}
-      />
-    </div>
-  );
   const renderPanelContent = () => {
     if (!activeTool) return <Empty description="도구를 선택하여 편집을 시작하세요" />;
     
@@ -258,6 +230,7 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
                     label="글자 색상" 
                     value={color} 
                     onChange={(val) => updateProperty('fill', val)}
+                    activateEyedropper={activateEyedropper}
                     height="h-10"
                   />
 
@@ -361,40 +334,8 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
                         label="채우기 색상" 
                         value={color} 
                         onChange={(val) => updateProperty('fill', val)}
+                        activateEyedropper={activateEyedropper}
                     />
-
-                    <div>
-                        <div className="flex justify-between items-center mb-4">
-                            <div className="flex items-center gap-2">
-                                <Icon path={mdiOpacity} size={0.7} className="text-slate-400" />
-                                <Text type="secondary" className="text-xs font-bold text-slate-500 uppercase tracking-wider">불투명도</Text>
-                            </div>
-                            <Text className="text-sm font-mono font-bold text-slate-600">{(activeObject?.opacity ?? 1) * 100}%</Text>
-                        </div>
-                        <Slider 
-                            min={0} 
-                            max={100} 
-                            value={(activeObject?.opacity ?? 1) * 100} 
-                            onChange={(val) => updateProperty('opacity', val / 100)} 
-                            tooltip={{ open: false }}
-                            className="mx-2"
-                        />
-                    </div>
-
-                    <div>
-                        <div className="flex justify-between items-center mb-4">
-                            <Text type="secondary" className="text-xs font-bold text-slate-500 uppercase tracking-wider">외곽선 두께</Text>
-                            <Text className="text-sm font-mono font-bold text-slate-600">{activeObject?.strokeWidth ?? 0}px</Text>
-                        </div>
-                        <Slider 
-                            min={0} 
-                            max={20} 
-                            value={activeObject?.strokeWidth ?? 0} 
-                            onChange={(val) => updateProperty('strokeWidth', val)} 
-                            tooltip={{ open: false }}
-                            className="mx-2"
-                        />
-                    </div>
 
                     <Button 
                         danger 
@@ -431,6 +372,7 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
                 label="브러쉬 색상" 
                 value={color} 
                 onChange={(val) => setColor(val)}
+                activateEyedropper={activateEyedropper}
              />
              
              <div>

@@ -9,7 +9,8 @@
 - [x] **도형도구(Shapes)**
   - [x] 사각형/원형 추가 버튼 구현 (UI 고도화 완료)
   - [x] UI 레이블 간소화 (설명 삭제 및 "사각형", "원형"으로 표기)
-  - [x] 도형 색상 변경 (ColorPicker)
+  - [x] 도형 색상 변경 (ColorPicker 컴포넌트 분리 완료)
+  - [x] 도형 속성 단순화 (불투명도, 외곽선 두께 제거)
   - [x] 레이아웃 피팅 및 아이콘 시인성 개선
 - [x] **브러쉬(Brush) 도구**
   - [x] Fabric.js `PencilBrush` 활성화 및 색상 연동
@@ -40,7 +41,7 @@
 
   - [x] `MemeCanvas`: 캔버스 렌더링 및 Empty State 영역
 
-- [x] **공통 UI 컴포넌트 정리**: `MemeColorPicker` 등을 별도 파일로 분리하여 재사용성 확보
+- [x] **공통 UI 컴포넌트 정리**: `MemeColorPicker`를 별도 파일로 분리하여 재사용성 확보 (Issue #6)
 
 - [x] **타입 및 린트 정리**: `any` 타입 제거 및 ESLint 규칙 준수
 
