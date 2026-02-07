@@ -70,9 +70,9 @@ const MemeToolbar: React.FC<MemeToolbarProps> = ({
   setEditMode 
 }) => {
   return (
-    <div className="w-full md:w-24 h-24 md:h-full border-t md:border-t-0 md:border-r border-slate-100 bg-white md:bg-slate-50/10 flex flex-row md:flex-col items-center justify-start py-4 md:py-6 gap-4 md:gap-4 px-2 md:px-4 shrink-0 z-20">
+    <div className="w-full md:w-32 h-20 md:h-full border-t md:border-t-0 md:border-r border-slate-100 bg-white md:bg-slate-50/10 flex flex-row md:flex-col items-center justify-start py-2 md:py-8 gap-4 md:gap-8 px-4 md:px-8 shrink-0 z-20">
       {/* Mode Switcher Tabs */}
-      <div className="flex flex-row md:flex-col w-auto md:w-full gap-2 bg-slate-200/40 p-2 rounded-2xl shrink-0">
+      <div className="flex flex-row md:flex-col w-auto md:w-full gap-2 bg-slate-200/40 p-1.5 rounded-2xl shrink-0">
         <button 
           type="button"
           onClick={() => setEditMode('base')}

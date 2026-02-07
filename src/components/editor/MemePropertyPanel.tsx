@@ -395,7 +395,7 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
     return (
     <div className="flex-1 h-full flex flex-col bg-white overflow-hidden">
       {/* 1. Property Section (Scrollable) */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar px-8 py-8 md:px-12 md:py-10">
+      <div className="flex-1 overflow-y-auto custom-scrollbar px-4 py-8 md:px-8 md:py-8">
         <div className="w-full max-w-full animate-in fade-in slide-in-from-top-4 duration-500">
           {renderPanelContent()}
         </div>
@@ -403,27 +403,30 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
 
       {/* 2. Layer Management Section (Fixed/Separated) */}
       {showLayers && (
-        <div className="h-[40%] flex flex-col bg-slate-50/50 border-t border-slate-100 animate-in slide-in-from-bottom-8 duration-500">
+        <div className="h-[42%] flex flex-col bg-slate-50 border-t-2 border-slate-100 shadow-[0_-10px_20px_-5px_rgba(0,0,0,0.05)] animate-in slide-in-from-bottom-8 duration-500">
           {/* Header */}
-          <div className="px-8 py-4 md:px-10 flex items-center justify-between bg-white/80 backdrop-blur-sm border-b border-slate-50 sticky top-0 z-10">
+          <div className="px-4 py-4 md:px-8 flex items-center justify-between bg-white border-b border-slate-100 sticky top-0 z-10">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-50 rounded-lg">
-                <Icon path={mdiLayers} size={0.7} className="text-blue-600" />
+              <div className="p-2 bg-slate-900 rounded-lg shadow-lg shadow-slate-900/10">
+                <Icon path={mdiLayers} size={0.7} className="text-white" />
               </div>
-              <span className="text-xs font-black uppercase tracking-widest text-slate-600">Layers</span>
-              <span className="px-2 py-0.5 bg-slate-200 rounded text-[10px] font-bold text-slate-500">{layers.length}</span>
+              <div className="flex flex-col">
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 leading-none mb-1">Management</span>
+                <span className="text-sm font-black text-slate-800 leading-none">Layers Stack</span>
+              </div>
+              <span className="ml-2 px-2.5 py-1 bg-blue-50 text-blue-600 rounded-full text-[10px] font-black">{layers.length}</span>
             </div>
             <Button 
               type="text" 
               size="small" 
               icon={<Icon path={mdiClose} size={0.6} />} 
               onClick={() => setShowLayers(false)}
-              className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg"
+              className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl w-8 h-8 flex items-center justify-center"
             />
           </div>
 
           {/* Layer List (Scrollable) */}
-          <div className="flex-1 overflow-y-auto custom-scrollbar px-8 py-6 md:px-10">
+          <div className="flex-1 overflow-y-auto custom-scrollbar px-4 py-6 md:px-8">
             <div className="flex flex-col gap-3 pb-4">
               {[...layers].reverse().map((obj, index) => {
                 const isSelected = activeObject === obj;
