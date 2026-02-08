@@ -16,24 +16,16 @@ const MemeEditor: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
 
   const [activeTool, setActiveTool] = useState<ToolType>(null);
-  const [eraserMode, setEraserMode] = useState<'shape' | 'brush'>('shape');
   const [isPanelOpen, setIsPanelOpen] = useState(false); 
   
   // Selection State
   const [activeObject, setActiveObject] = useState<fabric.Object | null>(null);
   const [layers, setLayers] = useState<fabric.Object[]>([]);
-  const [isTextSelected, setIsTextSelected] = useState(false);
-  const [isShapeSelected, setIsShapeSelected] = useState(false);
 
   // Property State
   const [color, setColor] = useState('#ffffff'); 
-  const [opacity, setOpacity] = useState(1);
-  const [fontSize, setFontSize] = useState(40);
-  const [strokeWidth, setStrokeWidth] = useState(3);
-  const [brushSize, setBrushSize] = useState(10);
   const [bgUrl, setBgUrl] = useState('');
   const [hasBackground, setHasBackground] = useState(false);
-  const [showLayers, setShowLayers] = useState(false);
 
   // History State
   const [history, setHistory] = useState<string[]>([]);
@@ -130,24 +122,14 @@ const MemeEditor: React.FC = () => {
       setActiveObject(selected || null);
       if (selected) {
         setIsPanelOpen(true); 
+        setActiveTool('edit'); // Always stay in edit tool for all objects
         
         if (selected instanceof fabric.IText) {
-          setIsTextSelected(true); setIsShapeSelected(false); setActiveTool('text');
           setColor(selected.fill as string); 
-          setFontSize(selected.fontSize || 40); 
-          setStrokeWidth(selected.strokeWidth || 3);
-          setOpacity(selected.opacity ?? 1);
         } 
         else if (selected instanceof fabric.Rect || selected instanceof fabric.Circle) {
-          setIsTextSelected(false); setIsShapeSelected(true); setActiveTool('eraser');
-          setEraserMode('shape');
           setColor(selected.fill as string);
-          setOpacity(selected.opacity ?? 1);
         }
-      } else {
-        setIsTextSelected(false);
-        setIsShapeSelected(false);
-        setActiveObject(null);
       }
     };
 
@@ -164,7 +146,7 @@ const MemeEditor: React.FC = () => {
 
     canvas.on('selection:created', handleSelection);
     canvas.on('selection:updated', handleSelection);
-    canvas.on('selection:cleared', handleSelection);
+    canvas.on('selection:cleared', () => setActiveObject(null));
     
     canvas.on('object:added', handleUpdate);
     canvas.on('object:modified', handleUpdate);
@@ -172,18 +154,6 @@ const MemeEditor: React.FC = () => {
 
     return () => { canvas.dispose(); fabricRef.current = null; };
   }, []);
-
-
-  useEffect(() => {
-    if (!fabricRef.current) return;
-    const canvas = fabricRef.current;
-    if (activeTool === 'eraser' && eraserMode === 'brush') {
-      canvas.isDrawingMode = true;
-      const brush = new fabric.PencilBrush(canvas);
-      brush.width = brushSize; brush.color = color;
-      canvas.freeDrawingBrush = brush;
-    } else { canvas.isDrawingMode = false; }
-  }, [activeTool, eraserMode, brushSize, color]);
 
   const setBackgroundImage = (url: string) => {
     if (!fabricRef.current) return;
@@ -207,26 +177,6 @@ const MemeEditor: React.FC = () => {
     }
   };
 
-  const updateLayers = () => {
-    if (fabricRef.current) {
-        setLayers([...fabricRef.current.getObjects()]);
-    }
-  };
-
-  const moveLayer = (direction: 'front' | 'forward' | 'backward' | 'back') => {
-    if (!fabricRef.current || !activeObject) return;
-    const canvas = fabricRef.current;
-    switch(direction) {
-        case 'front': canvas.bringObjectToFront(activeObject); break;
-        case 'forward': canvas.bringObjectForward(activeObject); break;
-        case 'backward': canvas.sendObjectBackwards(activeObject); break;
-        case 'back': canvas.sendObjectToBack(activeObject); break;
-    }
-    canvas.renderAll();
-    saveHistory();
-    updateLayers();
-  };
-
   const selectLayer = (obj: fabric.Object) => {
     if (!fabricRef.current) return;
     fabricRef.current.setActiveObject(obj);
@@ -234,14 +184,8 @@ const MemeEditor: React.FC = () => {
   };
 
   const panelProps = {
-    layers, moveLayer, selectLayer,
-    showLayers, 
-    setShowLayers: (show: boolean) => {
-        setShowLayers(show);
-        if (show) setIsPanelOpen(true);
-    },
+    layers, selectLayer,
     activeTool, hasBackground, bgUrl, setBgUrl,
-    opacity, 
     handleImageUpload: (info: UploadChangeParam<UploadFile>) => {
       const file = info.file.originFileObj;
       if (file) {
@@ -253,56 +197,28 @@ const MemeEditor: React.FC = () => {
     setBackgroundImage,
     addText: () => {
       if (!fabricRef.current) return;
-      const text = new fabric.IText('TOP TEXT', { 
+      const text = new fabric.IText('텍스트를 입력하세요', { 
         left: fabricRef.current.width!/2, 
-        top: 100, 
+        top: fabricRef.current.height!/2, 
         fontFamily: 'Impact', 
-        fontSize: 50, 
+        fontSize: 40, 
         fill: '#ffffff', 
         stroke: '#000000', 
-        strokeWidth: 3, 
+        strokeWidth: 2, 
         originX: 'center', 
         originY: 'center',
         uniformScaling: false
       });
       fabricRef.current.add(text); fabricRef.current.setActiveObject(text); fabricRef.current.renderAll();
     },
-    isTextSelected, color, 
+    color, 
     updateProperty: (key: string, value: string | number) => {
       if (!fabricRef.current) return;
       fabricRef.current.getActiveObjects().forEach(obj => obj.set(key as keyof fabric.Object, value));
       fabricRef.current.renderAll();
       if (key === 'fill') setColor(value as string);
-      if (key === 'fontSize') setFontSize(value as number);
-      if (key === 'strokeWidth') setStrokeWidth(value as number);
-      if (key === 'opacity') setOpacity(value as number);
     },
-    activateEyedropper: async () => {
-      if (!window.EyeDropper) {
-        messageApi.warning('이 브라우저는 스포이드 기능을 지원하지 않습니다.');
-        return;
-      }
-      
-      const wasDrawing = fabricRef.current?.isDrawingMode;
-      if (wasDrawing) fabricRef.current!.isDrawingMode = false;
-
-      try {
-        const result = await new window.EyeDropper().open();
-        if (result.sRGBHex) {
-          setColor(result.sRGBHex);
-          if (activeObject) {
-             fabricRef.current?.getActiveObjects().forEach(obj => obj.set('fill', result.sRGBHex));
-             fabricRef.current?.renderAll();
-          }
-          messageApi.success('색상이 추출되었습니다.');
-        }
-      } catch (e) {
-        console.log('Eyedropper cancelled or failed', e);
-      } finally {
-        if (wasDrawing) fabricRef.current!.isDrawingMode = true;
-      }
-    },
-    fontSize, activeObject, strokeWidth,
+    activeObject,
     deleteActiveObject: () => {
       fabricRef.current?.getActiveObjects().forEach(obj => fabricRef.current?.remove(obj));
       fabricRef.current?.discardActiveObject(); fabricRef.current?.renderAll();
@@ -312,7 +228,7 @@ const MemeEditor: React.FC = () => {
       const common = { 
         left: fabricRef.current.width!/2, 
         top: fabricRef.current.height!/2, 
-        fill: color, 
+        fill: '#000000', 
         originX: 'center' as const, 
         originY: 'center' as const,
         uniformScaling: false
@@ -320,30 +236,19 @@ const MemeEditor: React.FC = () => {
       const shape = type === 'rect' ? new fabric.Rect({...common, width: 100, height: 100}) : new fabric.Circle({...common, radius: 50});
       fabricRef.current.add(shape); fabricRef.current.setActiveObject(shape); fabricRef.current.renderAll();
     },
-    isShapeSelected, brushSize, setBrushSize, setColor,
-    eraserMode, setEraserMode,
     downloadImage: async (format: 'png' | 'jpg' | 'webp' | 'pdf') => {
       if (!fabricRef.current) return;
-      
       const canvas = fabricRef.current;
-      
       if (format === 'pdf') {
         try {
           messageApi.loading('PDF 생성 중...');
           const { default: jsPDF } = await import('jspdf');
           const imgData = canvas.toDataURL({ format: 'png', multiplier: 2 });
-          const pdf = new jsPDF({
-            orientation: canvas.width! > canvas.height! ? 'landscape' : 'portrait',
-            unit: 'px',
-            format: [canvas.width!, canvas.height!]
-          });
+          const pdf = new jsPDF({ orientation: canvas.width! > canvas.height! ? 'landscape' : 'portrait', unit: 'px', format: [canvas.width!, canvas.height!] });
           pdf.addImage(imgData, 'PNG', 0, 0, canvas.width!, canvas.height!);
           pdf.save(`meme-${Date.now()}.pdf`);
           messageApi.success('PDF 다운로드 완료');
-        } catch (error) {
-          console.error(error);
-          messageApi.error('PDF 생성에 실패했습니다');
-        }
+        } catch (error) { console.error(error); messageApi.error('PDF 생성에 실패했습니다'); }
       } else {
         const mimeType = format === 'jpg' ? 'jpeg' : format;
         const link = document.createElement('a'); 
@@ -359,14 +264,9 @@ const MemeEditor: React.FC = () => {
         const canvas = fabricRef.current;
         const dataURL = canvas.toDataURL({ format: 'png', multiplier: 2 });
         const blob = await (await fetch(dataURL)).blob();
-        await navigator.clipboard.write([
-            new ClipboardItem({ [blob.type]: blob })
-        ]);
+        await navigator.clipboard.write([ new ClipboardItem({ [blob.type]: blob }) ]);
         messageApi.success('클립보드에 복사되었습니다');
-      } catch (err) {
-        console.error('Failed to copy: ', err);
-        messageApi.error('복사에 실패했습니다');
-      }
+      } catch (err) { console.error('Failed to copy: ', err); messageApi.error('복사에 실패했습니다'); }
     }
   };
 
@@ -378,24 +278,14 @@ const MemeEditor: React.FC = () => {
       <div className="flex-1 flex overflow-hidden relative">
         <EditorLayout
           sidebar={
-            <div className="flex flex-col md:flex-row h-auto md:h-full w-full bg-white border-t md:border-t-0 md:border-r border-slate-200 order-2 md:order-1 shrink-0 md:w-[400px] relative z-20">
-              {/* Desktop Toolbar & Panel */}
-              <div className="hidden md:flex flex-row h-full w-full">
-                <div className="flex flex-col h-full w-28 shrink-0 bg-slate-50/10 border-r border-slate-100">
-                   <MemeToolbar 
-                      activeTool={activeTool} 
-                      setActiveTool={handleToolClick} 
-                      showLayers={showLayers}
-                      setShowLayers={(show) => {
-                        setShowLayers(show);
-                        if (show) setIsPanelOpen(true);
-                      }}
-                      hasBackground={hasBackground} 
-                    />
-                </div>
-                <div className="flex-1 overflow-hidden">
-                    <MemePropertyPanel {...panelProps} />
-                </div>
+            <div className="hidden md:flex flex-col h-full w-[400px] bg-white border-r border-slate-200 shrink-0 relative z-20">
+              <MemeToolbar 
+                activeTool={activeTool} 
+                setActiveTool={handleToolClick} 
+                hasBackground={hasBackground} 
+              />
+              <div className="flex-1 overflow-hidden">
+                <MemePropertyPanel {...panelProps} />
               </div>
             </div>
           }
@@ -404,12 +294,7 @@ const MemeEditor: React.FC = () => {
             className="flex-1 flex flex-col overflow-hidden order-1 md:order-2 relative"
             onClick={(e) => {
               if ((e.target as HTMLElement).tagName.toLowerCase() === 'canvas') return;
-              
-              if (fabricRef.current) {
-                fabricRef.current.discardActiveObject();
-                fabricRef.current.renderAll();
-              }
-              
+              if (fabricRef.current) { fabricRef.current.discardActiveObject(); fabricRef.current.renderAll(); }
               if (window.innerWidth < 768) setIsPanelOpen(false);
             }}
           >
@@ -435,10 +320,7 @@ const MemeEditor: React.FC = () => {
               style={{ height: activeObject ? '120px' : '45vh' }}
             >
                 {!activeObject && (
-                  <div 
-                    className="h-10 flex items-center justify-center bg-white cursor-pointer border-b border-slate-50 shrink-0"
-                    onClick={() => setIsPanelOpen(false)}
-                  >
+                  <div className="h-10 flex items-center justify-center bg-white cursor-pointer border-b border-slate-50 shrink-0" onClick={() => setIsPanelOpen(false)}>
                     <div className="w-12 h-1.5 bg-slate-200 rounded-full"></div>
                   </div>
                 )}
@@ -448,16 +330,7 @@ const MemeEditor: React.FC = () => {
             </div>
 
             <div className="bg-white border-t border-slate-100 relative z-10 pointer-events-auto" style={{ height: '80px' }}>
-                <MemeToolbar 
-                  activeTool={activeTool} 
-                  setActiveTool={handleToolClick} 
-                  showLayers={showLayers}
-                  setShowLayers={(show) => {
-                    setShowLayers(show);
-                    if (show) setIsPanelOpen(true);
-                  }}
-                  hasBackground={hasBackground} 
-                />
+                <MemeToolbar activeTool={activeTool} setActiveTool={handleToolClick} hasBackground={hasBackground} />
             </div>
         </div>
       </div>

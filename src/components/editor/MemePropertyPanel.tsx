@@ -2,31 +2,20 @@ import React from 'react';
 import { 
   Button, 
   Input, 
-  Slider, 
   Upload, 
-  Divider, 
   Typography, 
-  Empty,
-  Segmented
+  Empty
 } from 'antd';
 import type { UploadChangeParam, UploadFile } from 'antd/es/upload';
 import Icon from '@mdi/react';
 import { 
   mdiCloudUpload, 
   mdiLinkVariant, 
-  mdiPlus, 
   mdiDelete, 
   mdiDownload, 
-  mdiRectangle, 
-  mdiCircle, 
-  mdiBrush, 
   mdiContentCopy,
-  mdiArrowUp,
-  mdiArrowDown,
   mdiShape,
   mdiFormatColorText,
-  mdiImage,
-  mdiClose,
   mdiLayers
 } from '@mdi/js';
 import type { ToolType } from './MemeToolbar';
@@ -40,31 +29,19 @@ type FormatType = 'png' | 'jpg' | 'webp' | 'pdf';
 interface MemePropertyPanelProps {
   activeTool: ToolType | null;
   hasBackground: boolean;
-  showLayers: boolean;
-  setShowLayers: (show: boolean) => void;
   bgUrl: string;
   setBgUrl: (url: string) => void;
   handleImageUpload: (info: UploadChangeParam<UploadFile>) => void;
   setBackgroundImage: (url: string) => void;
   addText: () => void;
-  isTextSelected: boolean;
   color: string;
   updateProperty: (key: string, value: string | number) => void;
-  activateEyedropper: () => void;
-  fontSize: number;
   activeObject: fabric.Object | null;
-  opacity: number;
-  strokeWidth: number;
   deleteActiveObject: () => void;
   addShape: (type: 'rect' | 'circle') => void;
-  isShapeSelected: boolean;
-  brushSize: number;
-  setBrushSize: (size: number) => void;
-  setColor: (color: string) => void;
   downloadImage: (format: FormatType) => void;
   copyToClipboard: () => void;
   layers: fabric.Object[];
-  moveLayer: (direction: 'front' | 'forward' | 'backward' | 'back') => void;
   selectLayer: (obj: fabric.Object) => void;
 }
 
@@ -72,42 +49,31 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
   const {
     activeTool,
     hasBackground,
-    showLayers,
-    setShowLayers,
     bgUrl,
     setBgUrl,
     handleImageUpload,
     setBackgroundImage,
     addText,
-    isTextSelected,
-    color,
     updateProperty,
-    activateEyedropper,
     activeObject,
     deleteActiveObject,
     addShape,
-    isShapeSelected,
-    brushSize,
-    setBrushSize,
-    setColor,
     downloadImage,
     copyToClipboard,
     layers,
-    moveLayer,
     selectLayer
   } = props;
 
   const [downloadFormat, setDownloadFormat] = React.useState<FormatType>('png');
-  const [eraserMode, setEraserMode] = React.useState<'shape' | 'brush'>('shape');
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
   const isObjectSelected = !!activeObject;
 
   const renderSlimBar = () => {
     if (!activeObject) return null;
 
-    if (activeTool === 'text' && activeObject instanceof fabric.IText) {
+    if ((activeTool === 'text' || activeTool === 'edit') && activeObject instanceof fabric.IText) {
         return (
-            <div className="flex flex-row items-center gap-4 px-4 h-full w-full">
+            <div className="flex flex-row items-center gap-3 px-4 h-full w-full">
                 <Input 
                     value={activeObject.text} 
                     onChange={(e) => {
@@ -116,32 +82,33 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
                         props.selectLayer(activeObject); 
                     }}
                     onKeyDown={(e) => e.stopPropagation()}
-                    className="flex-1"
+                    className="flex-1 h-10 border-none bg-slate-100/50 rounded-lg"
                     placeholder="텍스트 입력"
                 />
-                <MemeColorPicker 
-                    label="글자" 
-                    value={props.color} 
-                    onChange={(val) => props.updateProperty('fill', val)}
-                    activateEyedropper={props.activateEyedropper}
-                    height="h-10"
-                    compact
-                />
-                <MemeColorPicker 
-                    label="외곽선" 
-                    value={(activeObject.stroke as string) || '#000000'} 
-                    onChange={(val) => props.updateProperty('stroke', val)}
-                    activateEyedropper={props.activateEyedropper}
-                    height="h-10"
-                    compact
-                />
-                <Button 
-                    danger 
-                    shape="circle"
-                    icon={<Icon path={mdiDelete} size={0.8} />} 
-                    onClick={props.deleteActiveObject}
-                    className="flex items-center justify-center border-none bg-red-50 hover:bg-red-100 shrink-0"
-                />
+                <div className="flex items-center gap-2">
+                    <MemeColorPicker 
+                        label="" 
+                        value={props.color} 
+                        onChange={(val) => props.updateProperty('fill', val)}
+                        height="h-8"
+                        compact
+                    />
+                    <MemeColorPicker 
+                        label="" 
+                        value={(activeObject.stroke as string) || '#000000'} 
+                        onChange={(val) => props.updateProperty('stroke', val)}
+                        height="h-8"
+                        compact
+                    />
+                    <Button 
+                        danger 
+                        shape="circle"
+                        type="text"
+                        icon={<Icon path={mdiDelete} size={0.7} />} 
+                        onClick={props.deleteActiveObject}
+                        className="flex items-center justify-center hover:bg-red-50 shrink-0"
+                    />
+                </div>
             </div>
         );
     }
@@ -154,7 +121,7 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
               label={activeObject instanceof fabric.IText ? "글자 색상" : "채우기 색상"} 
               value={props.color} 
               onChange={(val) => props.updateProperty('fill', val)}
-              activateEyedropper={props.activateEyedropper}
+              
               height="h-10"
               compact
            />
@@ -178,12 +145,13 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
   const renderPanelContent = () => {
     if (!activeTool) return <Empty description="도구를 선택하여 편집을 시작하세요" />;
     
-    if (isMobile && isObjectSelected && (activeTool === 'text' || activeTool === 'eraser')) {
+    if (isMobile && isObjectSelected && (activeTool === 'eraser' || activeTool === 'edit' || activeTool === 'text')) {
         return renderSlimBar();
     }
     
     switch(activeTool) {
       case 'background':
+        // ... (background logic)
         return (
           <div className="flex flex-col gap-6 md:gap-8 w-full">
             <div>
@@ -233,153 +201,119 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
           </div>
         );
 
-      case 'text':
+      case 'edit':
         return (
-          <div className="flex flex-col gap-10 w-full">
-            <Button 
-              type="primary" 
-              icon={<Icon path={mdiPlus} size={1.2} />} 
-              onClick={addText} 
-              block
-              disabled={!hasBackground}
-              className="h-20 text-xl font-extrabold rounded-[1.5rem] shadow-xl shadow-blue-500/20 flex items-center justify-center gap-4 border-none bg-blue-600 hover:bg-blue-500"
-            >
-              텍스트 추가
-            </Button>
+          <div className="flex flex-col gap-4 w-full">
+            {/* 1. Compact Action Bar */}
+            <div className="flex items-center gap-2 bg-slate-100/50 p-2 rounded-2xl mb-2">
+               <Button 
+                  type="text"
+                  icon={<Icon path={mdiFormatColorText} size={0.7} />} 
+                  onClick={() => addText()}
+                  className="flex-1 h-10 hover:bg-white hover:shadow-sm font-bold text-xs rounded-xl transition-all"
+               >
+                  텍스트
+               </Button>
+               <div className="w-px h-4 bg-slate-200" />
+               <Button 
+                  type="text"
+                  icon={<Icon path={mdiShape} size={0.7} />} 
+                  onClick={() => addShape('rect')}
+                  className="flex-1 h-10 hover:bg-white hover:shadow-sm font-bold text-xs rounded-xl transition-all"
+               >
+                  도형
+               </Button>
+            </div>
 
-            {isTextSelected && activeObject instanceof fabric.IText ? (
-              <div className="space-y-8 animate-in fade-in duration-300">
-                  <Divider className="my-0 border-slate-100" />
-
-                  <div className="flex flex-col gap-6">
-                      <div className="flex items-center gap-4">
-                          <Input 
-                              value={activeObject.text} 
-                              onChange={(e) => {
-                                  updateProperty('text', e.target.value);
-                                  activeObject.set('text', e.target.value);
-                                  selectLayer(activeObject);
-                              }}
-                              onKeyDown={(e) => e.stopPropagation()}
-                              className="flex-1 h-12 text-lg"
-                              placeholder="텍스트 입력"
-                          />
-                      </div>
-                      
-                      <div className="flex items-center gap-4">
-                          <div className="flex-1">
-                              <MemeColorPicker 
-                                label="글자 색상" 
-                                value={color} 
-                                onChange={(val) => updateProperty('fill', val)}
-                                activateEyedropper={activateEyedropper}
-                                height="h-12"
-                              />
-                          </div>
-                          <div className="flex-1">
-                              <MemeColorPicker 
-                                label="외곽선 색상" 
-                                value={(activeObject.stroke as string) || '#000000'} 
-                                onChange={(val) => updateProperty('stroke', val)}
-                                activateEyedropper={activateEyedropper}
-                                height="h-12"
-                              />
-                          </div>
-                      </div>
-                  </div>
-
-                  <Button 
-                    danger 
-                    icon={<Icon path={mdiDelete} size={0.8} />} 
-                    onClick={deleteActiveObject}
-                    block
-                    className="flex items-center justify-center gap-2 h-12 text-base font-bold rounded-xl"
-                  >
-                    선택 삭제
-                  </Button>
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center justify-between px-1">
+                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Layers ({layers.length})</span>
               </div>
-            ) : (
-                <Empty description="텍스트를 선택하세요" image={Empty.PRESENTED_IMAGE_SIMPLE} />
-            )}
-          </div>
-        );
+              
+              <div className="flex flex-col gap-1.5 overflow-y-auto pr-1 max-h-[65vh] custom-scrollbar">
+                {[...layers].reverse().map((obj, idx) => {
+                  const isSelected = activeObject === obj;
+                  const isText = obj instanceof fabric.IText;
+                  const isRect = obj instanceof fabric.Rect;
+                  const isCircle = obj instanceof fabric.Circle;
+                  
+                  return (
+                    <div 
+                      key={obj.id || idx} 
+                      className={`
+                        group flex flex-col gap-2 p-2 transition-all rounded-xl border
+                        ${isSelected ? 'bg-blue-50/50 border-blue-200 ring-2 ring-blue-500/5' : 'bg-white border-slate-100 hover:border-slate-200'}
+                      `}
+                      onClick={() => selectLayer(obj)}
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 ${isSelected ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-400'}`}>
+                          <Icon path={isText ? mdiFormatColorText : mdiShape} size={0.4} />
+                        </div>
+                        
+                        {isText ? (
+                          <Input 
+                            value={(obj as fabric.IText).text} 
+                            onChange={(e) => {
+                                (obj as fabric.IText).set('text', e.target.value);
+                                updateProperty('text', e.target.value);
+                                selectLayer(obj);
+                            }}
+                            onKeyDown={(e) => e.stopPropagation()}
+                            className="flex-1 h-7 border-none bg-transparent hover:bg-slate-100/50 focus:bg-white transition-colors rounded-md text-xs font-bold p-1"
+                            placeholder="텍스트..."
+                          />
+                        ) : (
+                          <span className={`text-xs font-bold truncate flex-1 pl-1 ${isSelected ? 'text-blue-900' : 'text-slate-500'}`}>
+                            {isRect ? '사각형' : isCircle ? '원형' : '도형'}
+                          </span>
+                        )}
 
-      case 'eraser':
-        return (
-          <div className="flex flex-col gap-8 w-full">
-             <div className="bg-slate-100/50 p-1.5 rounded-2xl">
-                <Segmented 
-                    block
-                    options={[
-                        { label: '도형으로 가리기', value: 'shape', icon: <Icon path={mdiShape} size={0.6} /> },
-                        { label: '브러쉬로 덧칠', value: 'brush', icon: <Icon path={mdiBrush} size={0.6} /> },
-                    ]}
-                    value={eraserMode}
-                    onChange={(val) => setEraserMode(val as 'shape' | 'brush')}
-                    className="rounded-xl"
-                />
-             </div>
-
-             {eraserMode === 'shape' ? (
-                <div className="flex flex-col gap-6">
-                    <div className="flex flex-col gap-4">
-                        <button 
-                            className="h-20 w-full flex flex-row items-center justify-start gap-6 px-6 rounded-2xl border-2 border-slate-100 bg-slate-50 hover:border-blue-500 hover:bg-white transition-all cursor-pointer outline-none"
-                            onClick={() => addShape('rect')}
-                        >
-                            <div className="w-12 h-12 shrink-0 rounded-xl bg-white shadow-sm border border-slate-200 flex items-center justify-center">
-                                <Icon path={mdiRectangle} size={1.2} className="text-blue-600" />
-                            </div>
-                            <span className="text-base font-black text-slate-900">사각형 추가</span>
-                        </button>
-                        <button 
-                            className="h-20 w-full flex flex-row items-center justify-start gap-6 px-6 rounded-2xl border-2 border-slate-100 bg-slate-50 hover:border-blue-500 hover:bg-white transition-all cursor-pointer outline-none"
-                            onClick={() => addShape('circle')}
-                        >
-                            <div className="w-12 h-12 shrink-0 rounded-xl bg-white shadow-sm border border-slate-200 flex items-center justify-center">
-                                <Icon path={mdiCircle} size={1.2} className="text-blue-600" />
-                            </div>
-                            <span className="text-base font-black text-slate-900">원형 추가</span>
-                        </button>
-                    </div>
-
-                    {isShapeSelected && (
-                        <div className="space-y-6 animate-in fade-in duration-300">
-                            <Divider className="my-0 border-slate-100" />
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <MemeColorPicker 
+                            label="" 
+                            value={obj.fill as string} 
+                            onChange={(val) => {
+                                obj.set('fill', val);
+                                updateProperty('fill', val);
+                                selectLayer(obj);
+                            }}
+                            compact
+                          />
+                          {isText && (
                             <MemeColorPicker 
-                                label="도형 색상" 
-                                value={color} 
-                                onChange={(val) => updateProperty('fill', val)}
-                                activateEyedropper={activateEyedropper}
+                              label="" 
+                              value={obj.stroke as string || '#000000'} 
+                              onChange={(val) => {
+                                  obj.set('stroke', val);
+                                  updateProperty('stroke', val);
+                                  selectLayer(obj);
+                              }}
+                              compact
                             />
-                            <Button danger icon={<Icon path={mdiDelete} size={0.8} />} onClick={deleteActiveObject} block className="h-12 rounded-xl">도형 삭제</Button>
+                          )}
+                          <Button 
+                            type="text"
+                            size="small"
+                            icon={<Icon path={mdiDelete} size={0.5} />} 
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                deleteActiveObject();
+                            }}
+                            className="w-6 h-6 flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg p-0"
+                          />
                         </div>
-                    )}
-                </div>
-             ) : (
-                <div className="flex flex-col gap-8">
-                    <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
-                        <Text type="secondary" className="text-sm block leading-relaxed">
-                            캔버스 위에 자유롭게 덧칠하여 불필요한 영역을 가립니다.
-                        </Text>
+                      </div>
                     </div>
-
-                    <MemeColorPicker 
-                        label="브러쉬 색상" 
-                        value={color} 
-                        onChange={(val) => setColor(val)}
-                        activateEyedropper={activateEyedropper}
-                    />
-                    
-                    <div>
-                        <div className="flex justify-between items-center mb-4">
-                        <Text type="secondary" className="text-xs font-bold text-slate-500 uppercase">브러쉬 크기</Text>
-                        <Text className="text-sm font-mono font-bold text-blue-600">{brushSize}px</Text>
-                        </div>
-                        <Slider min={1} max={100} value={brushSize} onChange={setBrushSize} tooltip={{ open: false }} className="mx-2" />
-                    </div>
-                </div>
-             )}
+                  );
+                })}
+                {layers.length === 0 && (
+                  <div className="py-12 text-center bg-slate-50/50 rounded-3xl border border-dashed border-slate-200">
+                    <Empty description="편집할 개체를 추가하세요" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         );
 
@@ -442,112 +376,6 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
           {renderPanelContent()}
         </div>
       </div>
-
-      {/* 2. Layer Management Section (Fixed/Separated) */}
-      {showLayers && (
-        <div className="h-[42%] flex flex-col bg-slate-50 border-t-2 border-slate-100 shadow-[0_-10px_20px_-5px_rgba(0,0,0,0.05)] animate-in slide-in-from-bottom-8 duration-500">
-          {/* Header */}
-          <div className="px-4 py-4 md:px-6 flex items-center justify-between bg-white border-b border-slate-100 sticky top-0 z-10">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-slate-900 rounded-lg shadow-lg shadow-slate-900/10">
-                <Icon path={mdiLayers} size={0.7} className="text-white" />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 leading-none mb-1">Management</span>
-                <span className="text-sm font-black text-slate-800 leading-none">Layers Stack</span>
-              </div>
-              <span className="ml-2 px-2.5 py-1 bg-blue-50 text-blue-600 rounded-full text-[10px] font-black">{layers.length}</span>
-            </div>
-            <Button 
-              type="text" 
-              size="small" 
-              icon={<Icon path={mdiClose} size={0.6} />} 
-              onClick={() => setShowLayers(false)}
-              className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl w-8 h-8 flex items-center justify-center"
-            />
-          </div>
-
-          {/* Layer List (Scrollable) */}
-          <div className="flex-1 overflow-y-auto custom-scrollbar px-4 py-6 md:px-6">
-            <div className="flex flex-col gap-3 pb-4">
-              {[...layers].reverse().map((obj, index) => {
-                const isSelected = activeObject === obj;
-                let icon = mdiShape;
-                let name = '도형';
-                if (obj instanceof fabric.IText) { 
-                  icon = mdiFormatColorText; 
-                  name = (obj as fabric.IText).text?.substring(0, 10) || '텍스트'; 
-                } else if (obj instanceof fabric.Image || obj.type === 'image') { 
-                  icon = mdiImage; 
-                  name = '이미지'; 
-                }
-                
-                return (
-                  <div 
-                    key={index}
-                    className={`
-                      flex items-center justify-between p-4 rounded-2xl border transition-all cursor-pointer group
-                      ${isSelected ? 'border-blue-500 bg-white shadow-md ring-4 ring-blue-500/5' : 'border-slate-100 bg-white hover:border-blue-200 shadow-sm hover:shadow-md'}
-                    `}
-                    onClick={() => selectLayer(obj)}
-                  >
-                    <div className="flex items-center gap-4 overflow-hidden">
-                      <div className={`p-2 rounded-xl transition-colors ${isSelected ? 'bg-blue-600 text-white' : 'bg-slate-50 text-slate-400'}`}>
-                        <Icon path={icon} size={0.7} />
-                      </div>
-                      <span className={`text-sm font-bold truncate ${isSelected ? 'text-blue-900' : 'text-slate-600'}`}>{name}</span>
-                    </div>
-                    {isSelected && (
-                      <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                        {/* Mobile: Remove Tooltips for better touch experience */}
-                        <Button 
-                          size="small" 
-                          type="text" 
-                          icon={<Icon path={mdiArrowUp} size={0.6} />} 
-                          onClick={(e) => {
-                             e.stopPropagation();
-                             moveLayer('forward');
-                          }} 
-                          className="hover:bg-blue-50 hover:text-blue-600" 
-                          title="앞으로" // Native tooltip as fallback
-                        />
-                        <Button 
-                          size="small" 
-                          type="text" 
-                          icon={<Icon path={mdiArrowDown} size={0.6} />} 
-                          onClick={(e) => {
-                             e.stopPropagation();
-                             moveLayer('backward');
-                          }} 
-                          className="hover:bg-blue-50 hover:text-blue-600" 
-                          title="뒤로"
-                        />
-                        <Button 
-                          size="small" 
-                          type="text" 
-                          danger 
-                          icon={<Icon path={mdiDelete} size={0.6} />} 
-                          onClick={(e) => {
-                             e.stopPropagation();
-                             deleteActiveObject();
-                          }} 
-                          className="hover:bg-red-50" 
-                          title="삭제"
-                        />
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
-              {layers.length === 0 && (
-                <div className="py-12">
-                  <Empty description="레이어가 없습니다" image={Empty.PRESENTED_IMAGE_SIMPLE} />
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

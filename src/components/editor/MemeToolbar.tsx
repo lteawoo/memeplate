@@ -3,19 +3,15 @@ import React from 'react';
 import Icon from '@mdi/react';
 import { 
   mdiImage, 
-  mdiFormatColorText, 
-  mdiEraser,
-  mdiShareVariant,
-  mdiLayers
+  mdiPencil,
+  mdiShareVariant
 } from '@mdi/js';
 
-export type ToolType = 'background' | 'text' | 'eraser' | 'layers' | 'share' | null;
+export type ToolType = 'background' | 'edit' | 'text' | 'eraser' | 'share' | null;
 
 interface MemeToolbarProps {
   activeTool: ToolType;
   setActiveTool: (tool: ToolType) => void;
-  showLayers: boolean;
-  setShowLayers: (show: boolean) => void;
   hasBackground: boolean;
 }
 
@@ -33,7 +29,7 @@ const SidebarItem: React.FC<SidebarItemProps> = ({ icon, label, isActive, onClic
     onClick={disabled ? undefined : onClick}
     disabled={disabled}
     className={`
-      w-16 md:w-full py-3 md:py-4 flex flex-col items-center justify-center gap-1 md:gap-2
+      flex-1 py-3 md:py-4 flex flex-col items-center justify-center gap-1 md:gap-2
       transition-all duration-300 rounded-xl relative
       border-none outline-none cursor-pointer active:scale-95 shrink-0
       ${disabled 
@@ -60,14 +56,12 @@ const SidebarItem: React.FC<SidebarItemProps> = ({ icon, label, isActive, onClic
 const MemeToolbar: React.FC<MemeToolbarProps> = ({ 
   activeTool, 
   setActiveTool, 
-  showLayers,
-  setShowLayers,
   hasBackground
 }) => {
   return (
-    <div className="w-full md:w-28 h-20 md:h-full border-t md:border-t-0 md:border-r border-slate-100 bg-white md:bg-slate-50/10 flex flex-row md:flex-col items-center justify-start py-2 md:py-6 gap-2 md:gap-6 px-4 md:px-6 shrink-0 z-20 overflow-x-auto no-scrollbar">
-      {/* Main Tools Group */}
-      <div className="flex flex-row md:flex-col w-auto md:w-full gap-1 md:gap-2 bg-slate-200/40 p-1.5 md:p-2 rounded-2xl shrink-0">
+    <div className="w-full h-24 border-b border-slate-100 bg-white flex flex-row items-center justify-center py-2 gap-2 px-4 shrink-0 z-20">
+      {/* Main Tools Group - Simplified to 3 core tools */}
+      <div className="flex flex-row w-full gap-1 bg-slate-200/40 p-1.5 rounded-2xl shrink-0">
         <SidebarItem 
           icon={mdiImage} 
           label="이미지" 
@@ -75,24 +69,10 @@ const MemeToolbar: React.FC<MemeToolbarProps> = ({
           onClick={() => setActiveTool('background')} 
         />
         <SidebarItem 
-          icon={mdiFormatColorText} 
-          label="텍스트" 
-          isActive={activeTool === 'text'} 
-          onClick={() => setActiveTool('text')} 
-          disabled={!hasBackground} 
-        />
-        <SidebarItem 
-          icon={mdiEraser} 
-          label="지우개" 
-          isActive={activeTool === 'eraser'} 
-          onClick={() => setActiveTool('eraser')} 
-          disabled={!hasBackground} 
-        />
-        <SidebarItem 
-          icon={mdiLayers} 
-          label="레이어" 
-          isActive={showLayers} 
-          onClick={() => setShowLayers(!showLayers)} 
+          icon={mdiPencil} 
+          label="편집" 
+          isActive={activeTool === 'edit'} 
+          onClick={() => setActiveTool('edit')} 
           disabled={!hasBackground} 
         />
         <SidebarItem 
