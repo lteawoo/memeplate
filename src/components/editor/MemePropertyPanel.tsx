@@ -4,7 +4,8 @@ import {
   Input, 
   Upload, 
   Typography, 
-  Empty
+  Empty,
+  Segmented
 } from 'antd';
 import type { UploadChangeParam, UploadFile } from 'antd/es/upload';
 import Icon from '@mdi/react';
@@ -16,7 +17,9 @@ import {
   mdiContentCopy,
   mdiShape,
   mdiFormatColorText,
-  mdiLayers
+  mdiLayers,
+  mdiChevronUp,
+  mdiChevronDown
 } from '@mdi/js';
 import type { ToolType } from './MemeToolbar';
 import * as fabric from 'fabric';
@@ -43,6 +46,7 @@ interface MemePropertyPanelProps {
   copyToClipboard: () => void;
   layers: fabric.Object[];
   selectLayer: (obj: fabric.Object) => void;
+  changeZIndex: (direction: 'forward' | 'backward' | 'front' | 'back') => void;
 }
 
 const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
@@ -61,7 +65,8 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
     downloadImage,
     copyToClipboard,
     layers,
-    selectLayer
+    selectLayer,
+    changeZIndex
   } = props;
 
   const [downloadFormat, setDownloadFormat] = React.useState<FormatType>('png');
@@ -225,12 +230,12 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
                </Button>
             </div>
 
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center justify-between px-1">
+            <div className="flex flex-col gap-0 border border-slate-100 rounded-lg overflow-hidden">
+              <div className="flex items-center justify-between px-3 py-2 bg-slate-50 border-b border-slate-100">
                 <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Layers ({layers.length})</span>
               </div>
               
-              <div className="flex flex-col gap-1.5 overflow-y-auto pr-1 max-h-[65vh] custom-scrollbar">
+              <div className="flex flex-col overflow-y-auto max-h-[65vh] custom-scrollbar">
                 {[...layers].reverse().map((obj, idx) => {
                   const isSelected = activeObject === obj;
                   const isText = obj instanceof fabric.IText;
@@ -241,13 +246,29 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
                     <div 
                       key={obj.id || idx} 
                       className={`
-                        group flex flex-col gap-2 p-2 transition-all rounded-xl border
-                        ${isSelected ? 'bg-blue-50/50 border-blue-200 ring-2 ring-blue-500/5' : 'bg-white border-slate-100 hover:border-slate-200'}
+                        group flex flex-col p-1.5 transition-all border-b border-slate-50 last:border-b-0
+                        ${isSelected ? 'bg-blue-50/50' : 'bg-white hover:bg-slate-50/50'}
                       `}
                       onClick={() => selectLayer(obj)}
                     >
                       <div className="flex items-center gap-2">
-                        <div className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 ${isSelected ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-400'}`}>
+                        <div className="flex flex-col bg-white rounded border border-slate-200 overflow-hidden shrink-0">
+                          <Button 
+                            type="text"
+                            size="small"
+                            icon={<Icon path={mdiChevronUp} size={0.4} />} 
+                            onClick={(e) => { e.stopPropagation(); selectLayer(obj); changeZIndex('forward'); }}
+                            className="w-5 h-3.5 flex items-center justify-center text-slate-400 hover:text-blue-600 p-0"
+                          />
+                          <Button 
+                            type="text"
+                            size="small"
+                            icon={<Icon path={mdiChevronDown} size={0.4} />} 
+                            onClick={(e) => { e.stopPropagation(); selectLayer(obj); changeZIndex('backward'); }}
+                            className="w-5 h-3.5 flex items-center justify-center text-slate-400 hover:text-blue-600 p-0"
+                          />
+                        </div>
+                        <div className={`w-6 h-6 rounded flex items-center justify-center shrink-0 ${isSelected ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-400'}`}>
                           <Icon path={isText ? mdiFormatColorText : mdiShape} size={0.4} />
                         </div>
                         
@@ -260,16 +281,16 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
                                 selectLayer(obj);
                             }}
                             onKeyDown={(e) => e.stopPropagation()}
-                            className="flex-1 h-7 border-none bg-transparent hover:bg-slate-100/50 focus:bg-white transition-colors rounded-md text-xs font-bold p-1"
+                            className="flex-1 h-6 border-none bg-transparent hover:bg-slate-100/30 focus:bg-white transition-colors rounded text-[11px] font-bold p-1"
                             placeholder="텍스트..."
                           />
                         ) : (
-                          <span className={`text-xs font-bold truncate flex-1 pl-1 ${isSelected ? 'text-blue-900' : 'text-slate-500'}`}>
+                          <span className={`text-[11px] font-bold truncate flex-1 pl-1 ${isSelected ? 'text-blue-900' : 'text-slate-500'}`}>
                             {isRect ? '사각형' : isCircle ? '원형' : '도형'}
                           </span>
                         )}
 
-                        <div className="flex items-center gap-1.5 shrink-0">
+                        <div className="flex items-center gap-1 shrink-0">
                           <MemeColorPicker 
                             label="" 
                             value={obj.fill as string} 
@@ -295,12 +316,13 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
                           <Button 
                             type="text"
                             size="small"
-                            icon={<Icon path={mdiDelete} size={0.5} />} 
+                            icon={<Icon path={mdiDelete} size={0.4} />} 
                             onClick={(e) => {
                                 e.stopPropagation();
+                                selectLayer(obj);
                                 deleteActiveObject();
                             }}
-                            className="w-6 h-6 flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg p-0"
+                            className="w-5 h-5 flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-red-50 rounded p-0"
                           />
                         </div>
                       </div>
@@ -345,7 +367,6 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
                   size="large"
                   block
                   className="h-16 text-lg font-bold shadow-lg shadow-blue-500/20 rounded-2xl border-none bg-blue-600 hover:bg-blue-500"
-                  disabled={!hasBackground}
                >
                   다운로드
                </Button>
@@ -356,7 +377,6 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
                   size="large"
                   block
                   className="h-16 text-lg font-bold rounded-2xl bg-white border border-slate-200 text-slate-600 hover:text-slate-800 hover:border-slate-300"
-                  disabled={!hasBackground}
                >
                   클립보드 복사
                </Button>

@@ -217,6 +217,7 @@ const MemeEditor: React.FC = () => {
       fabricRef.current.getActiveObjects().forEach(obj => obj.set(key as keyof fabric.Object, value));
       fabricRef.current.renderAll();
       if (key === 'fill') setColor(value as string);
+      setLayers([...fabricRef.current.getObjects()]);
     },
     activeObject,
     deleteActiveObject: () => {
@@ -228,7 +229,7 @@ const MemeEditor: React.FC = () => {
       const common = { 
         left: fabricRef.current.width!/2, 
         top: fabricRef.current.height!/2, 
-        fill: '#000000', 
+        fill: '#ffffff', 
         originX: 'center' as const, 
         originY: 'center' as const,
         uniformScaling: false
@@ -267,6 +268,20 @@ const MemeEditor: React.FC = () => {
         await navigator.clipboard.write([ new ClipboardItem({ [blob.type]: blob }) ]);
         messageApi.success('클립보드에 복사되었습니다');
       } catch (err) { console.error('Failed to copy: ', err); messageApi.error('복사에 실패했습니다'); }
+    },
+    changeZIndex: (direction: 'forward' | 'backward' | 'front' | 'back') => {
+      if (!fabricRef.current || !activeObject) return;
+      const canvas = fabricRef.current;
+      const obj = activeObject;
+      
+      switch(direction) {
+        case 'forward': canvas.bringObjectForward(obj); break;
+        case 'backward': canvas.sendObjectBackwards(obj); break;
+        case 'front': canvas.bringObjectToFront(obj); break;
+        case 'back': canvas.sendObjectToBack(obj); break;
+      }
+      canvas.renderAll();
+      setLayers([...canvas.getObjects()]);
     }
   };
 
