@@ -4,13 +4,12 @@ import Icon from '@mdi/react';
 import { 
   mdiImage, 
   mdiFormatColorText, 
-  mdiShape, 
-  mdiBrush,
+  mdiEraser,
   mdiShareVariant,
   mdiLayers
 } from '@mdi/js';
 
-export type ToolType = 'background' | 'text' | 'shapes' | 'brush' | 'layers' | 'share' | null;
+export type ToolType = 'background' | 'text' | 'eraser' | 'layers' | 'share' | null;
 
 interface MemeToolbarProps {
   activeTool: ToolType;
@@ -18,8 +17,6 @@ interface MemeToolbarProps {
   showLayers: boolean;
   setShowLayers: (show: boolean) => void;
   hasBackground: boolean;
-  editMode: 'base' | 'template';
-  setEditMode: (mode: 'base' | 'template') => void;
 }
 
 interface SidebarItemProps {
@@ -36,9 +33,9 @@ const SidebarItem: React.FC<SidebarItemProps> = ({ icon, label, isActive, onClic
     onClick={disabled ? undefined : onClick}
     disabled={disabled}
     className={`
-      w-20 md:w-full py-4 md:py-4 flex flex-col items-center justify-center gap-2
+      w-16 md:w-full py-3 md:py-4 flex flex-col items-center justify-center gap-1 md:gap-2
       transition-all duration-300 rounded-xl relative
-      border-none outline-none cursor-pointer active:scale-95
+      border-none outline-none cursor-pointer active:scale-95 shrink-0
       ${disabled 
           ? 'bg-transparent text-slate-300 cursor-not-allowed opacity-50' 
           : isActive 
@@ -48,11 +45,11 @@ const SidebarItem: React.FC<SidebarItemProps> = ({ icon, label, isActive, onClic
   >
     <Icon 
       path={icon} 
-      size={1.1} 
+      size={window.innerWidth < 768 ? 0.9 : 1.1} 
       className={`transition-all duration-300 ${isActive ? 'scale-110' : 'opacity-70'}`} 
     />
     <span className={`
-      text-[10px] font-black uppercase tracking-tighter transition-colors duration-300
+      text-[9px] md:text-[10px] font-black uppercase tracking-tighter transition-colors duration-300
       ${isActive ? 'text-blue-600' : 'text-slate-500'}
     `}>
       {label}
@@ -65,90 +62,44 @@ const MemeToolbar: React.FC<MemeToolbarProps> = ({
   setActiveTool, 
   showLayers,
   setShowLayers,
-  hasBackground, 
-  editMode, 
-  setEditMode 
+  hasBackground
 }) => {
   return (
-    <div className="w-full md:w-28 h-20 md:h-full border-t md:border-t-0 md:border-r border-slate-100 bg-white md:bg-slate-50/10 flex flex-row md:flex-col items-center justify-start py-2 md:py-6 gap-4 md:gap-6 px-4 md:px-6 shrink-0 z-20">
-      {/* Mode Switcher Tabs */}
-      <div className="flex flex-row md:flex-col w-auto md:w-full gap-2 bg-slate-200/40 p-1.5 rounded-2xl shrink-0">
-        <button 
-          type="button"
-          onClick={() => setEditMode('base')}
-          className={`
-            px-4 md:px-0 md:w-full py-2 md:py-4 rounded-xl flex flex-col items-center justify-center transition-all
-            border-none outline-none cursor-pointer active:scale-95
-            ${editMode === 'base' ? 'bg-white text-blue-600 shadow-sm ring-1 ring-black/5' : 'bg-transparent text-slate-500 hover:bg-white/40'}
-          `}
-        >
-          <span className="text-[11px] font-black uppercase tracking-tighter">Base</span>
-        </button>
-        <button 
-          type="button"
-          onClick={() => setEditMode('template')}
-          className={`
-            px-4 md:px-0 md:w-full py-2 md:py-4 rounded-xl flex flex-col items-center justify-center transition-all
-            border-none outline-none cursor-pointer active:scale-95
-            ${editMode === 'template' ? 'bg-white text-blue-600 shadow-sm ring-1 ring-black/5' : 'bg-transparent text-slate-500 hover:bg-white/40'}
-          `}
-        >
-          <span className="text-[11px] font-black uppercase tracking-tighter">Meme</span>
-        </button>
-      </div>
-
+    <div className="w-full md:w-28 h-20 md:h-full border-t md:border-t-0 md:border-r border-slate-100 bg-white md:bg-slate-50/10 flex flex-row md:flex-col items-center justify-start py-2 md:py-6 gap-2 md:gap-6 px-4 md:px-6 shrink-0 z-20 overflow-x-auto no-scrollbar">
       {/* Main Tools Group */}
-      <div className="flex flex-row md:flex-col w-auto md:w-full gap-2 bg-slate-200/40 p-2 rounded-2xl overflow-x-auto no-scrollbar">
-        {editMode === 'base' ? (
-          <>
-            <SidebarItem 
-              icon={mdiImage} 
-              label="이미지" 
-              isActive={activeTool === 'background'} 
-              onClick={() => setActiveTool('background')} 
-            />
-            <SidebarItem 
-              icon={mdiShape} 
-              label="도형" 
-              isActive={activeTool === 'shapes'} 
-              onClick={() => setActiveTool('shapes')} 
-              disabled={!hasBackground} 
-            />
-            <SidebarItem 
-              icon={mdiBrush} 
-              label="브러쉬" 
-              isActive={activeTool === 'brush'} 
-              onClick={() => setActiveTool('brush')} 
-              disabled={!hasBackground} 
-            />
-          </>
-        ) : (
-          <>
-            <SidebarItem 
-              icon={mdiFormatColorText} 
-              label="텍스트" 
-              isActive={activeTool === 'text'} 
-              onClick={() => setActiveTool('text')} 
-              disabled={!hasBackground} 
-            />
-            <SidebarItem 
-              icon={mdiShareVariant} 
-              label="공유" 
-              isActive={activeTool === 'share'} 
-              onClick={() => setActiveTool('share')} 
-              disabled={!hasBackground} 
-            />
-          </>
-        )}
-      </div>
-
-      {/* Persistent Tools Group (Layers) */}
-      <div className="flex flex-row md:flex-col w-auto md:w-full gap-2 bg-slate-200/40 p-2 rounded-2xl">
+      <div className="flex flex-row md:flex-col w-auto md:w-full gap-1 md:gap-2 bg-slate-200/40 p-1.5 md:p-2 rounded-2xl shrink-0">
+        <SidebarItem 
+          icon={mdiImage} 
+          label="이미지" 
+          isActive={activeTool === 'background'} 
+          onClick={() => setActiveTool('background')} 
+        />
+        <SidebarItem 
+          icon={mdiFormatColorText} 
+          label="텍스트" 
+          isActive={activeTool === 'text'} 
+          onClick={() => setActiveTool('text')} 
+          disabled={!hasBackground} 
+        />
+        <SidebarItem 
+          icon={mdiEraser} 
+          label="지우개" 
+          isActive={activeTool === 'eraser'} 
+          onClick={() => setActiveTool('eraser')} 
+          disabled={!hasBackground} 
+        />
         <SidebarItem 
           icon={mdiLayers} 
           label="레이어" 
           isActive={showLayers} 
           onClick={() => setShowLayers(!showLayers)} 
+          disabled={!hasBackground} 
+        />
+        <SidebarItem 
+          icon={mdiShareVariant} 
+          label="공유" 
+          isActive={activeTool === 'share'} 
+          onClick={() => setActiveTool('share')} 
           disabled={!hasBackground} 
         />
       </div>

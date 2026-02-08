@@ -19,7 +19,7 @@ const MainHeader: React.FC = () => {
   return (
     <Header 
       className="flex items-center justify-between px-4 md:px-6 border-b border-slate-200 z-30 relative"
-      style={{ height: 64, background: '#ffffff', lineHeight: '64px' }}
+      style={{ height: 64, background: '#ffffff', lineHeight: '64px', padding: '0 24px' }}
     >
       <div className="flex items-center gap-10">
         <Link to="/" className="flex items-center gap-4 no-underline">
@@ -57,7 +57,7 @@ const MainHeader: React.FC = () => {
         placement="right"
         onClose={() => setIsDrawerOpen(false)}
         open={isDrawerOpen}
-        width={280}
+        styles={{ wrapper: { width: 280 } }}
       >
         <div className="flex flex-col gap-6 pt-8 px-2">
           {navLinks.map(link => (

@@ -29,7 +29,7 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
 
   return (
     <Content 
-      className="flex-1 relative flex flex-col items-center justify-center bg-slate-50 p-4 md:p-8" 
+      className="flex-1 relative flex flex-col items-center justify-center bg-slate-50 p-4 md:p-6" 
       ref={containerRef}
       style={{ touchAction: 'none' }}
     >
@@ -66,6 +66,7 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
           ${hasBackground ? 'shadow-2xl opacity-100 scale-100' : 'opacity-0 scale-95 hidden'}
         `}
         style={{ fontSize: 0 }}
+        onClick={(e) => e.stopPropagation()}
       >
          <canvas ref={canvasRef} />
       </div>
@@ -73,18 +74,18 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
       {/* Empty State */}
       {!hasBackground && (
         <div 
-          className="flex flex-col items-center justify-center w-full max-w-2xl h-96 border-4 border-dashed rounded-3xl transition-all duration-300 group hover:border-blue-400 hover:bg-blue-50/30"
+          className="flex flex-col items-center justify-center w-full max-w-2xl h-64 md:h-96 border-4 border-dashed rounded-3xl transition-all duration-300 group hover:border-blue-400 hover:bg-blue-50/30"
           style={{ borderColor: token.colorBorderSecondary }}
         >
-          <div className="text-center p-8 transition-transform duration-300 group-hover:scale-105">
+          <div className="text-center p-4 md:p-8 transition-transform duration-300 group-hover:scale-105">
             <div 
-              className="w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm flex items-center justify-center"
+              className="w-16 h-16 md:w-24 md:h-24 rounded-full flex items-center justify-center mx-auto mb-4 md:mb-6 shadow-sm"
               style={{ backgroundColor: token.colorFillSecondary }}
             >
-                                <Icon path={mdiImage} size={2} color={token.colorPrimary} />
-                              </div>
-                              <Title level={3} className="mb-2 text-gray-700">나만의 Memeplate를 만들어보세요</Title>
-                              <Text type="secondary" className="block mb-8 text-lg">              이미지 탭에서 이미지를 업로드하여 시작하세요
+              <Icon path={mdiImage} size={window.innerWidth < 768 ? 1.5 : 2} color={token.colorPrimary} />
+            </div>
+            <Title level={window.innerWidth < 768 ? 4 : 3} className="mb-1 md:mb-2 text-gray-700">나만의 Memeplate를 만들어보세요</Title>
+            <Text type="secondary" className="block mb-4 md:mb-8 text-sm md:text-lg">              이미지 탭에서 이미지를 업로드하여 시작하세요
             </Text>
           </div>
         </div>
