@@ -17,7 +17,6 @@ import {
   mdiContentCopy,
   mdiShape,
   mdiFormatColorText,
-  mdiLayers,
   mdiChevronUp,
   mdiChevronDown
 } from '@mdi/js';
@@ -52,7 +51,6 @@ interface MemePropertyPanelProps {
 const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
   const {
     activeTool,
-    hasBackground,
     bgUrl,
     setBgUrl,
     handleImageUpload,
@@ -148,11 +146,11 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
   };
 
   const renderPanelContent = () => {
-    if (!activeTool) return <Empty description="도구를 선택하여 편집을 시작하세요" />;
-    
-    if (isMobile && isObjectSelected && (activeTool === 'eraser' || activeTool === 'edit' || activeTool === 'text')) {
+    if (isMobile && isObjectSelected && (activeTool === 'edit' || !activeTool)) {
         return renderSlimBar();
     }
+
+    if (!activeTool) return <Empty description="도구를 선택하여 편집을 시작하세요" />;
     
     switch(activeTool) {
       case 'background':

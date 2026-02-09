@@ -73,14 +73,12 @@ const MemeToolbar: React.FC<MemeToolbarProps> = ({
           label="편집" 
           isActive={activeTool === 'edit'} 
           onClick={() => setActiveTool('edit')} 
-          disabled={!hasBackground} 
         />
         <SidebarItem 
           icon={mdiShareVariant} 
           label="공유" 
           isActive={activeTool === 'share'} 
           onClick={() => setActiveTool('share')} 
-          disabled={!hasBackground} 
         />
       </div>
     </div>
