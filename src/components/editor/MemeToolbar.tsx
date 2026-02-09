@@ -12,6 +12,7 @@ export type ToolType = 'background' | 'edit' | 'text' | 'eraser' | 'share' | nul
 interface MemeToolbarProps {
   activeTool: ToolType;
   setActiveTool: (tool: ToolType) => void;
+  hasBackground: boolean;
 }
 
 interface SidebarItemProps {
@@ -54,7 +55,8 @@ const SidebarItem: React.FC<SidebarItemProps> = ({ icon, label, isActive, onClic
 
 const MemeToolbar: React.FC<MemeToolbarProps> = ({ 
   activeTool, 
-  setActiveTool
+  setActiveTool,
+  hasBackground
 }) => {
   return (
     <div className="w-full h-24 border-b border-slate-100 bg-white flex flex-row items-center justify-center py-2 gap-2 px-4 shrink-0 z-20">
@@ -71,12 +73,14 @@ const MemeToolbar: React.FC<MemeToolbarProps> = ({
           label="편집" 
           isActive={activeTool === 'edit'} 
           onClick={() => setActiveTool('edit')} 
+          disabled={!hasBackground}
         />
         <SidebarItem 
           icon={mdiShareVariant} 
           label="공유" 
           isActive={activeTool === 'share'} 
           onClick={() => setActiveTool('share')} 
+          disabled={!hasBackground}
         />
       </div>
     </div>

@@ -67,6 +67,7 @@ const MemeEditor: React.FC = () => {
         fabricRef.current?.renderAll();
         isHistoryLocked.current = false;
         setHistoryIndex(newIndex);
+        if (fabricRef.current) setLayers([...fabricRef.current.getObjects()]);
     });
   };
 
@@ -79,6 +80,7 @@ const MemeEditor: React.FC = () => {
         fabricRef.current?.renderAll();
         isHistoryLocked.current = false;
         setHistoryIndex(newIndex);
+        if (fabricRef.current) setLayers([...fabricRef.current.getObjects()]);
     });
   };
 
@@ -391,7 +393,8 @@ const MemeEditor: React.FC = () => {
             <div className="hidden md:flex flex-col h-full w-[400px] bg-white border-r border-slate-200 shrink-0 relative z-20">
               <MemeToolbar 
                 activeTool={activeTool} 
-                setActiveTool={handleToolClick} 
+                setActiveTool={handleToolClick}
+                hasBackground={hasBackground}
               />
               <div className="flex-1 overflow-hidden">
                 <MemePropertyPanel {...panelProps} />
@@ -437,7 +440,7 @@ const MemeEditor: React.FC = () => {
             </div>
 
             <div className="bg-white border-t border-slate-100 relative z-10 pointer-events-auto" style={{ height: '80px' }}>
-                <MemeToolbar activeTool={activeTool} setActiveTool={handleToolClick} />
+                <MemeToolbar activeTool={activeTool} setActiveTool={handleToolClick} hasBackground={hasBackground} />
             </div>
         </div>
       </div>

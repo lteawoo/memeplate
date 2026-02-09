@@ -5,7 +5,9 @@ import {
   Upload, 
   Typography, 
   Empty,
-  Segmented
+  Segmented,
+  Dropdown,
+  type MenuProps
 } from 'antd';
 import type { UploadChangeParam, UploadFile } from 'antd/es/upload';
 import Icon from '@mdi/react';
@@ -16,6 +18,8 @@ import {
   mdiDownload, 
   mdiContentCopy,
   mdiShape,
+  mdiSquare,
+  mdiCircle,
   mdiFormatColorText,
   mdiChevronUp,
   mdiChevronDown
@@ -68,6 +72,21 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
   } = props;
 
   const [downloadFormat, setDownloadFormat] = React.useState<FormatType>('png');
+
+  const shapeItems: MenuProps['items'] = [
+    {
+      key: 'rect',
+      label: '사각형',
+      icon: <Icon path={mdiSquare} size={0.8} />,
+      onClick: () => addShape('rect'),
+    },
+    {
+      key: 'circle',
+      label: '원형',
+      icon: <Icon path={mdiCircle} size={0.8} />,
+      onClick: () => addShape('circle'),
+    },
+  ];
 
   const renderPanelContent = () => {
     if (!activeTool) return <Empty description="도구를 선택하여 편집을 시작하세요" />;
@@ -138,14 +157,15 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
                   텍스트
                </Button>
                <div className="w-px h-4 bg-slate-200" />
-               <Button 
-                  type="text"
-                  icon={<Icon path={mdiShape} size={0.7} />} 
-                  onClick={() => addShape('rect')}
-                  className="flex-1 h-10 hover:bg-white hover:shadow-sm font-bold text-xs rounded-xl transition-all"
-               >
-                  도형
-               </Button>
+               <Dropdown menu={{ items: shapeItems }} trigger={['click']} placement="bottom">
+                 <Button 
+                    type="text"
+                    icon={<Icon path={mdiShape} size={0.7} />} 
+                    className="flex-1 h-10 hover:bg-white hover:shadow-sm font-bold text-xs rounded-xl transition-all"
+                 >
+                    도형
+                 </Button>
+               </Dropdown>
             </div>
 
             <div className="flex flex-col gap-0 border border-slate-100 rounded-lg overflow-hidden">
