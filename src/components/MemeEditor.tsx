@@ -9,6 +9,8 @@ import MemeToolbar, { type ToolType } from './editor/MemeToolbar';
 import MemePropertyPanel from './editor/MemePropertyPanel';
 import MemeCanvas from './editor/MemeCanvas';
 
+const CANVAS_MARGIN = 60;
+
 const MemeEditor: React.FC = () => {
   const [messageApi, contextHolder] = message.useMessage();
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -26,6 +28,8 @@ const MemeEditor: React.FC = () => {
   const [color, setColor] = useState('#ffffff'); 
   const [bgUrl, setBgUrl] = useState('');
   const [hasBackground, setHasBackground] = useState(false);
+  const [workspaceSize, setWorkspaceSize] = useState({ width: 0, height: 0 });
+  const workspaceSizeRef = useRef({ width: 0, height: 0 });
 
   // History State
   const [history, setHistory] = useState<string[]>([]);
@@ -97,7 +101,7 @@ const MemeEditor: React.FC = () => {
   useEffect(() => {
     if (!canvasRef.current) return;
     const canvas = new fabric.Canvas(canvasRef.current, {
-      width: 600, height: 600, backgroundColor: '#ffffff', preserveObjectStacking: true,
+      width: 600, height: 600, backgroundColor: 'transparent', preserveObjectStacking: true,
       targetFindTolerance: 15,
     });
     fabricRef.current = canvas;
@@ -108,7 +112,7 @@ const MemeEditor: React.FC = () => {
         cornerStrokeColor: '#2563eb',
         borderColor: '#2563eb',
         cornerSize: 12,
-        padding: 20, 
+        padding: 16, 
         cornerStyle: 'circle',
         uniformScaling: false 
     });
@@ -137,6 +141,46 @@ const MemeEditor: React.FC = () => {
         setLayers([...canvas.getObjects()]);
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const enforceBoundaries = (e: any) => {
+        const obj = e.target;
+        if (!obj || !fabricRef.current) return;
+
+        obj.setCoords(); // Ensure current coordinates are up to date
+        const bound = obj.getBoundingRect();
+        
+        const minLeft = CANVAS_MARGIN;
+        const minTop = CANVAS_MARGIN;
+        const maxLeft = CANVAS_MARGIN + workspaceSizeRef.current.width;
+        const maxTop = CANVAS_MARGIN + workspaceSizeRef.current.height;
+
+        let moved = false;
+        let newLeft = obj.left;
+        let newTop = obj.top;
+
+        if (bound.left < minLeft) {
+            newLeft += (minLeft - bound.left);
+            moved = true;
+        }
+        if (bound.top < minTop) {
+            newTop += (minTop - bound.top);
+            moved = true;
+        }
+        if (bound.left + bound.width > maxLeft) {
+            newLeft -= (bound.left + bound.width - maxLeft);
+            moved = true;
+        }
+        if (bound.top + bound.height > maxTop) {
+            newTop -= (bound.top + bound.height - maxTop);
+            moved = true;
+        }
+
+        if (moved) {
+            obj.set({ left: newLeft, top: newTop });
+            obj.setCoords();
+        }
+    };
+
     canvas.on('mouse:down', (opt) => {
         if (window.innerWidth < 768 && !opt.target) {
             setIsPanelOpen(false);
@@ -150,6 +194,9 @@ const MemeEditor: React.FC = () => {
     canvas.on('object:added', handleUpdate);
     canvas.on('object:modified', handleUpdate);
     canvas.on('object:removed', handleUpdate);
+    
+    canvas.on('object:moving', enforceBoundaries);
+    canvas.on('object:scaling', enforceBoundaries);
 
     return () => { canvas.dispose(); fabricRef.current = null; };
   }, []);
@@ -158,11 +205,39 @@ const MemeEditor: React.FC = () => {
     if (!fabricRef.current) return;
     fabric.FabricImage.fromURL(url, { crossOrigin: 'anonymous' }).then((img) => {
       const canvas = fabricRef.current!;
-      const containerPadding = window.innerWidth < 768 ? 32 : 48; 
+      const containerPadding = (window.innerWidth < 768 ? 32 : 48) + (CANVAS_MARGIN * 2); 
       const ratio = Math.min((containerRef.current!.clientWidth - containerPadding) / img.width!, (containerRef.current!.clientHeight - containerPadding) / img.height!);
-      canvas.setDimensions({ width: img.width! * ratio, height: img.height! * ratio });
-      img.set({ scaleX: ratio, scaleY: ratio, originX: 'left', originY: 'top' });
-      canvas.backgroundImage = img; canvas.renderAll();
+      
+      const scaledW = img.width! * ratio;
+      const scaledH = img.height! * ratio;
+      
+      canvas.setDimensions({ 
+        width: scaledW + (CANVAS_MARGIN * 2), 
+        height: scaledH + (CANVAS_MARGIN * 2) 
+      });
+      
+      const newSize = { width: scaledW, height: scaledH };
+      setWorkspaceSize(newSize);
+      workspaceSizeRef.current = newSize;
+
+      img.set({ 
+        scaleX: ratio, 
+        scaleY: ratio, 
+        originX: 'left', 
+        originY: 'top',
+        left: CANVAS_MARGIN,
+        top: CANVAS_MARGIN,
+        selectable: false,
+        evented: false
+      });
+      
+      // Clear existing background and set as regular object at the bottom
+      canvas.getObjects().filter(o => o.name === 'background').forEach(o => canvas.remove(o));
+      img.set('name', 'background');
+      canvas.add(img);
+      canvas.sendObjectToBack(img);
+      canvas.renderAll();
+      
       setHasBackground(true); setBgUrl(url); setActiveTool('background');
     });
   };
@@ -183,7 +258,8 @@ const MemeEditor: React.FC = () => {
   };
 
   const panelProps = {
-    layers, selectLayer,
+    layers: layers.filter(l => l.name !== 'background'), 
+    selectLayer,
     activeTool, hasBackground, bgUrl, setBgUrl,
     handleImageUpload: (info: UploadChangeParam<UploadFile>) => {
       const file = info.file.originFileObj;
@@ -197,15 +273,15 @@ const MemeEditor: React.FC = () => {
     addText: () => {
       if (!fabricRef.current) return;
       const text = new fabric.IText('텍스트를 입력하세요', { 
-        left: fabricRef.current.width!/2, 
-        top: fabricRef.current.height!/2, 
+        left: CANVAS_MARGIN + workspaceSize.width/2 - 100, 
+        top: CANVAS_MARGIN + workspaceSize.height/2 - 20, 
         fontFamily: 'Impact', 
         fontSize: 40, 
         fill: '#ffffff', 
         stroke: '#000000', 
         strokeWidth: 2, 
-        originX: 'center', 
-        originY: 'center',
+        originX: 'left', 
+        originY: 'top',
         uniformScaling: false
       });
       fabricRef.current.add(text); fabricRef.current.setActiveObject(text); fabricRef.current.renderAll();
@@ -220,40 +296,53 @@ const MemeEditor: React.FC = () => {
     },
     activeObject,
     deleteActiveObject: () => {
-      fabricRef.current?.getActiveObjects().forEach(obj => fabricRef.current?.remove(obj));
+      fabricRef.current?.getActiveObjects().forEach(obj => {
+          if (obj.name !== 'background') fabricRef.current?.remove(obj);
+      });
       fabricRef.current?.discardActiveObject(); fabricRef.current?.renderAll();
     },
     addShape: (type: 'rect' | 'circle') => {
       if (!fabricRef.current) return;
+      const centerX = CANVAS_MARGIN + workspaceSize.width/2;
+      const centerY = CANVAS_MARGIN + workspaceSize.height/2;
       const common = { 
-        left: fabricRef.current.width!/2, 
-        top: fabricRef.current.height!/2, 
         fill: '#ffffff', 
-        originX: 'center' as const, 
-        originY: 'center' as const,
+        originX: 'left' as const, 
+        originY: 'top' as const,
         uniformScaling: false
       };
-      const shape = type === 'rect' ? new fabric.Rect({...common, width: 100, height: 100}) : new fabric.Circle({...common, radius: 50});
+      const shape = type === 'rect' 
+        ? new fabric.Rect({...common, left: centerX - 50, top: centerY - 50, width: 100, height: 100}) 
+        : new fabric.Circle({...common, left: centerX - 50, top: centerY - 50, radius: 50});
       fabricRef.current.add(shape); fabricRef.current.setActiveObject(shape); fabricRef.current.renderAll();
     },
     downloadImage: async (format: 'png' | 'jpg' | 'webp' | 'pdf') => {
       if (!fabricRef.current) return;
       const canvas = fabricRef.current;
+      
+      // Temporary crop to workspace size for download
+      const dataURL = canvas.toDataURL({ 
+        format: (format === 'jpg' ? 'jpeg' : format) as 'png' | 'jpeg' | 'webp', 
+        multiplier: 2,
+        left: CANVAS_MARGIN,
+        top: CANVAS_MARGIN,
+        width: workspaceSize.width,
+        height: workspaceSize.height
+      });
+
       if (format === 'pdf') {
         try {
           messageApi.loading('PDF 생성 중...');
           const { default: jsPDF } = await import('jspdf');
-          const imgData = canvas.toDataURL({ format: 'png', multiplier: 2 });
-          const pdf = new jsPDF({ orientation: canvas.width! > canvas.height! ? 'landscape' : 'portrait', unit: 'px', format: [canvas.width!, canvas.height!] });
-          pdf.addImage(imgData, 'PNG', 0, 0, canvas.width!, canvas.height!);
+          const pdf = new jsPDF({ orientation: workspaceSize.width > workspaceSize.height ? 'landscape' : 'portrait', unit: 'px', format: [workspaceSize.width, workspaceSize.height] });
+          pdf.addImage(dataURL, 'PNG', 0, 0, workspaceSize.width, workspaceSize.height);
           pdf.save(`meme-${Date.now()}.pdf`);
           messageApi.success('PDF 다운로드 완료');
         } catch (error) { console.error(error); messageApi.error('PDF 생성에 실패했습니다'); }
       } else {
-        const mimeType = format === 'jpg' ? 'jpeg' : format;
         const link = document.createElement('a'); 
         link.download = `meme-${Date.now()}.${format}`;
-        link.href = canvas.toDataURL({ format: mimeType, multiplier: 2 }); 
+        link.href = dataURL;
         link.click();
         messageApi.success('이미지 다운로드 시작');
       }
@@ -262,7 +351,14 @@ const MemeEditor: React.FC = () => {
       if (!fabricRef.current) return;
       try {
         const canvas = fabricRef.current;
-        const dataURL = canvas.toDataURL({ format: 'png', multiplier: 2 });
+        const dataURL = canvas.toDataURL({ 
+            format: 'png', 
+            multiplier: 2,
+            left: CANVAS_MARGIN,
+            top: CANVAS_MARGIN,
+            width: workspaceSize.width,
+            height: workspaceSize.height
+        });
         const blob = await (await fetch(dataURL)).blob();
         await navigator.clipboard.write([ new ClipboardItem({ [blob.type]: blob }) ]);
         messageApi.success('클립보드에 복사되었습니다');
@@ -296,7 +392,6 @@ const MemeEditor: React.FC = () => {
               <MemeToolbar 
                 activeTool={activeTool} 
                 setActiveTool={handleToolClick} 
-                hasBackground={hasBackground} 
               />
               <div className="flex-1 overflow-hidden">
                 <MemePropertyPanel {...panelProps} />
@@ -342,7 +437,7 @@ const MemeEditor: React.FC = () => {
             </div>
 
             <div className="bg-white border-t border-slate-100 relative z-10 pointer-events-auto" style={{ height: '80px' }}>
-                <MemeToolbar activeTool={activeTool} setActiveTool={handleToolClick} hasBackground={hasBackground} />
+                <MemeToolbar activeTool={activeTool} setActiveTool={handleToolClick} />
             </div>
         </div>
       </div>

@@ -41,7 +41,6 @@ const MemeColorPicker: React.FC<MemeColorPickerProps> = ({
         onChange={(c) => onChange(c.toHexString())} 
         showText
         size="large"
-        variant="borderless"
         className={`w-full ${height} flex items-center justify-center gap-4 p-0`}
     />
   </div>

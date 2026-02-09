@@ -68,7 +68,6 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
   } = props;
 
   const [downloadFormat, setDownloadFormat] = React.useState<FormatType>('png');
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
 
   const renderPanelContent = () => {
     if (!activeTool) return <Empty description="도구를 선택하여 편집을 시작하세요" />;
