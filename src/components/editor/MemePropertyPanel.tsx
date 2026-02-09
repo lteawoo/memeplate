@@ -69,87 +69,8 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
 
   const [downloadFormat, setDownloadFormat] = React.useState<FormatType>('png');
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-  const isObjectSelected = !!activeObject;
-
-  const renderSlimBar = () => {
-    if (!activeObject) return null;
-
-    if ((activeTool === 'text' || activeTool === 'edit') && activeObject instanceof fabric.IText) {
-        return (
-            <div className="flex flex-row items-center gap-3 px-4 h-full w-full">
-                <Input 
-                    value={activeObject.text} 
-                    onChange={(e) => {
-                        props.updateProperty('text', e.target.value);
-                        activeObject.set('text', e.target.value);
-                        props.selectLayer(activeObject); 
-                    }}
-                    onKeyDown={(e) => e.stopPropagation()}
-                    className="flex-1 h-10 border-none bg-slate-100/50 rounded-lg"
-                    placeholder="텍스트 입력"
-                />
-                <div className="flex items-center gap-2">
-                    <MemeColorPicker 
-                        label="" 
-                        value={props.color} 
-                        onChange={(val) => props.updateProperty('fill', val)}
-                        height="h-8"
-                        compact
-                    />
-                    <MemeColorPicker 
-                        label="" 
-                        value={(activeObject.stroke as string) || '#000000'} 
-                        onChange={(val) => props.updateProperty('stroke', val)}
-                        height="h-8"
-                        compact
-                    />
-                    <Button 
-                        danger 
-                        shape="circle"
-                        type="text"
-                        icon={<Icon path={mdiDelete} size={0.7} />} 
-                        onClick={props.deleteActiveObject}
-                        className="flex items-center justify-center hover:bg-red-50 shrink-0"
-                    />
-                </div>
-            </div>
-        );
-    }
-
-    return (
-      <div className="flex flex-row items-center gap-8 px-4 h-full overflow-x-auto no-scrollbar py-2">
-        {/* Common: Color Picker */}
-        <div className="shrink-0 border-r border-slate-100 pr-8">
-           <MemeColorPicker 
-              label={activeObject instanceof fabric.IText ? "글자 색상" : "채우기 색상"} 
-              value={props.color} 
-              onChange={(val) => props.updateProperty('fill', val)}
-              
-              height="h-10"
-              compact
-           />
-        </div>
-
-        {/* Delete Action */}
-        <div className="shrink-0">
-          <Button 
-            danger 
-            shape="circle"
-            icon={<Icon path={mdiDelete} size={0.8} />} 
-            onClick={props.deleteActiveObject}
-            size="large"
-            className="flex items-center justify-center border-none bg-red-50 hover:bg-red-100"
-          />
-        </div>
-      </div>
-    );
-  };
 
   const renderPanelContent = () => {
-    if (isMobile && isObjectSelected && (activeTool === 'edit' || !activeTool)) {
-        return renderSlimBar();
-    }
-
     if (!activeTool) return <Empty description="도구를 선택하여 편집을 시작하세요" />;
     
     switch(activeTool) {

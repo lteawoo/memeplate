@@ -331,14 +331,12 @@ const MemeEditor: React.FC = () => {
         >
             <div 
               className={`bg-white border-t border-slate-200 shadow-[0_-10px_20px_-5px_rgba(0,0,0,0.1)] transition-all duration-300 ease-in-out rounded-t-3xl overflow-hidden pointer-events-auto ${isPanelOpen ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-full'}`}
-              style={{ height: activeObject && (activeTool === 'edit' || !activeTool) ? '120px' : '45vh' }}
+              style={{ height: '45vh' }}
             >
-                {!(activeObject && (activeTool === 'edit' || !activeTool)) && (
-                  <div className="h-10 flex items-center justify-center bg-white cursor-pointer border-b border-slate-50 shrink-0" onClick={() => setIsPanelOpen(false)}>
-                    <div className="w-12 h-1.5 bg-slate-200 rounded-full"></div>
-                  </div>
-                )}
-                <div className="h-full overflow-hidden" style={{ height: activeObject && (activeTool === 'edit' || !activeTool) ? '120px' : 'calc(45vh - 40px)' }}>
+                <div className="h-10 flex items-center justify-center bg-white cursor-pointer border-b border-slate-50 shrink-0" onClick={() => setIsPanelOpen(false)}>
+                  <div className="w-12 h-1.5 bg-slate-200 rounded-full"></div>
+                </div>
+                <div className="h-full overflow-hidden" style={{ height: 'calc(45vh - 40px)' }}>
                     <MemePropertyPanel {...panelProps} />
                 </div>
             </div>
