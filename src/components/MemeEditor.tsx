@@ -274,9 +274,10 @@ const MemeEditor: React.FC = () => {
     setBackgroundImage,
     addText: () => {
       if (!fabricRef.current) return;
-      const text = new fabric.IText('텍스트를 입력하세요', { 
+      const text = new fabric.Textbox('텍스트를 입력하세요', { 
         left: CANVAS_MARGIN + workspaceSize.width/2 - 100, 
         top: CANVAS_MARGIN + workspaceSize.height/2 - 20, 
+        width: 300,
         fontFamily: 'Impact', 
         fontSize: 40, 
         fill: '#ffffff', 
@@ -284,7 +285,8 @@ const MemeEditor: React.FC = () => {
         strokeWidth: 2, 
         originX: 'left', 
         originY: 'top',
-        uniformScaling: false
+        uniformScaling: false,
+        splitByGrapheme: true
       });
       fabricRef.current.add(text); fabricRef.current.setActiveObject(text); fabricRef.current.renderAll();
     },
