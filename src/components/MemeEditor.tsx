@@ -285,9 +285,18 @@ const MemeEditor: React.FC = () => {
         strokeWidth: 2, 
         originX: 'left', 
         originY: 'top',
-        uniformScaling: false,
-        splitByGrapheme: true
+        uniformScaling: true,
+        splitByGrapheme: true,
+        lockScalingY: true
       });
+      
+      text.setControlsVisibility({
+        tl: false, tr: false, bl: false, br: false, 
+        mt: false, mb: false, 
+        ml: true, mr: true, 
+        mtr: true
+      });
+
       fabricRef.current.add(text); fabricRef.current.setActiveObject(text); fabricRef.current.renderAll();
     },
     color, 
