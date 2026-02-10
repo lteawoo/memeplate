@@ -1,28 +1,28 @@
 import React, { useEffect, useRef, useState } from 'react';
-import * as fabric from 'fabric';
 import { Layout, message } from 'antd';
 import type { UploadChangeParam, UploadFile } from 'antd/es/upload';
 
+import { Canvas, CanvasObject, Rect, Circle, Textbox, CanvasImage } from '../core/canvas';
 import MainHeader from './layout/MainHeader';
 import EditorLayout from './editor/EditorLayout';
 import MemeToolbar, { type ToolType } from './editor/MemeToolbar';
 import MemePropertyPanel from './editor/MemePropertyPanel';
 import MemeCanvas from './editor/MemeCanvas';
 
-const CANVAS_MARGIN = 60;
+const CANVAS_MARGIN = 0;
 
 const MemeEditor: React.FC = () => {
   const [messageApi, contextHolder] = message.useMessage();
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const fabricRef = useRef<fabric.Canvas | null>(null);
+  const canvasInstanceRef = useRef<Canvas | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const [activeTool, setActiveTool] = useState<ToolType>(null);
   const [isPanelOpen, setIsPanelOpen] = useState(false); 
   
   // Selection State
-  const [activeObject, setActiveObject] = useState<fabric.Object | null>(null);
-  const [layers, setLayers] = useState<fabric.Object[]>([]);
+  const [activeObject, setActiveObject] = useState<CanvasObject | null>(null);
+  const [layers, setLayers] = useState<CanvasObject[]>([]);
 
   // Property State
   const [color, setColor] = useState('#ffffff'); 
@@ -43,8 +43,8 @@ const MemeEditor: React.FC = () => {
   useEffect(() => { indexRef.current = historyIndex; }, [historyIndex]);
 
   const saveHistory = () => {
-    if (isHistoryLocked.current || !fabricRef.current) return;
-    const json = JSON.stringify(fabricRef.current.toJSON());
+    if (isHistoryLocked.current || !canvasInstanceRef.current) return;
+    const json = JSON.stringify(canvasInstanceRef.current.toJSON());
     
     if (historyRef.current.length > 0 && indexRef.current > -1) {
         if (historyRef.current[indexRef.current] === json) return;
@@ -59,28 +59,26 @@ const MemeEditor: React.FC = () => {
   };
 
   const undo = () => {
-    if (indexRef.current <= 0 || !fabricRef.current) return;
+    if (indexRef.current <= 0 || !canvasInstanceRef.current) return;
     isHistoryLocked.current = true;
     const newIndex = indexRef.current - 1;
     const prevState = historyRef.current[newIndex];
-    fabricRef.current.loadFromJSON(JSON.parse(prevState)).then(() => {
-        fabricRef.current?.renderAll();
+    canvasInstanceRef.current.loadFromJSON(JSON.parse(prevState)).then(() => {
         isHistoryLocked.current = false;
         setHistoryIndex(newIndex);
-        if (fabricRef.current) setLayers([...fabricRef.current.getObjects()]);
+        if (canvasInstanceRef.current) setLayers([...canvasInstanceRef.current.getObjects()]);
     });
   };
 
   const redo = () => {
-    if (indexRef.current >= historyRef.current.length - 1 || !fabricRef.current) return;
+    if (indexRef.current >= historyRef.current.length - 1 || !canvasInstanceRef.current) return;
     isHistoryLocked.current = true;
     const newIndex = indexRef.current + 1;
     const nextState = historyRef.current[newIndex];
-    fabricRef.current.loadFromJSON(JSON.parse(nextState)).then(() => {
-        fabricRef.current?.renderAll();
+    canvasInstanceRef.current.loadFromJSON(JSON.parse(nextState)).then(() => {
         isHistoryLocked.current = false;
         setHistoryIndex(newIndex);
-        if (fabricRef.current) setLayers([...fabricRef.current.getObjects()]);
+        if (canvasInstanceRef.current) setLayers([...canvasInstanceRef.current.getObjects()]);
     });
   };
 
@@ -102,37 +100,28 @@ const MemeEditor: React.FC = () => {
 
   useEffect(() => {
     if (!canvasRef.current) return;
-    const canvas = new fabric.Canvas(canvasRef.current, {
-      width: 600, height: 600, backgroundColor: 'transparent', preserveObjectStacking: true,
-      targetFindTolerance: 15,
-    });
-    fabricRef.current = canvas;
-
-    fabric.Object.prototype.set({
-        transparentCorners: false,
-        cornerColor: '#ffffff',
-        cornerStrokeColor: '#2563eb',
-        borderColor: '#2563eb',
-        cornerSize: 12,
-        padding: 16, 
-        cornerStyle: 'circle',
-        uniformScaling: false 
-    });
+    const canvas = new Canvas(canvasRef.current);
+    // Initial setup if needed (width/height usually set by setBackgroundImage or container)
+    canvas.setWidth(600);
+    canvas.setHeight(600);
+    
+    canvasInstanceRef.current = canvas;
 
     const initialJson = JSON.stringify(canvas.toJSON());
     setHistory([initialJson]);
     setHistoryIndex(0);
 
-    const handleSelection = () => {
-      const selected = canvas.getActiveObject();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const handleSelection = (e: any) => {
+      const selected = e.selected ? e.selected[0] : null;
       setActiveObject(selected || null);
       if (selected) {
         setIsPanelOpen(true); 
         
-        if (selected instanceof fabric.IText) {
+        if (selected instanceof Textbox) {
           setColor(selected.fill as string); 
         } 
-        else if (selected instanceof fabric.Rect || selected instanceof fabric.Circle) {
+        else if (selected instanceof Rect || selected instanceof Circle) {
           setColor(selected.fill as string);
         }
       }
@@ -146,10 +135,19 @@ const MemeEditor: React.FC = () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const enforceBoundaries = (e: any) => {
         const obj = e.target;
-        if (!obj || !fabricRef.current) return;
+        if (!obj || !canvasInstanceRef.current) return;
 
-        obj.setCoords(); // Ensure current coordinates are up to date
-        const bound = obj.getBoundingRect();
+        // Bounding rect check
+        // Note: My simple engine doesn't implement getBoundingRect fully with rotation yet.
+        // Assuming non-rotated or simple bounds for now.
+        const width = obj.width * obj.scaleX;
+        const height = obj.height * obj.scaleY;
+        // const left = obj.left - width / 2; // centered origin in my engine? 
+        // Wait, my draw logic uses translate(obj.left, obj.top) and draws at -w/2, -h/2
+        // So obj.left/top IS the center.
+        
+        const boundLeft = obj.left - width / 2;
+        const boundTop = obj.top - height / 2;
         
         const minLeft = CANVAS_MARGIN;
         const minTop = CANVAS_MARGIN;
@@ -160,30 +158,31 @@ const MemeEditor: React.FC = () => {
         let newLeft = obj.left;
         let newTop = obj.top;
 
-        if (bound.left < minLeft) {
-            newLeft += (minLeft - bound.left);
+        if (boundLeft < minLeft) {
+            newLeft += (minLeft - boundLeft);
             moved = true;
         }
-        if (bound.top < minTop) {
-            newTop += (minTop - bound.top);
+        if (boundTop < minTop) {
+            newTop += (minTop - boundTop);
             moved = true;
         }
-        if (bound.left + bound.width > maxLeft) {
-            newLeft -= (bound.left + bound.width - maxLeft);
+        if (boundLeft + width > maxLeft) {
+            newLeft -= (boundLeft + width - maxLeft);
             moved = true;
         }
-        if (bound.top + bound.height > maxTop) {
-            newTop -= (bound.top + bound.height - maxTop);
+        if (boundTop + height > maxTop) {
+            newTop -= (boundTop + height - maxTop);
             moved = true;
         }
 
         if (moved) {
-            obj.set({ left: newLeft, top: newTop });
-            obj.setCoords();
+            obj.set('left', newLeft);
+            obj.set('top', newTop);
         }
     };
 
-    canvas.on('mouse:down', (opt) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    canvas.on('mouse:down', (opt: any) => {
         if (window.innerWidth < 768 && !opt.target) {
             setIsPanelOpen(false);
         }
@@ -198,42 +197,40 @@ const MemeEditor: React.FC = () => {
     canvas.on('object:removed', handleUpdate);
     
     canvas.on('object:moving', enforceBoundaries);
-    canvas.on('object:scaling', enforceBoundaries);
+    // canvas.on('object:scaling', enforceBoundaries); // Not implemented yet
 
-    return () => { canvas.dispose(); fabricRef.current = null; };
+    return () => { canvas.dispose(); canvasInstanceRef.current = null; };
   }, []);
 
   const setBackgroundImage = (url: string) => {
-    if (!fabricRef.current) return;
-    fabric.FabricImage.fromURL(url, { crossOrigin: 'anonymous' }).then((img) => {
-      const canvas = fabricRef.current!;
-      const containerPadding = (window.innerWidth < 768 ? 32 : 48) + (CANVAS_MARGIN * 2); 
-      const ratio = Math.min((containerRef.current!.clientWidth - containerPadding) / img.width!, (containerRef.current!.clientHeight - containerPadding) / img.height!);
+    if (!canvasInstanceRef.current) return;
+    CanvasImage.fromURL(url).then((img) => {
+      const canvas = canvasInstanceRef.current!;
+      const containerPadding = (window.innerWidth < 768 ? 32 : 48); 
+      const ratio = Math.min((containerRef.current!.clientWidth - containerPadding) / img.width, (containerRef.current!.clientHeight - containerPadding) / img.height);
       
-      const scaledW = img.width! * ratio;
-      const scaledH = img.height! * ratio;
+      const scaledW = img.width * ratio;
+      const scaledH = img.height * ratio;
       
       canvas.setDimensions({ 
-        width: scaledW + (CANVAS_MARGIN * 2), 
-        height: scaledH + (CANVAS_MARGIN * 2) 
+        width: scaledW, 
+        height: scaledH 
       });
       
       const newSize = { width: scaledW, height: scaledH };
       setWorkspaceSize(newSize);
       workspaceSizeRef.current = newSize;
 
-      img.set({ 
-        scaleX: ratio, 
-        scaleY: ratio, 
-        originX: 'left', 
-        originY: 'top',
-        left: CANVAS_MARGIN,
-        top: CANVAS_MARGIN,
-        selectable: false,
-        evented: false
-      });
+      img.set('scaleX', ratio);
+      img.set('scaleY', ratio);
+      // Center at 50%, 50%
+      img.set('left', scaledW / 2);
+      img.set('top', scaledH / 2);
       
-      // Clear existing background and set as regular object at the bottom
+      img.set('selectable', false);
+      img.set('evented', false);
+      
+      // Clear existing background
       canvas.getObjects().filter(o => o.name === 'background').forEach(o => canvas.remove(o));
       img.set('name', 'background');
       canvas.add(img);
@@ -241,6 +238,13 @@ const MemeEditor: React.FC = () => {
       canvas.renderAll();
       
       setHasBackground(true); setBgUrl(url); setActiveTool('background');
+
+      // Ensure rendering after layout changes
+      setTimeout(() => {
+        if (canvasInstanceRef.current) {
+          canvasInstanceRef.current.requestRender();
+        }
+      }, 100);
     });
   };
 
@@ -253,10 +257,9 @@ const MemeEditor: React.FC = () => {
     }
   };
 
-  const selectLayer = (obj: fabric.Object) => {
-    if (!fabricRef.current) return;
-    fabricRef.current.setActiveObject(obj);
-    fabricRef.current.renderAll();
+  const selectLayer = (obj: CanvasObject) => {
+    if (!canvasInstanceRef.current) return;
+    canvasInstanceRef.current.setActiveObject(obj);
   };
 
   const panelProps = {
@@ -273,63 +276,73 @@ const MemeEditor: React.FC = () => {
     },
     setBackgroundImage,
     addText: () => {
-      if (!fabricRef.current) return;
-      const text = new fabric.Textbox('텍스트를 입력하세요', { 
-        left: CANVAS_MARGIN + workspaceSize.width/2 - 100, 
-        top: CANVAS_MARGIN + workspaceSize.height/2 - 20, 
-        width: 300,
-        fontFamily: 'Impact', 
+      if (!canvasInstanceRef.current) return;
+      const canvasW = workspaceSize.width || 400;
+      const text = new Textbox('텍스트를 입력하세요', { 
+        // Center of workspace
+        left: CANVAS_MARGIN + canvasW / 2, 
+        top: CANVAS_MARGIN + workspaceSize.height / 2, 
+        width: Math.min(canvasW * 0.8, 400), // Fixed width: 80% of canvas or max 400
+        height: 100, // Fixed height
         fontSize: 40, 
         fill: '#ffffff', 
         stroke: '#000000', 
         strokeWidth: 2, 
-        originX: 'left', 
-        originY: 'top',
-        uniformScaling: false,
-        splitByGrapheme: true
+        name: 'text'
       });
-      fabricRef.current.add(text); fabricRef.current.setActiveObject(text); fabricRef.current.renderAll();
+      canvasInstanceRef.current.add(text); 
+      canvasInstanceRef.current.setActiveObject(text); 
     },
     color, 
     updateProperty: (key: string, value: string | number) => {
-      if (!fabricRef.current) return;
-      fabricRef.current.getActiveObjects().forEach(obj => obj.set(key as keyof fabric.Object, value));
-      fabricRef.current.renderAll();
-      if (key === 'fill') setColor(value as string);
-      setLayers([...fabricRef.current.getObjects()]);
+      if (!canvasInstanceRef.current) return;
+      // In my engine activeObject is single
+      const active = canvasInstanceRef.current.getActiveObject();
+      if (active) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          active.set(key as any, value);
+          canvasInstanceRef.current.renderAll();
+          if (key === 'fill') setColor(value as string);
+          setLayers([...canvasInstanceRef.current.getObjects()]);
+      }
     },
     activeObject,
     deleteActiveObject: () => {
-      fabricRef.current?.getActiveObjects().forEach(obj => {
-          if (obj.name !== 'background') fabricRef.current?.remove(obj);
-      });
-      fabricRef.current?.discardActiveObject(); fabricRef.current?.renderAll();
+      if (!canvasInstanceRef.current) return;
+      const active = canvasInstanceRef.current.getActiveObject();
+      if (active && active.name !== 'background') {
+          canvasInstanceRef.current.remove(active);
+          canvasInstanceRef.current.discardActiveObject();
+      }
     },
     addShape: (type: 'rect' | 'circle') => {
-      if (!fabricRef.current) return;
+      if (!canvasInstanceRef.current) return;
       const centerX = CANVAS_MARGIN + workspaceSize.width/2;
       const centerY = CANVAS_MARGIN + workspaceSize.height/2;
       const common = { 
         fill: '#ffffff', 
-        originX: 'left' as const, 
-        originY: 'top' as const,
-        uniformScaling: false
+        stroke: '#000000',
+        strokeWidth: 0,
+        name: 'shape'
       };
-      const shape = type === 'rect' 
-        ? new fabric.Rect({...common, left: centerX - 50, top: centerY - 50, width: 100, height: 100}) 
-        : new fabric.Circle({...common, left: centerX - 50, top: centerY - 50, radius: 50});
-      fabricRef.current.add(shape); fabricRef.current.setActiveObject(shape); fabricRef.current.renderAll();
+      
+      let shape;
+      if (type === 'rect') {
+          shape = new Rect({ ...common, left: centerX, top: centerY, width: 100, height: 100 });
+      } else {
+          shape = new Circle({ ...common, left: centerX, top: centerY, radius: 50 });
+      }
+      
+      canvasInstanceRef.current.add(shape); 
+      canvasInstanceRef.current.setActiveObject(shape); 
     },
     downloadImage: async (format: 'png' | 'jpg' | 'webp' | 'pdf') => {
-      if (!fabricRef.current) return;
-      const canvas = fabricRef.current;
+      if (!canvasInstanceRef.current) return;
+      const canvas = canvasInstanceRef.current;
       
-      // Temporary crop to workspace size for download
       const dataURL = canvas.toDataURL({ 
         format: (format === 'jpg' ? 'jpeg' : format) as 'png' | 'jpeg' | 'webp', 
         multiplier: 2,
-        left: CANVAS_MARGIN,
-        top: CANVAS_MARGIN,
         width: workspaceSize.width,
         height: workspaceSize.height
       });
@@ -352,14 +365,12 @@ const MemeEditor: React.FC = () => {
       }
     },
     copyToClipboard: async () => {
-      if (!fabricRef.current) return;
+      if (!canvasInstanceRef.current) return;
       try {
-        const canvas = fabricRef.current;
+        const canvas = canvasInstanceRef.current;
         const dataURL = canvas.toDataURL({ 
             format: 'png', 
             multiplier: 2,
-            left: CANVAS_MARGIN,
-            top: CANVAS_MARGIN,
             width: workspaceSize.width,
             height: workspaceSize.height
         });
@@ -369,8 +380,8 @@ const MemeEditor: React.FC = () => {
       } catch (err) { console.error('Failed to copy: ', err); messageApi.error('복사에 실패했습니다'); }
     },
     changeZIndex: (direction: 'forward' | 'backward' | 'front' | 'back') => {
-      if (!fabricRef.current || !activeObject) return;
-      const canvas = fabricRef.current;
+      if (!canvasInstanceRef.current || !activeObject) return;
+      const canvas = canvasInstanceRef.current;
       const obj = activeObject;
       
       switch(direction) {
@@ -379,7 +390,6 @@ const MemeEditor: React.FC = () => {
         case 'front': canvas.bringObjectToFront(obj); break;
         case 'back': canvas.sendObjectToBack(obj); break;
       }
-      canvas.renderAll();
       setLayers([...canvas.getObjects()]);
     }
   };
@@ -408,7 +418,9 @@ const MemeEditor: React.FC = () => {
             className="flex-1 flex flex-col overflow-hidden order-1 md:order-2 relative"
             onClick={(e) => {
               if ((e.target as HTMLElement).tagName.toLowerCase() === 'canvas') return;
-              if (fabricRef.current) { fabricRef.current.discardActiveObject(); fabricRef.current.renderAll(); }
+              if (canvasInstanceRef.current) { 
+                  canvasInstanceRef.current.discardActiveObject(); 
+              }
               if (window.innerWidth < 768) setIsPanelOpen(false);
             }}
           >

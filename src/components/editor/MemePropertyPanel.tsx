@@ -25,7 +25,7 @@ import {
   mdiChevronDown
 } from '@mdi/js';
 import type { ToolType } from './MemeToolbar';
-import * as fabric from 'fabric';
+import { Rect, Circle, Textbox, type CanvasObject } from '../../core/canvas';
 import MemeColorPicker from './MemeColorPicker';
 
 const { Text } = Typography;
@@ -42,13 +42,13 @@ interface MemePropertyPanelProps {
   addText: () => void;
   color: string;
   updateProperty: (key: string, value: string | number) => void;
-  activeObject: fabric.Object | null;
+  activeObject: CanvasObject | null;
   deleteActiveObject: () => void;
   addShape: (type: 'rect' | 'circle') => void;
   downloadImage: (format: FormatType) => void;
   copyToClipboard: () => void;
-  layers: fabric.Object[];
-  selectLayer: (obj: fabric.Object) => void;
+  layers: CanvasObject[];
+  selectLayer: (obj: CanvasObject) => void;
   changeZIndex: (direction: 'forward' | 'backward' | 'front' | 'back') => void;
 }
 
@@ -176,9 +176,9 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
               <div className="flex flex-col overflow-y-auto max-h-[65vh] custom-scrollbar">
                 {[...layers].reverse().map((obj, idx) => {
                   const isSelected = activeObject === obj;
-                  const isText = obj instanceof fabric.IText;
-                  const isRect = obj instanceof fabric.Rect;
-                  const isCircle = obj instanceof fabric.Circle;
+                  const isText = obj instanceof Textbox;
+                  const isRect = obj instanceof Rect;
+                  const isCircle = obj instanceof Circle;
                   
                   return (
                     <div 
@@ -212,9 +212,9 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
                         
                         {isText ? (
                           <Input 
-                            value={(obj as fabric.IText).text} 
+                            value={(obj as Textbox).text} 
                             onChange={(e) => {
-                                (obj as fabric.IText).set('text', e.target.value);
+                                (obj as Textbox).set('text', e.target.value);
                                 updateProperty('text', e.target.value);
                                 selectLayer(obj);
                             }}

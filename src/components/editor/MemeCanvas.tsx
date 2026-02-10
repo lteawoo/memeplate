@@ -63,12 +63,12 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
       <div 
         className={`
           relative transition-all duration-300 ease-in-out
-          ${hasBackground ? 'opacity-100 scale-100' : 'opacity-0 scale-95 hidden'}
+          ${hasBackground ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none absolute'}
         `}
         style={{ fontSize: 0 }}
         onClick={(e) => e.stopPropagation()}
       >
-         <canvas ref={canvasRef} className="max-w-full h-auto" />
+         <canvas ref={canvasRef} className="max-w-full h-auto shadow-2xl rounded-sm" />
       </div>
 
       {/* Empty State */}
