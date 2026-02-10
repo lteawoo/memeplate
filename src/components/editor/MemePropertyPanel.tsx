@@ -22,11 +22,17 @@ import {
   mdiCircle,
   mdiFormatColorText,
   mdiChevronUp,
-  mdiChevronDown
+  mdiChevronDown,
+  mdiTune,
+  mdiFormatAlignLeft,
+  mdiFormatAlignCenter,
+  mdiFormatAlignRight,
+  mdiFormatSize
 } from '@mdi/js';
 import type { ToolType } from './MemeToolbar';
 import { Rect, Circle, Textbox, type CanvasObject } from '../../core/canvas';
 import MemeColorPicker from './MemeColorPicker';
+import { Popover, Slider, InputNumber, Space } from 'antd';
 
 const { Text } = Typography;
 
@@ -194,20 +200,20 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
                           <Button 
                             type="text"
                             size="small"
-                            icon={<Icon path={mdiChevronUp} size={0.4} />} 
+                            icon={<Icon path={mdiChevronUp} size={0.5} />} 
                             onClick={(e) => { e.stopPropagation(); selectLayer(obj); changeZIndex('forward'); }}
-                            className="w-5 h-3.5 flex items-center justify-center text-slate-400 hover:text-blue-600 p-0"
+                            className="w-6 h-4 flex items-center justify-center text-slate-400 hover:text-blue-600 p-0"
                           />
                           <Button 
                             type="text"
                             size="small"
-                            icon={<Icon path={mdiChevronDown} size={0.4} />} 
+                            icon={<Icon path={mdiChevronDown} size={0.5} />} 
                             onClick={(e) => { e.stopPropagation(); selectLayer(obj); changeZIndex('backward'); }}
-                            className="w-5 h-3.5 flex items-center justify-center text-slate-400 hover:text-blue-600 p-0"
+                            className="w-6 h-4 flex items-center justify-center text-slate-400 hover:text-blue-600 p-0"
                           />
                         </div>
-                        <div className={`w-6 h-6 rounded flex items-center justify-center shrink-0 ${isSelected ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-400'}`}>
-                          <Icon path={isText ? mdiFormatColorText : mdiShape} size={0.4} />
+                        <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${isSelected ? 'bg-blue-600 text-white shadow-sm' : 'bg-slate-100 text-slate-400'}`}>
+                          <Icon path={isText ? mdiFormatColorText : mdiShape} size={0.5} />
                         </div>
                         
                         {isText ? (
@@ -251,16 +257,79 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
                               compact
                             />
                           )}
+                          {isText && (
+                            <Popover
+                              placement="bottomRight"
+                              title={<span className="text-xs font-bold">텍스트 상세 설정</span>}
+                              trigger="click"
+                              content={
+                                <div className="flex flex-col gap-4 w-60 p-1">
+                                  <div>
+                                    <Text className="text-[11px] text-slate-400 font-bold uppercase block mb-2">정렬</Text>
+                                    <Segmented
+                                      block
+                                      value={(obj as Textbox).textAlign}
+                                      onChange={(val) => {
+                                        (obj as Textbox).set('textAlign', val);
+                                        updateProperty('textAlign', val as string);
+                                      }}
+                                      options={[
+                                        { value: 'left', icon: <Icon path={mdiFormatAlignLeft} size={0.6} /> },
+                                        { value: 'center', icon: <Icon path={mdiFormatAlignCenter} size={0.6} /> },
+                                        { value: 'right', icon: <Icon path={mdiFormatAlignRight} size={0.6} /> },
+                                      ]}
+                                    />
+                                  </div>
+                                  <div>
+                                    <Text className="text-[11px] text-slate-400 font-bold uppercase block mb-2">크기</Text>
+                                    <div className="flex items-center gap-3">
+                                      <Slider
+                                        min={10}
+                                        max={200}
+                                        value={(obj as Textbox).fontSize}
+                                        onChange={(val) => {
+                                          (obj as Textbox).set('fontSize', val);
+                                          updateProperty('fontSize', val);
+                                        }}
+                                        className="flex-1"
+                                      />
+                                      <InputNumber
+                                        min={10}
+                                        max={200}
+                                        value={(obj as Textbox).fontSize}
+                                        onChange={(val) => {
+                                          if (val) {
+                                            (obj as Textbox).set('fontSize', val);
+                                            updateProperty('fontSize', val);
+                                          }
+                                        }}
+                                        size="small"
+                                        className="w-14"
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+                              }
+                            >
+                              <Button 
+                                type="text"
+                                size="small"
+                                icon={<Icon path={mdiTune} size={0.6} />} 
+                                onClick={(e) => { e.stopPropagation(); selectLayer(obj); }}
+                                className={`w-7 h-7 flex items-center justify-center rounded-lg p-0 ${isSelected ? 'text-blue-600 bg-blue-50/50 hover:bg-blue-100' : 'text-slate-400 hover:text-blue-600 hover:bg-slate-100'}`}
+                              />
+                            </Popover>
+                          )}
                           <Button 
                             type="text"
                             size="small"
-                            icon={<Icon path={mdiDelete} size={0.4} />} 
+                            icon={<Icon path={mdiDelete} size={0.6} />} 
                             onClick={(e) => {
                                 e.stopPropagation();
                                 selectLayer(obj);
                                 deleteActiveObject();
                             }}
-                            className="w-5 h-5 flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-red-50 rounded p-0"
+                            className="w-7 h-7 flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg p-0"
                           />
                         </div>
                       </div>

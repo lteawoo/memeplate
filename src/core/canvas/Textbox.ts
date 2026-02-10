@@ -36,8 +36,8 @@ export class Textbox extends CanvasObject {
   draw(ctx: CanvasRenderingContext2D) {
     ctx.font = `${this.fontWeight} ${this.fontSize}px ${this.fontFamily}`;
     ctx.fillStyle = this.fill;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'top'; // Start drawing from top for multi-line
+    ctx.textAlign = this.textAlign;
+    ctx.textBaseline = 'top';
 
     const words = this.text.split(' ');
     const lines: string[] = [];
@@ -58,17 +58,21 @@ export class Textbox extends CanvasObject {
     }
     lines.push(currentLine.trim());
 
-    // Vertical Centering Calculation Removed - Top Align
+    // Calculate drawing X position based on alignment
+    let x = 0;
+    if (this.textAlign === 'left') x = -this.width / 2;
+    else if (this.textAlign === 'right') x = this.width / 2;
+
     const startY = -this.height / 2;
 
     lines.forEach((line, index) => {
       const y = startY + index * this.fontSize * this.lineHeight;
-      ctx.fillText(line, 0, y);
+      ctx.fillText(line, x, y);
       
       if (this.stroke && this.stroke !== 'transparent' && this.strokeWidth > 0) {
         ctx.strokeStyle = this.stroke;
         ctx.lineWidth = this.strokeWidth;
-        ctx.strokeText(line, 0, y);
+        ctx.strokeText(line, x, y);
       }
     });
   }
