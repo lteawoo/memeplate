@@ -27,12 +27,17 @@ import {
   mdiFormatAlignLeft,
   mdiFormatAlignCenter,
   mdiFormatAlignRight,
-  mdiFormatSize
+  mdiFormatBold,
+  mdiFormatItalic,
+  mdiFormatAlignTop,
+  mdiFormatVerticalAlignCenter,
+  mdiFormatAlignBottom,
+  mdiOpacity
 } from '@mdi/js';
 import type { ToolType } from './MemeToolbar';
 import { Rect, Circle, Textbox, type CanvasObject } from '../../core/canvas';
 import MemeColorPicker from './MemeColorPicker';
-import { Popover, Slider, InputNumber, Space } from 'antd';
+import { Popover, Slider, InputNumber } from 'antd';
 
 const { Text } = Typography;
 
@@ -107,8 +112,10 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
               <Upload.Dragger
                 accept="image/*"
                 showUploadList={false}
-                customRequest={({ onSuccess }) => onSuccess?.('ok')}
-                onChange={handleImageUpload}
+                beforeUpload={(file) => {
+                  handleImageUpload({ file: file as unknown as UploadFile, fileList: [] });
+                  return false; // Prevent default upload behavior
+                }}
                 className="bg-slate-50 hover:bg-slate-100 transition-colors border-slate-200"
                 style={{ padding: window.innerWidth < 768 ? '16px 0' : '24px 0', border: '2px dashed #e2e8f0' }}
               >
@@ -263,9 +270,37 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
                               title={<span className="text-xs font-bold">텍스트 상세 설정</span>}
                               trigger="click"
                               content={
-                                <div className="flex flex-col gap-4 w-60 p-1">
+                                <div className="flex flex-col gap-5 w-72 p-1">
+                                  {/* 1. Font Style & Weight */}
+                                  <div className="flex flex-col gap-2">
+                                    <Text className="text-[11px] text-slate-400 font-bold uppercase block">스타일</Text>
+                                    <div className="flex gap-2">
+                                      <Button 
+                                        type={(obj as Textbox).fontWeight === 'bold' ? 'primary' : 'default'}
+                                        icon={<Icon path={mdiFormatBold} size={0.6} />}
+                                        onClick={() => {
+                                          const next = (obj as Textbox).fontWeight === 'bold' ? 'normal' : 'bold';
+                                          (obj as Textbox).set('fontWeight', next);
+                                          updateProperty('fontWeight', next);
+                                        }}
+                                        className="flex-1 font-bold"
+                                      >Bold</Button>
+                                      <Button 
+                                        type={(obj as Textbox).fontStyle === 'italic' ? 'primary' : 'default'}
+                                        icon={<Icon path={mdiFormatItalic} size={0.6} />}
+                                        onClick={() => {
+                                          const next = (obj as Textbox).fontStyle === 'italic' ? 'normal' : 'italic';
+                                          (obj as Textbox).set('fontStyle', next);
+                                          updateProperty('fontStyle', next);
+                                        }}
+                                        className="flex-1 italic"
+                                      >Italic</Button>
+                                    </div>
+                                  </div>
+
+                                  {/* 2. Horizontal Align */}
                                   <div>
-                                    <Text className="text-[11px] text-slate-400 font-bold uppercase block mb-2">정렬</Text>
+                                    <Text className="text-[11px] text-slate-400 font-bold uppercase block mb-2">가로 정렬</Text>
                                     <Segmented
                                       block
                                       value={(obj as Textbox).textAlign}
@@ -274,39 +309,83 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
                                         updateProperty('textAlign', val as string);
                                       }}
                                       options={[
-                                        { value: 'left', icon: <Icon path={mdiFormatAlignLeft} size={0.6} /> },
-                                        { value: 'center', icon: <Icon path={mdiFormatAlignCenter} size={0.6} /> },
-                                        { value: 'right', icon: <Icon path={mdiFormatAlignRight} size={0.6} /> },
+                                        { value: 'left', label: <div className="flex items-center justify-center h-8 w-full"><Icon path={mdiFormatAlignLeft} size={0.6} /></div> },
+                                        { value: 'center', label: <div className="flex items-center justify-center h-8 w-full"><Icon path={mdiFormatAlignCenter} size={0.6} /></div> },
+                                        { value: 'right', label: <div className="flex items-center justify-center h-8 w-full"><Icon path={mdiFormatAlignRight} size={0.6} /></div> },
                                       ]}
                                     />
                                   </div>
+
+                                  {/* 3. Vertical Align */}
                                   <div>
-                                    <Text className="text-[11px] text-slate-400 font-bold uppercase block mb-2">크기</Text>
-                                    <div className="flex items-center gap-3">
-                                      <Slider
-                                        min={10}
-                                        max={200}
-                                        value={(obj as Textbox).fontSize}
-                                        onChange={(val) => {
-                                          (obj as Textbox).set('fontSize', val);
-                                          updateProperty('fontSize', val);
-                                        }}
-                                        className="flex-1"
-                                      />
+                                    <Text className="text-[11px] text-slate-400 font-bold uppercase block mb-2">세로 정렬</Text>
+                                    <Segmented
+                                      block
+                                      value={(obj as Textbox).verticalAlign}
+                                      onChange={(val) => {
+                                        (obj as Textbox).set('verticalAlign', val);
+                                        updateProperty('verticalAlign', val as string);
+                                      }}
+                                      options={[
+                                        { value: 'top', label: <div className="flex items-center justify-center h-8 w-full"><Icon path={mdiFormatAlignTop} size={0.6} /></div> },
+                                        { value: 'middle', label: <div className="flex items-center justify-center h-8 w-full"><Icon path={mdiFormatVerticalAlignCenter} size={0.6} /></div> },
+                                        { value: 'bottom', label: <div className="flex items-center justify-center h-8 w-full"><Icon path={mdiFormatAlignBottom} size={0.6} /></div> },
+                                      ]}
+                                    />
+                                  </div>
+
+                                  {/* 4. Max Font Size */}
+                                  <div>
+                                    <div className="flex justify-between items-center mb-1">
+                                      <Text className="text-[11px] text-slate-400 font-bold uppercase">최대 크기</Text>
                                       <InputNumber
-                                        min={10}
-                                        max={200}
+                                        min={8} max={300} size="small" variant="borderless"
                                         value={(obj as Textbox).fontSize}
-                                        onChange={(val) => {
-                                          if (val) {
-                                            (obj as Textbox).set('fontSize', val);
-                                            updateProperty('fontSize', val);
-                                          }
-                                        }}
-                                        size="small"
-                                        className="w-14"
+                                        onChange={(val) => val && updateProperty('fontSize', val)}
+                                        className="text-right font-bold w-16"
                                       />
                                     </div>
+                                    <Slider
+                                      min={8} max={300}
+                                      value={(obj as Textbox).fontSize}
+                                      onChange={(val) => updateProperty('fontSize', val)}
+                                      tooltip={{ open: false }}
+                                    />
+                                  </div>
+
+                                  {/* 5. Stroke Width */}
+                                  <div>
+                                    <div className="flex justify-between items-center mb-1">
+                                      <Text className="text-[11px] text-slate-400 font-bold uppercase">외곽선 두께 (px)</Text>
+                                      <InputNumber
+                                        min={0} max={20} size="small" variant="borderless"
+                                        value={(obj as Textbox).strokeWidth}
+                                        onChange={(val) => val !== null && updateProperty('strokeWidth', val)}
+                                        className="text-right font-bold w-16"
+                                      />
+                                    </div>
+                                    <Slider
+                                      min={0} max={20} step={0.5}
+                                      value={(obj as Textbox).strokeWidth}
+                                      onChange={(val) => updateProperty('strokeWidth', val)}
+                                      tooltip={{ open: false }}
+                                    />
+                                  </div>
+
+                                  {/* 6. Opacity */}
+                                  <div>
+                                    <div className="flex justify-between items-center mb-1">
+                                      <Text className="text-[11px] text-slate-400 font-bold uppercase px-0.5">
+                                        <Icon path={mdiOpacity} size={0.4} className="inline mr-1" /> 불투명도
+                                      </Text>
+                                      <Text className="text-[11px] font-bold text-blue-600">{Math.round((obj as Textbox).opacity * 100)}%</Text>
+                                    </div>
+                                    <Slider
+                                      min={0} max={1} step={0.01}
+                                      value={(obj as Textbox).opacity}
+                                      onChange={(val) => updateProperty('opacity', val)}
+                                      tooltip={{ open: false }}
+                                    />
                                   </div>
                                 </div>
                               }

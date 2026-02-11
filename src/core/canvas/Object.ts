@@ -15,11 +15,13 @@ export interface CanvasObjectOptions {
   visible?: boolean;
   name?: string;
   id?: string;
+  type?: string;
 }
 
 export abstract class CanvasObject {
   id: string;
   name: string;
+  type: string = 'object';
   left: number;
   top: number;
   width: number;
@@ -67,6 +69,7 @@ export abstract class CanvasObject {
   toObject(): CanvasObjectOptions {
     return {
       id: this.id,
+      type: this.type,
       name: this.name,
       left: this.left,
       top: this.top,

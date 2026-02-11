@@ -6,7 +6,7 @@ export interface ImageOptions extends CanvasObjectOptions {
 }
 
 export class CanvasImage extends CanvasObject {
-  private element: HTMLImageElement | null = null;
+  public element: HTMLImageElement | null = null;
   src: string = '';
   type = 'image';
 
@@ -24,7 +24,9 @@ export class CanvasImage extends CanvasObject {
 
   private loadElement() {
     const img = new Image();
-    img.crossOrigin = 'anonymous';
+    if (!this.src.startsWith('data:')) {
+      img.crossOrigin = 'anonymous';
+    }
     img.src = this.src;
     img.onload = () => {
       this.element = img;
@@ -38,10 +40,12 @@ export class CanvasImage extends CanvasObject {
   static fromURL(url: string, options: ImageOptions = {}): Promise<CanvasImage> {
     return new Promise((resolve, reject) => {
       const img = new Image();
-      img.crossOrigin = 'anonymous';
+      if (!url.startsWith('data:')) {
+        img.crossOrigin = 'anonymous';
+      }
       img.src = url;
       img.onload = () => {
-        const imageObj = new CanvasImage({ ...options, element: img });
+        const imageObj = new CanvasImage({ ...options, element: img, src: url });
         resolve(imageObj);
       };
       img.onerror = reject;
@@ -51,6 +55,7 @@ export class CanvasImage extends CanvasObject {
   draw(ctx: CanvasRenderingContext2D) {
     if (!this.element) return;
     
+    ctx.beginPath(); // Ensure clean path state
     const x = -this.width / 2;
     const y = -this.height / 2;
     
