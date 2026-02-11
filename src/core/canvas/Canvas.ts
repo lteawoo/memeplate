@@ -32,7 +32,7 @@ export class Canvas {
   private renderLoop() {
     // Check if any object is still loading (like images without an element yet)
     // This ensures that as soon as the image is loaded, it gets drawn.
-    const hasLoadingObjects = this.objects.some(obj => obj.type === 'image' && !(obj as any).element);
+    const hasLoadingObjects = this.objects.some(obj => obj instanceof CanvasImage && !obj.element);
     
     if (this.needsRedraw || hasLoadingObjects) {
       this.render();
@@ -65,9 +65,23 @@ export class Canvas {
     this.eventListeners[eventName].forEach(handler => handler(options));
   }
 
-  private initEvents() {
-    const handleDown = (e: MouseEvent | TouchEvent) => {
+    private initEvents() {
+      this.el.addEventListener('mousedown', this.handleDown);
+      this.el.addEventListener('touchstart', this.handleDown, { passive: false });
+      this.el.addEventListener('mousemove', this.handleMouseMove);
+    }
+  
+    private handleDown = (e: MouseEvent | TouchEvent) => {
+      // Prevent double firing on touch devices (touchstart followed by mousedown)
+      if (e.type === 'touchstart') {
+        e.preventDefault();
+      }
+  
       const { x, y } = this.getPointer(e);
+      
+      // Early exit if pointer coordinates are invalid
+      if (!isFinite(x) || !isFinite(y)) return;
+  
       const control = this.activeObject ? this.findControl(this.activeObject, x, y) : null;
       
       if (control) {
@@ -78,7 +92,7 @@ export class Canvas {
         }
         return;
       }
-
+  
       const target = this.findTarget(x, y);
       this.fire('mouse:down', { e, target, pointer: { x, y } });
       
@@ -94,16 +108,10 @@ export class Canvas {
         this.fire('selection:cleared', {});
       }
     };
-
-    const handleMouseMove = (e: MouseEvent) => {
+  
+    private handleMouseMove = (e: MouseEvent) => {
       this.updateCursor(e);
     };
-
-    this.el.addEventListener('mousedown', handleDown);
-    this.el.addEventListener('touchstart', handleDown, { passive: false });
-    this.el.addEventListener('mousemove', handleMouseMove);
-  }
-
   private updateCursor(e: MouseEvent) {
     const { x, y } = this.getPointer(e);
     const control = this.activeObject ? this.findControl(this.activeObject, x, y) : null;
@@ -221,18 +229,24 @@ export class Canvas {
     const origWidth = target.width * origScaleX;
     const origHeight = target.height * origScaleY;
 
-    // For text, we want to work with width/height directly. 
+    // For text, we want to work with width/height directly.
     // If it has scale, commit it to width/height first.
     if (isText && (origScaleX !== 1 || origScaleY !== 1)) {
-      target.width = origWidth;
-      target.height = origHeight;
-      target.scaleX = 1;
-      target.scaleY = 1;
+      if (isFinite(origWidth) && isFinite(origHeight) && origWidth > 0 && origHeight > 0) {
+        target.width = origWidth;
+        target.height = origHeight;
+        target.scaleX = 1;
+        target.scaleY = 1;
+        this.requestRender();
+      }
     }
 
     const handleMove = (em: MouseEvent | TouchEvent) => {
       em.preventDefault();
       const p = this.getPointer(em);
+      
+      if (!isFinite(p.x) || !isFinite(p.y)) return;
+      
       const dx = p.x - startX;
       const dy = p.y - startY;
 
@@ -240,32 +254,53 @@ export class Canvas {
         if (control === 'br' || control === 'tr' || control === 'tl' || control === 'bl') {
           const dw = (control === 'br' || control === 'tr') ? dx * 2 : -dx * 2;
           const dh = (control === 'br' || control === 'bl') ? dy * 2 : -dy * 2;
-          target.width = Math.max(50, origWidth + dw);
-          target.height = Math.max(20, origHeight + dh);
+          
+          const newWidth = origWidth + dw;
+          const newHeight = origHeight + dh;
+          
+          if (isFinite(newWidth) && isFinite(newHeight)) {
+            target.width = Math.max(50, newWidth);
+            target.height = Math.max(20, newHeight);
+          }
         } else if (control === 'mr') {
-          target.width = Math.max(50, origWidth + dx * 2);
+          const newWidth = origWidth + dx * 2;
+          if (isFinite(newWidth)) target.width = Math.max(50, newWidth);
         } else if (control === 'ml') {
-          target.width = Math.max(50, origWidth - dx * 2);
+          const newWidth = origWidth - dx * 2;
+          if (isFinite(newWidth)) target.width = Math.max(50, newWidth);
         } else if (control === 'mb') {
-          target.height = Math.max(20, origHeight + dy * 2);
+          const newHeight = origHeight + dy * 2;
+          if (isFinite(newHeight)) target.height = Math.max(20, newHeight);
         } else if (control === 'mt') {
-          target.height = Math.max(20, origHeight - dy * 2);
+          const newHeight = origHeight - dy * 2;
+          if (isFinite(newHeight)) target.height = Math.max(20, newHeight);
         }
       } else {
         // Scaling logic for other objects
         if (control === 'br' || control === 'tr' || control === 'tl' || control === 'bl') {
+          if (origWidth === 0) return;
           const scale = (control === 'br' || control === 'tr') ? (origWidth + dx * 2) / origWidth : (origWidth - dx * 2) / origWidth;
           const uniformScale = Math.max(0.1, scale);
-          target.scaleX = origScaleX * uniformScale;
-          target.scaleY = origScaleY * uniformScale;
+          if (isFinite(uniformScale)) {
+            target.scaleX = origScaleX * uniformScale;
+            target.scaleY = origScaleY * uniformScale;
+          }
         } else if (control === 'mr') {
-          target.scaleX = Math.max(0.1, (origWidth + dx * 2) / target.width);
+          if (target.width === 0) return;
+          const scale = (origWidth + dx * 2) / target.width;
+          if (isFinite(scale)) target.scaleX = Math.max(0.1, scale);
         } else if (control === 'ml') {
-          target.scaleX = Math.max(0.1, (origWidth - dx * 2) / target.width);
+          if (target.width === 0) return;
+          const scale = (origWidth - dx * 2) / target.width;
+          if (isFinite(scale)) target.scaleX = Math.max(0.1, scale);
         } else if (control === 'mb') {
-          target.scaleY = Math.max(0.1, (origHeight + dy * 2) / target.height);
+          if (target.height === 0) return;
+          const scale = (origHeight + dy * 2) / target.height;
+          if (isFinite(scale)) target.scaleY = Math.max(0.1, scale);
         } else if (control === 'mt') {
-          target.scaleY = Math.max(0.1, (origHeight - dy * 2) / target.height);
+          if (target.height === 0) return;
+          const scale = (origHeight - dy * 2) / target.height;
+          if (isFinite(scale)) target.scaleY = Math.max(0.1, scale);
         }
       }
 
@@ -296,13 +331,30 @@ export class Canvas {
       clientX = e.clientX;
       clientY = e.clientY;
     } else {
-      clientX = e.touches[0].clientX;
-      clientY = e.touches[0].clientY;
+      const touch = (e.touches && e.touches.length > 0) ? e.touches[0] : (e.changedTouches && e.changedTouches.length > 0 ? e.changedTouches[0] : null);
+      if (touch) {
+        clientX = touch.clientX;
+        clientY = touch.clientY;
+      } else {
+        clientX = rect.left;
+        clientY = rect.top;
+      }
     }
     
+    const cssWidth = rect.width;
+    const cssHeight = rect.height;
+    
+    // Protect against division by zero if element is hidden or collapsed
+    if (cssWidth === 0 || cssHeight === 0) {
+        return { x: 0, y: 0 };
+    }
+
+    const scaleX = this.width / cssWidth;
+    const scaleY = this.height / cssHeight;
+    
     return {
-      x: clientX - rect.left,
-      y: clientY - rect.top
+      x: (clientX - rect.left) * scaleX,
+      y: (clientY - rect.top) * scaleY
     };
   }
 
@@ -364,20 +416,24 @@ export class Canvas {
   }
 
   setWidth(width: number) {
+    if (!isFinite(width) || width <= 0) return;
     this.width = width;
     this.el.width = width;
     this.requestRender();
   }
 
   setHeight(height: number) {
+    if (!isFinite(height) || height <= 0) return;
     this.height = height;
     this.el.height = height;
     this.requestRender();
   }
 
   setDimensions(dims: { width: number; height: number }) {
-    this.setWidth(dims.width);
-    this.setHeight(dims.height);
+    if (isFinite(dims.width) && isFinite(dims.height) && dims.width > 0 && dims.height > 0) {
+        this.setWidth(dims.width);
+        this.setHeight(dims.height);
+    }
   }
 
   renderAll() {
@@ -385,88 +441,137 @@ export class Canvas {
   }
 
   render() {
-    // Clear the entire canvas
-    this.ctx.clearRect(0, 0, this.width, this.height);
-    
-    // Fill background with a light gray to indicate the canvas area (optional)
-    // this.ctx.fillStyle = '#f8fafc';
-    // this.ctx.fillRect(0, 0, this.width, this.height);
-
-    this.ctx.save();
-    
-    // Draw all objects
-    this.objects.forEach(obj => {
-      if (obj.visible) {
-        this.ctx.save();
-        // Basic transform
-        this.ctx.translate(obj.left, obj.top);
-        this.ctx.rotate((obj.angle * Math.PI) / 180);
-        this.ctx.scale(obj.scaleX, obj.scaleY);
-        this.ctx.globalAlpha = obj.opacity;
-        
-        obj.draw(this.ctx);
-        
-        this.ctx.restore();
-      }
-    });
-
-    // Draw selection controls if exists
-    if (this.activeObject) {
-      this.drawControls(this.activeObject);
+    if (!this.ctx || !isFinite(this.width) || !isFinite(this.height) || this.width <= 0 || this.height <= 0) {
+      return;
     }
 
-    this.ctx.restore();
+    try {
+      this.ctx.save();
+      
+      // Reset any global state that might have been left over
+      this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+      this.ctx.globalAlpha = 1;
+      this.ctx.shadowColor = 'transparent';
+      this.ctx.shadowBlur = 0;
+      this.ctx.shadowOffsetX = 0;
+      this.ctx.shadowOffsetY = 0;
+      
+      // Clear the canvas - use actual canvas element dimensions
+      this.ctx.clearRect(0, 0, this.el.width, this.el.height);
+      
+      // Draw all objects
+      for (const obj of this.objects) {
+        if (!obj || !obj.visible) continue;
+
+        const left = obj.left ?? 0;
+        const top = obj.top ?? 0;
+        const angle = obj.angle ?? 0;
+        const scaleX = obj.scaleX ?? 1;
+        const scaleY = obj.scaleY ?? 1;
+
+        // Skip objects with invalid transformation properties
+        if (!isFinite(left) || !isFinite(top) || !isFinite(scaleX) || !isFinite(scaleY) || !isFinite(angle)) {
+          continue;
+        }
+
+        this.ctx.save();
+        try {
+          this.ctx.translate(left, top);
+          this.ctx.rotate((angle * Math.PI) / 180);
+          this.ctx.scale(scaleX, scaleY);
+          this.ctx.globalAlpha = isFinite(obj.opacity) ? Math.max(0, Math.min(1, obj.opacity)) : 1;
+          
+          obj.draw(this.ctx);
+        } catch (err) {
+          console.error('Error drawing object:', err, obj);
+        } finally {
+          this.ctx.restore();
+        }
+      }
+
+      // Draw controls for the active object
+      if (this.activeObject && this.activeObject.visible) {
+        try {
+          this.drawControls(this.activeObject);
+        } catch (err) {
+          console.error('Error drawing controls:', err);
+        }
+      }
+
+    } catch (err) {
+      console.error('Canvas render error:', err);
+    } finally {
+      this.ctx.restore();
+    }
   }
 
   private drawControls(obj: CanvasObject) {
-    this.ctx.save();
-    this.ctx.strokeStyle = '#2563eb';
-    this.ctx.lineWidth = 1;
-    
-    const viewWidth = obj.width * obj.scaleX;
-    const viewHeight = obj.height * obj.scaleY;
+    if (!obj || !isFinite(obj.left) || !isFinite(obj.top)) return;
 
-    this.ctx.translate(obj.left, obj.top);
-    this.ctx.rotate((obj.angle * Math.PI) / 180);
-    
-    // Bounding box
-    this.ctx.strokeRect(-viewWidth / 2 - 4, -viewHeight / 2 - 4, viewWidth + 8, viewHeight + 8);
-    
-    // Controls style
-    this.ctx.fillStyle = '#ffffff';
-    this.ctx.strokeStyle = '#2563eb';
-    const halfW = viewWidth / 2 + 4;
-    const halfH = viewHeight / 2 + 4;
-    
-    const handles = [
-      { id: 'tl', x: -halfW, y: -halfH },
-      { id: 'tr', x: halfW, y: -halfH },
-      { id: 'bl', x: -halfW, y: halfH },
-      { id: 'br', x: halfW, y: halfH },
-      { id: 'mt', x: 0, y: -halfH },
-      { id: 'mb', x: 0, y: halfH },
-      { id: 'ml', x: -halfW, y: 0 },
-      { id: 'mr', x: halfW, y: 0 },
-      { id: 'mtr', x: 0, y: -halfH - 30 } // Rotation handle
-    ];
-    
-    handles.forEach(h => {
+    const scaleX = obj.scaleX ?? 1;
+    const scaleY = obj.scaleY ?? 1;
+    const width = obj.width || 0;
+    const height = obj.height || 0;
+
+    if (!isFinite(scaleX) || !isFinite(scaleY) || !isFinite(width) || !isFinite(height)) return;
+
+    this.ctx.save();
+    try {
+      this.ctx.strokeStyle = '#2563eb';
+      this.ctx.lineWidth = 1;
+      
+      const viewWidth = width * scaleX;
+      const viewHeight = height * scaleY;
+
+      this.ctx.translate(obj.left, obj.top);
+      this.ctx.rotate(((obj.angle || 0) * Math.PI) / 180);
+      
+      // 1. Draw bounding box (Stroke only)
       this.ctx.beginPath();
-      if (h.id === 'mtr') {
-        // Draw a line to rotation handle
-        this.ctx.moveTo(0, -halfH - 4);
-        this.ctx.lineTo(0, -halfH - 30);
-        this.ctx.stroke();
-        this.ctx.beginPath();
-        this.ctx.arc(h.x, h.y, 6, 0, Math.PI * 2);
-      } else {
-        this.ctx.rect(h.x - 5, h.y - 5, 10, 10);
-      }
-      this.ctx.fill();
+      this.ctx.rect(-viewWidth / 2 - 4, -viewHeight / 2 - 4, viewWidth + 8, viewHeight + 8);
       this.ctx.stroke();
-    });
-    
-    this.ctx.restore();
+      
+      // 2. Draw handles
+      this.ctx.fillStyle = '#ffffff';
+      this.ctx.strokeStyle = '#2563eb';
+      const halfW = viewWidth / 2 + 4;
+      const halfH = viewHeight / 2 + 4;
+      
+      const handles = [
+        { id: 'tl', x: -halfW, y: -halfH },
+        { id: 'tr', x: halfW, y: -halfH },
+        { id: 'bl', x: -halfW, y: halfH },
+        { id: 'br', x: halfW, y: halfH },
+        { id: 'mt', x: 0, y: -halfH },
+        { id: 'mb', x: 0, y: halfH },
+        { id: 'ml', x: -halfW, y: 0 },
+        { id: 'mr', x: halfW, y: 0 },
+        { id: 'mtr', x: 0, y: -halfH - 30 }
+      ];
+      
+      handles.forEach(h => {
+        if (h.id === 'mtr') {
+          // Line to rotation handle
+          this.ctx.beginPath();
+          this.ctx.moveTo(0, -halfH - 4);
+          this.ctx.lineTo(0, -halfH - 30);
+          this.ctx.stroke();
+          
+          // Rotation handle circle
+          this.ctx.beginPath();
+          this.ctx.arc(h.x, h.y, 6, 0, Math.PI * 2);
+          this.ctx.fill();
+          this.ctx.stroke();
+        } else {
+          this.ctx.beginPath();
+          this.ctx.rect(h.x - 5, h.y - 5, 10, 10);
+          this.ctx.fill();
+          this.ctx.stroke();
+        }
+      });
+    } finally {
+      this.ctx.restore();
+    }
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -557,7 +662,9 @@ export class Canvas {
     const idx = this.objects.indexOf(obj);
     if (idx !== -1) {
       this.objects.splice(idx, 1);
-      this.objects.unshift(obj);
+      // Ensure background stays at the very bottom
+      const targetIdx = (this.objects.length > 0 && this.objects[0].name === 'background') ? 1 : 0;
+      this.objects.splice(targetIdx, 0, obj);
       this.requestRender();
     }
   }
@@ -582,7 +689,10 @@ export class Canvas {
 
   sendObjectBackwards(obj: CanvasObject) {
     const idx = this.objects.indexOf(obj);
-    if (idx !== -1 && idx > 0) {
+    // Cannot move backwards if it's already at the bottom (or just above background)
+    const minIdx = (this.objects.length > 0 && this.objects[0].name === 'background') ? 1 : 0;
+    
+    if (idx !== -1 && idx > minIdx) {
       this.objects[idx] = this.objects[idx - 1];
       this.objects[idx - 1] = obj;
       this.requestRender();
@@ -591,7 +701,9 @@ export class Canvas {
 
   dispose() {
     // Cleanup listeners
-    // TODO: remove event listeners
+    this.el.removeEventListener('mousedown', this.handleDown);
+    this.el.removeEventListener('touchstart', this.handleDown);
+    this.el.removeEventListener('mousemove', this.handleMouseMove);
     this.objects = [];
   }
 }
