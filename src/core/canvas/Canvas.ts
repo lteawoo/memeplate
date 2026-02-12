@@ -405,6 +405,10 @@ export class Canvas {
     return this.activeObject ? [this.activeObject] : [];
   }
 
+  getObjectById(id: string): CanvasObject | undefined {
+    return this.objects.find(obj => obj.id === id);
+  }
+
   getObjects() {
     return [...this.objects];
   }
@@ -616,20 +620,21 @@ export class Canvas {
     return this.el.toDataURL(`image/${options.format === 'jpg' ? 'jpeg' : (options.format || 'png')}`);
   }
 
-  toJSON() {
+  toJSON(includeBackground: boolean = true) {
+    const objects = includeBackground 
+      ? this.objects 
+      : this.objects.filter(obj => obj.name !== 'background');
+      
     return {
-      objects: this.objects.map(obj => obj.toJSON()),
+      objects: objects.map(obj => obj.toJSON()),
       width: this.width,
       height: this.height
     };
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  loadFromJSON(json: any): Promise<void> {
+  loadFromJSON(json: any, preserveBackground: boolean = false): Promise<void> {
     return new Promise((resolve) => {
-      this.clear();
-      if (json.width) this.setWidth(json.width);
-      if (json.height) this.setHeight(json.height);
       
       if (json.objects) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -644,9 +649,23 @@ export class Canvas {
            return obj ? Promise.resolve(obj) : Promise.resolve(null);
         });
         
-        Promise.all(promises).then((objects) => {
-            objects.forEach(obj => {
-                if (obj) this.objects.push(obj);
+        Promise.allSettled(promises).then((results) => {
+            if (preserveBackground) {
+                // Keep only background objects
+                this.objects = this.objects.filter(o => o.name === 'background');
+                this.discardActiveObject();
+            } else {
+                this.clear();
+                if (json.width) this.setWidth(json.width);
+                if (json.height) this.setHeight(json.height);
+            }
+
+            results.forEach(result => {
+                if (result.status === 'fulfilled' && result.value) {
+                    this.objects.push(result.value);
+                } else if (result.status === 'rejected') {
+                    console.error('Failed to load object:', result.reason);
+                }
             });
             this.requestRender();
             resolve();

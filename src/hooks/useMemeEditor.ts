@@ -7,6 +7,11 @@ type MessageInstance = ReturnType<typeof message.useMessage>[0];
 
 const CANVAS_MARGIN = 0;
 
+interface HistoryItem {
+  json: string;
+  selectedId: string | null;
+}
+
 export const useMemeEditor = (messageApi: MessageInstance) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const canvasInstanceRef = useRef<Canvas | null>(null);
@@ -27,26 +32,29 @@ export const useMemeEditor = (messageApi: MessageInstance) => {
   const workspaceSizeRef = useRef({ width: 0, height: 0 });
 
   // History State
-  const [history, setHistory] = useState<string[]>([]);
+  const [history, setHistory] = useState<HistoryItem[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
   const isHistoryLocked = useRef(false);
-  const historyRef = useRef<string[]>([]);
+  const historyRef = useRef<HistoryItem[]>([]);
   const indexRef = useRef(-1);
-
-  // Sync refs for event listeners
-  useEffect(() => { historyRef.current = history; }, [history]);
-  useEffect(() => { indexRef.current = historyIndex; }, [historyIndex]);
 
   const saveHistory = () => {
     if (isHistoryLocked.current || !canvasInstanceRef.current) return;
-    const json = JSON.stringify(canvasInstanceRef.current.toJSON());
+    
+    const canvas = canvasInstanceRef.current;
+    const json = JSON.stringify(canvas.toJSON(false)); // Exclude background
+    const activeObj = canvas.getActiveObject();
+    const selectedId = activeObj ? activeObj.id : null;
     
     if (historyRef.current.length > 0 && indexRef.current > -1) {
-        if (historyRef.current[indexRef.current] === json) return;
+        // Compare only JSON content to avoid duplicate saves on selection change only
+        if (historyRef.current[indexRef.current].json === json) return;
     }
 
+    const newItem: HistoryItem = { json, selectedId };
     const newHistory = historyRef.current.slice(0, indexRef.current + 1);
-    newHistory.push(json);
+    newHistory.push(newItem);
+    
     if (newHistory.length > 50) newHistory.shift();
     
     // Update refs immediately to prevent race conditions in rapid updates
@@ -57,36 +65,51 @@ export const useMemeEditor = (messageApi: MessageInstance) => {
     setHistoryIndex(newHistory.length - 1);
   };
 
-  const undo = () => {
-    if (indexRef.current <= 0 || !canvasInstanceRef.current) return;
+  const loadHistoryItem = (item: HistoryItem, newIndex: number) => {
+    if (!canvasInstanceRef.current) return;
+    
     isHistoryLocked.current = true;
-    const newIndex = indexRef.current - 1;
-    const prevState = historyRef.current[newIndex];
-    canvasInstanceRef.current.loadFromJSON(JSON.parse(prevState)).then(() => {
-        isHistoryLocked.current = false;
+    canvasInstanceRef.current.loadFromJSON(JSON.parse(item.json), true).then(() => { // Preserve background
+        if (!canvasInstanceRef.current) return;
         
+        // Restore selection
+        if (item.selectedId) {
+            const obj = canvasInstanceRef.current.getObjectById(item.selectedId);
+            if (obj) {
+                canvasInstanceRef.current.setActiveObject(obj);
+            }
+        } else {
+            canvasInstanceRef.current.discardActiveObject();
+        }
+
         // Update refs immediately
         indexRef.current = newIndex;
         setHistoryIndex(newIndex);
+        setLayers([...canvasInstanceRef.current.getObjects()]);
         
-        if (canvasInstanceRef.current) setLayers([...canvasInstanceRef.current.getObjects()]);
+        isHistoryLocked.current = false;
+    }).catch((err) => {
+        console.error('Failed to load history item:', err);
+        isHistoryLocked.current = false;
     });
   };
 
+  const undo = () => {
+    if (isHistoryLocked.current) return;
+    if (indexRef.current <= 0 || !canvasInstanceRef.current) return;
+    
+    const newIndex = indexRef.current - 1;
+    const prevState = historyRef.current[newIndex];
+    loadHistoryItem(prevState, newIndex);
+  };
+
   const redo = () => {
+    if (isHistoryLocked.current) return;
     if (indexRef.current >= historyRef.current.length - 1 || !canvasInstanceRef.current) return;
-    isHistoryLocked.current = true;
+    
     const newIndex = indexRef.current + 1;
     const nextState = historyRef.current[newIndex];
-    canvasInstanceRef.current.loadFromJSON(JSON.parse(nextState)).then(() => {
-        isHistoryLocked.current = false;
-        
-        // Update refs immediately
-        indexRef.current = newIndex;
-        setHistoryIndex(newIndex);
-        
-        if (canvasInstanceRef.current) setLayers([...canvasInstanceRef.current.getObjects()]);
-    });
+    loadHistoryItem(nextState, newIndex);
   };
 
   useEffect(() => {
@@ -113,12 +136,14 @@ export const useMemeEditor = (messageApi: MessageInstance) => {
     
     canvasInstanceRef.current = canvas;
 
-    const initialJson = JSON.stringify(canvas.toJSON());
-    setHistory([initialJson]);
+    const initialJson = JSON.stringify(canvas.toJSON(false)); // Exclude background
+    const initialItem: HistoryItem = { json: initialJson, selectedId: null };
+    
+    setHistory([initialItem]);
     setHistoryIndex(0);
     
     // Initialize refs
-    historyRef.current = [initialJson];
+    historyRef.current = [initialItem];
     indexRef.current = 0;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -252,9 +277,8 @@ export const useMemeEditor = (messageApi: MessageInstance) => {
       canvas.sendObjectToBack(img);
       canvas.renderAll();
       
-      // Unlock history and save manually once at the end
+      // Unlock history
       isHistoryLocked.current = false;
-      saveHistory();
 
       setTimeout(() => {
         if (canvasInstanceRef.current) {
@@ -330,6 +354,7 @@ export const useMemeEditor = (messageApi: MessageInstance) => {
         canvasInstanceRef.current.renderAll();
         if (key === 'fill') setColor(value as string);
         setLayers([...canvasInstanceRef.current.getObjects()]);
+        saveHistory();
     }
   };
 

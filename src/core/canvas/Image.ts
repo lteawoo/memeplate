@@ -39,16 +39,28 @@ export class CanvasImage extends CanvasObject {
 
   static fromURL(url: string, options: ImageOptions = {}): Promise<CanvasImage> {
     return new Promise((resolve, reject) => {
-      const img = new Image();
-      if (!url.startsWith('data:')) {
-        img.crossOrigin = 'anonymous';
-      }
-      img.src = url;
-      img.onload = () => {
-        const imageObj = new CanvasImage({ ...options, element: img, src: url });
-        resolve(imageObj);
+      const load = (withCORS: boolean) => {
+        const img = new Image();
+        if (withCORS && !url.startsWith('data:')) {
+          img.crossOrigin = 'anonymous';
+        }
+        img.src = url;
+        img.onload = () => {
+          const imageObj = new CanvasImage({ ...options, element: img, src: url });
+          resolve(imageObj);
+        };
+        img.onerror = (e) => {
+          if (withCORS && !url.startsWith('data:')) {
+            console.warn('Failed to load image with CORS, retrying without CORS:', url);
+            load(false);
+          } else {
+            console.error('CanvasImage loading failed for:', url, e);
+            reject(e);
+          }
+        };
       };
-      img.onerror = reject;
+      
+      load(true);
     });
   }
 
