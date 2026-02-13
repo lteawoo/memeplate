@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Canvas, CanvasObject, Rect, Circle, Textbox, CanvasImage } from '../core/canvas';
+import type { CanvasObjectOptions } from '../core/canvas';
 import type { ToolType } from '../components/editor/MemeToolbar';
 import { message } from 'antd';
 
@@ -11,6 +12,16 @@ interface HistoryItem {
   json: string;
   selectedId: string | null;
 }
+
+interface CanvasDoubleClickEvent {
+  target?: CanvasObject;
+}
+
+type UploadInput = File | Blob | {
+  file?: File | Blob | {
+    originFileObj?: File | Blob;
+  };
+};
 
 export const useMemeEditor = (messageApi: MessageInstance) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -94,23 +105,23 @@ export const useMemeEditor = (messageApi: MessageInstance) => {
     });
   };
 
-  const undo = () => {
+  const undo = useCallback(() => {
     if (isHistoryLocked.current) return;
     if (indexRef.current <= 0 || !canvasInstanceRef.current) return;
     
     const newIndex = indexRef.current - 1;
     const prevState = historyRef.current[newIndex];
     loadHistoryItem(prevState, newIndex);
-  };
+  }, []);
 
-  const redo = () => {
+  const redo = useCallback(() => {
     if (isHistoryLocked.current) return;
     if (indexRef.current >= historyRef.current.length - 1 || !canvasInstanceRef.current) return;
     
     const newIndex = indexRef.current + 1;
     const nextState = historyRef.current[newIndex];
     loadHistoryItem(nextState, newIndex);
-  };
+  }, []);
 
   useEffect(() => {
       const handleKeyDown = (e: KeyboardEvent) => {
@@ -126,7 +137,7 @@ export const useMemeEditor = (messageApi: MessageInstance) => {
       };
       window.addEventListener('keydown', handleKeyDown);
       return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [redo, undo]);
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -210,7 +221,7 @@ export const useMemeEditor = (messageApi: MessageInstance) => {
         }
     };
 
-    canvas.on('mouse:dblclick', (opt: any) => {
+    canvas.on('mouse:dblclick', (opt: CanvasDoubleClickEvent) => {
         if (opt.target instanceof Textbox) {
             setEditingTextId(opt.target.id);
             opt.target.set('visible', false);
@@ -283,8 +294,14 @@ export const useMemeEditor = (messageApi: MessageInstance) => {
     canvasInstanceRef.current.setActiveObject(obj);
   };
 
-  const handleImageUpload = (info: any) => {
-    const file = info.file?.originFileObj || info.file || info;
+  const handleImageUpload = (info: UploadInput) => {
+    const maybeFile = info.file ?? info;
+    const file = (
+      typeof maybeFile === 'object' &&
+      maybeFile !== null &&
+      'originFileObj' in maybeFile
+    ) ? maybeFile.originFileObj : maybeFile;
+
     if (file instanceof File || file instanceof Blob) {
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -312,11 +329,11 @@ export const useMemeEditor = (messageApi: MessageInstance) => {
     canvasInstanceRef.current.setActiveObject(text); 
   };
 
-  const updateProperty = (key: string, value: string | number) => {
+  const updateProperty = (key: keyof CanvasObjectOptions, value: string | number | boolean) => {
     if (!canvasInstanceRef.current) return;
     const active = canvasInstanceRef.current.getActiveObject();
     if (active) {
-        active.set(key as any, value);
+        active.set(key, value);
         canvasInstanceRef.current.renderAll();
         if (key === 'fill') setColor(value as string);
         setLayers([...canvasInstanceRef.current.getObjects()]);
@@ -350,8 +367,9 @@ export const useMemeEditor = (messageApi: MessageInstance) => {
   const downloadImage = async (format: 'png' | 'jpg' | 'webp' | 'pdf') => {
     if (!canvasInstanceRef.current) return;
     const canvas = canvasInstanceRef.current;
+    const exportFormat = format === 'jpg' ? 'jpeg' : format;
     const dataURL = canvas.toDataURL({ 
-      format: (format === 'jpg' ? 'jpeg' : format) as any, 
+      format: exportFormat, 
       multiplier: 2,
       width: workspaceSize.width,
       height: workspaceSize.height
@@ -369,7 +387,9 @@ export const useMemeEditor = (messageApi: MessageInstance) => {
         pdf.addImage(dataURL, 'PNG', 0, 0, workspaceSize.width, workspaceSize.height);
         pdf.save(`meme-${Date.now()}.pdf`);
         messageApi.success('PDF 다운로드 완료');
-      } catch (error) { messageApi.error('PDF 생성에 실패했습니다'); }
+      } catch {
+        messageApi.error('PDF 생성에 실패했습니다');
+      }
     } else {
       const link = document.createElement('a'); 
       link.download = `meme-${Date.now()}.${format}`;
@@ -388,7 +408,9 @@ export const useMemeEditor = (messageApi: MessageInstance) => {
       const blob = await (await fetch(dataURL)).blob();
       await navigator.clipboard.write([ new ClipboardItem({ [blob.type]: blob }) ]);
       messageApi.success('클립보드에 복사되었습니다');
-    } catch (err) { messageApi.error('복사에 실패했습니다'); }
+    } catch {
+      messageApi.error('복사에 실패했습니다');
+    }
   };
 
   const changeZIndex = (direction: 'forward' | 'backward' | 'front' | 'back') => {

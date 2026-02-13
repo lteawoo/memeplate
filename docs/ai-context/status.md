@@ -21,6 +21,10 @@
   - [x] 업로드 이미지의 논리 캔버스 크기를 원본 해상도 기준으로 반영
   - [x] 상단 컨트롤에 `Fit`/`100%` 토글 및 퍼센트 표시 추가
   - [x] `Ctrl/Cmd + 0` 단축키로 Fit 복귀 지원
+- [x] **린트 경고 제거 및 lint 통과 복구 (완료 - 이슈 #33)**
+  - [x] `useMemeEditor.ts`의 `react-hooks/exhaustive-deps` 경고 제거
+  - [x] `useMemeEditor.ts`의 `no-explicit-any` 경고 제거
+  - [x] `useMemeEditor.ts`의 `no-unused-vars` 경고 제거
 
 ## 다음 작업
 - [ ] 텍스트 레이어 영역 클리핑(Clipping) 처리
