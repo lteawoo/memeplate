@@ -15,10 +15,6 @@ interface MemeCanvasProps {
   completeTextEdit?: (id: string, newText: string) => void;
   canvasInstance?: Canvas | null;
   workspaceSize?: { width: number; height: number };
-  zoomMode?: 'fit' | 'manual';
-  zoomPercent?: number;
-  onZoomPercentChange?: (percent: number) => void;
-  onWheelZoom?: (deltaY: number) => void;
 }
 
 const MemeCanvas: React.FC<MemeCanvasProps> = ({ 
@@ -28,11 +24,7 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
   editingTextId,
   completeTextEdit,
   canvasInstance,
-  workspaceSize,
-  zoomMode = 'fit',
-  zoomPercent = 100,
-  onZoomPercentChange,
-  onWheelZoom
+  workspaceSize
 }) => {
   const AUTO_FIT_MAX_SCALE_NEAR = 1.1;
   const AUTO_FIT_MAX_SCALE_MID = 1.25;
@@ -72,8 +64,7 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
     return Math.min(rawFitScale, autoMaxScale);
   }, [intrinsicWidth, intrinsicHeight, viewportSize.width, viewportSize.height]);
 
-  const manualScale = Math.max(0.2, Math.min(4, zoomPercent / 100));
-  const displayScale = zoomMode === 'fit' ? fitScale : manualScale;
+  const displayScale = fitScale;
   const displayWidth = intrinsicWidth ? Math.max(1, Math.round(intrinsicWidth * displayScale)) : 0;
   const displayHeight = intrinsicHeight ? Math.max(1, Math.round(intrinsicHeight * displayScale)) : 0;
 
@@ -120,15 +111,7 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
     observer.observe(canvas);
 
     return () => observer.disconnect();
-  }, [canvasRef, displayWidth, displayHeight, hasBackground, zoomMode]);
-
-  React.useEffect(() => {
-    if (!hasBackground) {
-      onZoomPercentChange?.(100);
-      return;
-    }
-    onZoomPercentChange?.(Math.max(1, Math.round(displayScale * 100)));
-  }, [hasBackground, displayScale, onZoomPercentChange]);
+  }, [canvasRef, displayWidth, displayHeight, hasBackground]);
 
   React.useEffect(() => {
     if (editingObject) {
@@ -192,11 +175,6 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
         className={`relative transition-all duration-300 flex items-center justify-center overflow-hidden ${hasBackground ? 'opacity-100 scale-100 w-full h-full' : 'opacity-0 scale-95 pointer-events-none absolute w-0 h-0'}`}
         style={{ fontSize: 0 }}
         onClick={(e) => e.stopPropagation()}
-        onWheel={(e) => {
-          if (!(e.ctrlKey || e.metaKey)) return;
-          e.preventDefault();
-          onWheelZoom?.(e.deltaY);
-        }}
       >
          <canvas 
             ref={canvasRef} 
