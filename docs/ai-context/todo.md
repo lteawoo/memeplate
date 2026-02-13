@@ -39,6 +39,7 @@
   - [x] `MemeEditor.tsx`: `fit/manual` 줌 상태 및 `- / + / 퍼센트 입력` 컨트롤 추가
   - [x] `MemeCanvas.tsx`: 수동 줌 퍼센트 기반 표시 스케일 계산 추가
   - [x] `MemeCanvas.tsx`: `Ctrl/Cmd + Wheel` 연속 줌 이벤트 연결
+  - [x] `MemeCanvas.tsx`: Auto Fit 스케일 상한(100%) 적용으로 과확대 방지
 - [x] **고정 크기 조절점 (#27)**
   - [x] `Canvas.ts`: 화면 배율 역보정 로직 (`getSceneScale`) 도입
   - [x] `Canvas.ts`: `drawControls` 핸들 크기 및 선 두께 보정

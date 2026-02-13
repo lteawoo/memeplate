@@ -34,6 +34,7 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
   onZoomPercentChange,
   onWheelZoom
 }) => {
+  const AUTO_FIT_MAX_SCALE = 1;
   const { token } = theme.useToken();
   const [editingText, setEditingText] = React.useState('');
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
@@ -53,7 +54,11 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
     if (!intrinsicWidth || !intrinsicHeight || !viewportSize.width || !viewportSize.height) {
       return 1;
     }
-    return Math.min(viewportSize.width / intrinsicWidth, viewportSize.height / intrinsicHeight);
+    return Math.min(
+      viewportSize.width / intrinsicWidth,
+      viewportSize.height / intrinsicHeight,
+      AUTO_FIT_MAX_SCALE
+    );
   }, [intrinsicWidth, intrinsicHeight, viewportSize.width, viewportSize.height]);
 
   const manualScale = Math.max(0.2, Math.min(4, zoomPercent / 100));
