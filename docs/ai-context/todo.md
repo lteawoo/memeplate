@@ -49,6 +49,7 @@
   - [x] `MemeCanvas.tsx`: Auto Fit 가변 상한 제거 및 순수 Fit 비율 복원
   - [x] `MemeEditor.tsx`: `workspaceSize` 변경 시 `zoomMode`를 `fit`으로 자동 복귀
   - [x] `EditorLayout.tsx`/`MemeEditor.tsx`/`MemeCanvas.tsx`: `min-w-0` 추가로 대형 캔버스가 레이아웃 폭을 밀어내는 문제 수정
+  - [x] `MemeCanvas.tsx`: `fit` 모드 표시 크기를 floor 계산으로 변경해 비클리핑 보장 강화
 - [x] **고정 크기 조절점 (#27)**
   - [x] `Canvas.ts`: 화면 배율 역보정 로직 (`getSceneScale`) 도입
   - [x] `Canvas.ts`: `drawControls` 핸들 크기 및 선 두께 보정

@@ -54,8 +54,12 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
   }, [intrinsicWidth, intrinsicHeight, viewportSize.width, viewportSize.height]);
 
   const displayScale = zoomMode === 'fit' ? fitScale : 1;
-  const displayWidth = intrinsicWidth ? Math.max(1, Math.round(intrinsicWidth * displayScale)) : 0;
-  const displayHeight = intrinsicHeight ? Math.max(1, Math.round(intrinsicHeight * displayScale)) : 0;
+  const displayWidth = intrinsicWidth
+    ? Math.max(1, zoomMode === 'fit' ? Math.floor(intrinsicWidth * displayScale) : Math.round(intrinsicWidth * displayScale))
+    : 0;
+  const displayHeight = intrinsicHeight
+    ? Math.max(1, zoomMode === 'fit' ? Math.floor(intrinsicHeight * displayScale) : Math.round(intrinsicHeight * displayScale))
+    : 0;
 
   React.useEffect(() => {
     if (!canvasInstance) return;
