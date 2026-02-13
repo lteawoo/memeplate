@@ -15,8 +15,9 @@ interface MemeCanvasProps {
   completeTextEdit?: (id: string, newText: string) => void;
   canvasInstance?: Canvas | null;
   workspaceSize?: { width: number; height: number };
-  zoomMode?: 'fit' | 'actual';
 }
+
+const MAX_DISPLAY_EDGE_PX = 800;
 
 const MemeCanvas: React.FC<MemeCanvasProps> = ({ 
   canvasRef, 
@@ -25,8 +26,7 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
   editingTextId,
   completeTextEdit,
   canvasInstance,
-  workspaceSize,
-  zoomMode = 'fit'
+  workspaceSize
 }) => {
   const { token } = theme.useToken();
   const [editingText, setEditingText] = React.useState('');
@@ -42,23 +42,25 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
 
   const intrinsicWidth = workspaceSize?.width || 0;
   const intrinsicHeight = workspaceSize?.height || 0;
+  const intrinsicMaxEdge = Math.max(intrinsicWidth, intrinsicHeight, 1);
 
-  const fitScale = React.useMemo(() => {
+  const displayScale = React.useMemo(() => {
     if (!intrinsicWidth || !intrinsicHeight || !viewportSize.width || !viewportSize.height) {
       return 1;
     }
-    return Math.min(
+    const viewportScale = Math.min(
       viewportSize.width / intrinsicWidth,
       viewportSize.height / intrinsicHeight
     );
-  }, [intrinsicWidth, intrinsicHeight, viewportSize.width, viewportSize.height]);
+    const maxEdgeScale = MAX_DISPLAY_EDGE_PX / intrinsicMaxEdge;
+    return Math.min(viewportScale, maxEdgeScale);
+  }, [intrinsicWidth, intrinsicHeight, intrinsicMaxEdge, viewportSize.width, viewportSize.height]);
 
-  const displayScale = zoomMode === 'fit' ? fitScale : 1;
   const displayWidth = intrinsicWidth
-    ? Math.max(1, zoomMode === 'fit' ? Math.floor(intrinsicWidth * displayScale) : Math.round(intrinsicWidth * displayScale))
+    ? Math.max(1, Math.floor(intrinsicWidth * displayScale))
     : 0;
   const displayHeight = intrinsicHeight
-    ? Math.max(1, zoomMode === 'fit' ? Math.floor(intrinsicHeight * displayScale) : Math.round(intrinsicHeight * displayScale))
+    ? Math.max(1, Math.floor(intrinsicHeight * displayScale))
     : 0;
 
   React.useEffect(() => {
@@ -104,7 +106,7 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
     observer.observe(canvas);
 
     return () => observer.disconnect();
-  }, [canvasRef, displayWidth, displayHeight, hasBackground, zoomMode]);
+  }, [canvasRef, displayWidth, displayHeight, hasBackground]);
 
   React.useEffect(() => {
     if (editingObject) {
