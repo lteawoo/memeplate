@@ -191,7 +191,7 @@ export class Canvas {
       return Math.abs(x - rx) <= handleSize && Math.abs(y - ry) <= handleSize;
     };
 
-    if (checkHandle(0, -halfH - 30)) return 'mtr'; // Rotation
+    if (checkHandle(0, -halfH - (30 * scale))) return 'mtr'; // Rotation
     if (checkHandle(-halfW, -halfH)) return 'tl';
     if (checkHandle(halfW, -halfH)) return 'tr';
     if (checkHandle(-halfW, halfH)) return 'bl';
