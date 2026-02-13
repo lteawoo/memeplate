@@ -34,7 +34,9 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
   onZoomPercentChange,
   onWheelZoom
 }) => {
-  const AUTO_FIT_MAX_SCALE = 1;
+  const AUTO_FIT_MAX_SCALE_NEAR = 1.1;
+  const AUTO_FIT_MAX_SCALE_MID = 1.25;
+  const AUTO_FIT_MAX_SCALE_FAR = 1.4;
   const { token } = theme.useToken();
   const [editingText, setEditingText] = React.useState('');
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
@@ -54,11 +56,20 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
     if (!intrinsicWidth || !intrinsicHeight || !viewportSize.width || !viewportSize.height) {
       return 1;
     }
-    return Math.min(
+    const rawFitScale = Math.min(
       viewportSize.width / intrinsicWidth,
-      viewportSize.height / intrinsicHeight,
-      AUTO_FIT_MAX_SCALE
+      viewportSize.height / intrinsicHeight
     );
+
+    // Large originals (rawFitScale <= 1) should stay in fit mode to avoid over-zoom.
+    if (rawFitScale <= 1) return rawFitScale;
+
+    // Small originals can be auto-enlarged, but cap by ratio bands for stable readability.
+    let autoMaxScale = AUTO_FIT_MAX_SCALE_NEAR;
+    if (rawFitScale >= 1.75) autoMaxScale = AUTO_FIT_MAX_SCALE_FAR;
+    else if (rawFitScale >= 1.25) autoMaxScale = AUTO_FIT_MAX_SCALE_MID;
+
+    return Math.min(rawFitScale, autoMaxScale);
   }, [intrinsicWidth, intrinsicHeight, viewportSize.width, viewportSize.height]);
 
   const manualScale = Math.max(0.2, Math.min(4, zoomPercent / 100));
