@@ -1,7 +1,7 @@
 import React from 'react';
-import { Layout, Typography, theme, Button, Tooltip } from 'antd';
+import { Layout, Typography, theme } from 'antd';
 import Icon from '@mdi/react';
-import { mdiImage, mdiUndo, mdiRedo } from '@mdi/js';
+import { mdiImage } from '@mdi/js';
 import { Canvas, Textbox } from '../../core/canvas';
 
 const { Content } = Layout;
@@ -11,34 +11,29 @@ interface MemeCanvasProps {
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
   containerRef: React.RefObject<HTMLDivElement | null>;
   hasBackground: boolean;
-  undo?: () => void;
-  redo?: () => void;
-  canUndo?: boolean;
-  canRedo?: boolean;
   editingTextId?: string | null;
   completeTextEdit?: (id: string, newText: string) => void;
   canvasInstance?: Canvas | null;
   workspaceSize?: { width: number; height: number };
+  zoomMode?: 'fit' | 'actual';
+  onZoomPercentChange?: (percent: number) => void;
 }
 
 const MemeCanvas: React.FC<MemeCanvasProps> = ({ 
   canvasRef, 
   containerRef, 
   hasBackground,
-  undo,
-  redo,
-  canUndo,
-  canRedo,
   editingTextId,
   completeTextEdit,
   canvasInstance,
-  workspaceSize
+  workspaceSize,
+  zoomMode = 'fit',
+  onZoomPercentChange
 }) => {
   const { token } = theme.useToken();
   const [editingText, setEditingText] = React.useState('');
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
   const canvasViewportRef = React.useRef<HTMLDivElement>(null);
-  const [zoomMode, setZoomMode] = React.useState<'fit' | 'actual'>('fit');
   const [viewportSize, setViewportSize] = React.useState({ width: 0, height: 0 });
   const [canvasCssSize, setCanvasCssSize] = React.useState({ width: 0, height: 0 });
 
@@ -58,15 +53,8 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
   }, [intrinsicWidth, intrinsicHeight, viewportSize.width, viewportSize.height]);
 
   const displayScale = zoomMode === 'fit' ? fitScale : 1;
-  const zoomPercent = Math.max(1, Math.round(displayScale * 100));
   const displayWidth = intrinsicWidth ? Math.max(1, Math.round(intrinsicWidth * displayScale)) : 0;
   const displayHeight = intrinsicHeight ? Math.max(1, Math.round(intrinsicHeight * displayScale)) : 0;
-
-  React.useEffect(() => {
-    if (!hasBackground) {
-      setZoomMode('fit');
-    }
-  }, [hasBackground]);
 
   React.useEffect(() => {
     const viewport = canvasViewportRef.current;
@@ -107,16 +95,12 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
   }, [canvasRef, displayWidth, displayHeight, hasBackground, zoomMode]);
 
   React.useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (!(e.metaKey || e.ctrlKey)) return;
-      if (e.key !== '0') return;
-      e.preventDefault();
-      setZoomMode('fit');
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+    if (!hasBackground) {
+      onZoomPercentChange?.(100);
+      return;
+    }
+    onZoomPercentChange?.(Math.max(1, Math.round(displayScale * 100)));
+  }, [hasBackground, displayScale, onZoomPercentChange]);
 
   React.useEffect(() => {
     if (editingObject) {
@@ -173,55 +157,6 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
       ref={containerRef}
       style={{ touchAction: 'none' }}
     >
-      {/* Undo/Redo Controls */}
-      {hasBackground && (
-        <div className="absolute top-6 right-6 md:top-8 md:right-8 z-50 flex items-center gap-2">
-            <div className="flex items-center gap-1 rounded-full border border-slate-100 bg-white/90 px-2 py-1 backdrop-blur-sm shadow-sm">
-                <Tooltip title="화면에 맞춤 (Ctrl/Cmd+0)">
-                    <Button
-                        size="small"
-                        type={zoomMode === 'fit' ? 'primary' : 'default'}
-                        onClick={() => setZoomMode('fit')}
-                    >
-                        Fit
-                    </Button>
-                </Tooltip>
-                <Tooltip title="원본 크기 (100%)">
-                    <Button
-                        size="small"
-                        type={zoomMode === 'actual' ? 'primary' : 'default'}
-                        onClick={() => setZoomMode('actual')}
-                    >
-                        100%
-                    </Button>
-                </Tooltip>
-                <span className="min-w-12 text-center text-xs font-semibold text-slate-600">
-                  {zoomPercent}%
-                </span>
-            </div>
-            <Tooltip title="실행 취소 (Ctrl+Z)">
-                <Button 
-                    shape="circle" 
-                    icon={<Icon path={mdiUndo} size={0.8} />} 
-                    onClick={undo} 
-                    disabled={!canUndo}
-                    size="large"
-                    className="shadow-sm border border-slate-100 bg-white/90 backdrop-blur-sm hover:bg-white"
-                />
-            </Tooltip>
-            <Tooltip title="다시 실행 (Ctrl+Y)">
-                <Button 
-                    shape="circle" 
-                    icon={<Icon path={mdiRedo} size={0.8} />} 
-                    onClick={redo} 
-                    disabled={!canRedo}
-                    size="large"
-                    className="shadow-sm border border-slate-100 bg-white/90 backdrop-blur-sm hover:bg-white"
-                />
-            </Tooltip>
-        </div>
-      )}
-
       {/* Canvas Container - Always in DOM but doesn't affect layout if no background */}
       <div 
         ref={canvasViewportRef}
