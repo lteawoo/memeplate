@@ -1,7 +1,7 @@
 import React from 'react';
 import { Layout, message, Button, Tooltip, InputNumber } from 'antd';
 import Icon from '@mdi/react';
-import { mdiUndo, mdiRedo } from '@mdi/js';
+import { mdiUndo, mdiRedo, mdiMinus, mdiPlus } from '@mdi/js';
 
 import MainHeader from './layout/MainHeader';
 import EditorLayout from './editor/EditorLayout';
@@ -159,10 +159,20 @@ const MemeEditor: React.FC = () => {
                     </Tooltip>
                     <div className="mx-1 h-6 w-px bg-slate-200" />
                     <Tooltip title="축소">
-                      <Button size="small" onClick={() => nudgeZoom(-ZOOM_STEP)}>-</Button>
+                      <Button
+                        size="small"
+                        shape="circle"
+                        icon={<Icon path={mdiMinus} size={0.62} />}
+                        onClick={() => nudgeZoom(-ZOOM_STEP)}
+                      />
                     </Tooltip>
                     <Tooltip title="확대">
-                      <Button size="small" onClick={() => nudgeZoom(ZOOM_STEP)}>+</Button>
+                      <Button
+                        size="small"
+                        shape="circle"
+                        icon={<Icon path={mdiPlus} size={0.62} />}
+                        onClick={() => nudgeZoom(ZOOM_STEP)}
+                      />
                     </Tooltip>
                     <InputNumber
                       size="small"
@@ -256,8 +266,18 @@ const MemeEditor: React.FC = () => {
                       >
                         100%
                       </Button>
-                      <Button size="small" onClick={() => nudgeZoom(-ZOOM_STEP)}>-</Button>
-                      <Button size="small" onClick={() => nudgeZoom(ZOOM_STEP)}>+</Button>
+                      <Button
+                        size="small"
+                        shape="circle"
+                        icon={<Icon path={mdiMinus} size={0.62} />}
+                        onClick={() => nudgeZoom(-ZOOM_STEP)}
+                      />
+                      <Button
+                        size="small"
+                        shape="circle"
+                        icon={<Icon path={mdiPlus} size={0.62} />}
+                        onClick={() => nudgeZoom(ZOOM_STEP)}
+                      />
                       <InputNumber
                         size="small"
                         min={ZOOM_MIN}
