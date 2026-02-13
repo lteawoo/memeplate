@@ -61,12 +61,20 @@ const MemeEditor: React.FC = () => {
     copyToClipboard,
     changeZIndex
   };
+  const workspaceWidth = workspaceSize?.width ?? 0;
+  const workspaceHeight = workspaceSize?.height ?? 0;
 
   React.useEffect(() => {
     if (!hasBackground) {
       setZoomMode('fit');
     }
   }, [hasBackground]);
+
+  React.useEffect(() => {
+    if (!hasBackground || !workspaceWidth || !workspaceHeight) return;
+    // Reset to fit when a new image changes workspace dimensions.
+    setZoomMode('fit');
+  }, [hasBackground, workspaceWidth, workspaceHeight]);
 
   React.useEffect(() => {
     const handleZoomReset = (e: KeyboardEvent) => {
