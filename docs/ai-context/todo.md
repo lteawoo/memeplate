@@ -43,6 +43,8 @@
   - [x] `MemeCanvas.tsx`: 화면/원본 비율에 따른 Auto Fit 가변 상한(1.1/1.25/1.4) 적용
   - [x] `MemeEditor.tsx`: 줌 UI 요소 제거(버튼/입력)
   - [x] `MemeCanvas.tsx`: Auto Fit 단일 스케일 계산으로 단순화
+  - [x] `MemeEditor.tsx`: `Fit`/`100%` 컨트롤 및 퍼센트 표시 복원
+  - [x] `MemeCanvas.tsx`: `fit/actual` 표시 모드 재연결 및 기본 `fit` 복구
 - [x] **고정 크기 조절점 (#27)**
   - [x] `Canvas.ts`: 화면 배율 역보정 로직 (`getSceneScale`) 도입
   - [x] `Canvas.ts`: `drawControls` 핸들 크기 및 선 두께 보정

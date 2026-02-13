@@ -15,6 +15,8 @@ interface MemeCanvasProps {
   completeTextEdit?: (id: string, newText: string) => void;
   canvasInstance?: Canvas | null;
   workspaceSize?: { width: number; height: number };
+  zoomMode?: 'fit' | 'actual';
+  onZoomPercentChange?: (percent: number) => void;
 }
 
 const MemeCanvas: React.FC<MemeCanvasProps> = ({ 
@@ -24,7 +26,9 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
   editingTextId,
   completeTextEdit,
   canvasInstance,
-  workspaceSize
+  workspaceSize,
+  zoomMode = 'fit',
+  onZoomPercentChange
 }) => {
   const AUTO_FIT_MAX_SCALE_NEAR = 1.1;
   const AUTO_FIT_MAX_SCALE_MID = 1.25;
@@ -64,7 +68,7 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
     return Math.min(rawFitScale, autoMaxScale);
   }, [intrinsicWidth, intrinsicHeight, viewportSize.width, viewportSize.height]);
 
-  const displayScale = fitScale;
+  const displayScale = zoomMode === 'fit' ? fitScale : 1;
   const displayWidth = intrinsicWidth ? Math.max(1, Math.round(intrinsicWidth * displayScale)) : 0;
   const displayHeight = intrinsicHeight ? Math.max(1, Math.round(intrinsicHeight * displayScale)) : 0;
 
@@ -111,7 +115,15 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
     observer.observe(canvas);
 
     return () => observer.disconnect();
-  }, [canvasRef, displayWidth, displayHeight, hasBackground]);
+  }, [canvasRef, displayWidth, displayHeight, hasBackground, zoomMode]);
+
+  React.useEffect(() => {
+    if (!hasBackground) {
+      onZoomPercentChange?.(100);
+      return;
+    }
+    onZoomPercentChange?.(Math.max(1, Math.round(displayScale * 100)));
+  }, [hasBackground, displayScale, onZoomPercentChange]);
 
   React.useEffect(() => {
     if (editingObject) {
