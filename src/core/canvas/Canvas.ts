@@ -45,6 +45,16 @@ export class Canvas {
     this.needsRedraw = true;
   }
 
+  /**
+   * Returns the scale factor between logical canvas size and its CSS display size.
+   * Used to keep UI elements (like handles) consistent in size regardless of zoom/screen size.
+   */
+  private getSceneScale(): number {
+    const rect = this.el.getBoundingClientRect();
+    if (rect.width === 0) return 1;
+    return this.width / rect.width;
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   on(eventName: string, handler: (options?: any) => void) {
     if (!this.eventListeners[eventName]) {
@@ -136,11 +146,12 @@ export class Canvas {
   }
 
   private findControl(obj: CanvasObject, x: number, y: number): string | null {
+    const scale = this.getSceneScale();
     const viewWidth = obj.width * obj.scaleX;
     const viewHeight = obj.height * obj.scaleY;
-    const halfW = viewWidth / 2 + 4;
-    const halfH = viewHeight / 2 + 4;
-    const handleSize = 12;
+    const halfW = viewWidth / 2 + (4 * scale);
+    const halfH = viewHeight / 2 + (4 * scale);
+    const handleSize = 12 * scale; // Adjust touch area based on screen scale
 
     // Helper to check if point is near handle, considering rotation
     const checkHandle = (hx: number, hy: number) => {
@@ -547,6 +558,7 @@ export class Canvas {
   private drawControls(obj: CanvasObject) {
     if (!obj || !isFinite(obj.left) || !isFinite(obj.top)) return;
 
+    const scale = this.getSceneScale();
     const scaleX = obj.scaleX ?? 1;
     const scaleY = obj.scaleY ?? 1;
     const width = obj.width || 0;
@@ -557,7 +569,7 @@ export class Canvas {
     this.ctx.save();
     try {
       this.ctx.strokeStyle = '#2563eb';
-      this.ctx.lineWidth = 1;
+      this.ctx.lineWidth = 1 * scale; // Keep line weight consistent
       
       const viewWidth = width * scaleX;
       const viewHeight = height * scaleY;
@@ -566,15 +578,18 @@ export class Canvas {
       this.ctx.rotate(((obj.angle || 0) * Math.PI) / 180);
       
       // 1. Draw bounding box (Stroke only)
+      const offset = 4 * scale;
       this.ctx.beginPath();
-      this.ctx.rect(-viewWidth / 2 - 4, -viewHeight / 2 - 4, viewWidth + 8, viewHeight + 8);
+      this.ctx.rect(-viewWidth / 2 - offset, -viewHeight / 2 - offset, viewWidth + (offset * 2), viewHeight + (offset * 2));
       this.ctx.stroke();
       
       // 2. Draw handles
       this.ctx.fillStyle = '#ffffff';
       this.ctx.strokeStyle = '#2563eb';
-      const halfW = viewWidth / 2 + 4;
-      const halfH = viewHeight / 2 + 4;
+      const halfW = viewWidth / 2 + offset;
+      const halfH = viewHeight / 2 + offset;
+      const hSize = 10 * scale; // Visual size of handles
+      const hHalf = hSize / 2;
       
       const handles = [
         { id: 'tl', x: -halfW, y: -halfH },
@@ -585,25 +600,25 @@ export class Canvas {
         { id: 'mb', x: 0, y: halfH },
         { id: 'ml', x: -halfW, y: 0 },
         { id: 'mr', x: halfW, y: 0 },
-        { id: 'mtr', x: 0, y: -halfH - 30 }
+        { id: 'mtr', x: 0, y: -halfH - (30 * scale) }
       ];
       
       handles.forEach(h => {
         if (h.id === 'mtr') {
           // Line to rotation handle
           this.ctx.beginPath();
-          this.ctx.moveTo(0, -halfH - 4);
-          this.ctx.lineTo(0, -halfH - 30);
+          this.ctx.moveTo(0, -halfH - (4 * scale));
+          this.ctx.lineTo(0, -halfH - (30 * scale));
           this.ctx.stroke();
           
           // Rotation handle circle
           this.ctx.beginPath();
-          this.ctx.arc(h.x, h.y, 6, 0, Math.PI * 2);
+          this.ctx.arc(h.x, h.y, 6 * scale, 0, Math.PI * 2);
           this.ctx.fill();
           this.ctx.stroke();
         } else {
           this.ctx.beginPath();
-          this.ctx.rect(h.x - 5, h.y - 5, 10, 10);
+          this.ctx.rect(h.x - hHalf, h.y - hHalf, hSize, hSize);
           this.ctx.fill();
           this.ctx.stroke();
         }
