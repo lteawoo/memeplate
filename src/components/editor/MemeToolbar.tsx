@@ -29,7 +29,7 @@ const SidebarItem: React.FC<SidebarItemProps> = ({ icon, label, isActive, onClic
     onClick={disabled ? undefined : onClick}
     disabled={disabled}
     className={`
-      flex-1 py-3 md:py-4 flex flex-col items-center justify-center gap-1 md:gap-2
+      flex-1 py-2 md:py-2 flex flex-col items-center justify-center gap-1 md:gap-1
       transition-all duration-300 rounded-xl relative
       border-none outline-none cursor-pointer active:scale-95 shrink-0
       ${disabled 
@@ -41,7 +41,7 @@ const SidebarItem: React.FC<SidebarItemProps> = ({ icon, label, isActive, onClic
   >
     <Icon 
       path={icon} 
-      size={window.innerWidth < 768 ? 0.9 : 1.1} 
+      size={window.innerWidth < 768 ? 0.85 : 1} 
       className={`transition-all duration-300 ${isActive ? 'scale-110' : 'opacity-70'}`} 
     />
     <span className={`
@@ -59,9 +59,9 @@ const MemeToolbar: React.FC<MemeToolbarProps> = ({
   hasBackground
 }) => {
   return (
-    <div className="w-full h-24 border-b border-slate-100 bg-white flex flex-row items-center justify-center py-2 gap-2 px-4 shrink-0 z-20">
+    <div className="w-full h-20 border-b border-slate-100 bg-white flex flex-row items-center justify-center py-1 gap-1 px-3 shrink-0 z-20">
       {/* Main Tools Group - Simplified to 3 core tools */}
-      <div className="flex flex-row w-full gap-1 bg-slate-200/40 p-1.5 rounded-2xl shrink-0">
+      <div className="flex flex-row w-full gap-1 bg-slate-200/40 p-1 rounded-xl shrink-0">
         <SidebarItem 
           icon={mdiImage} 
           label="이미지" 
