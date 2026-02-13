@@ -287,6 +287,10 @@ export class Canvas {
     const angleRad = (origAngle * Math.PI) / 180;
     const cos = Math.cos(angleRad);
     const sin = Math.sin(angleRad);
+    const startViewWidth = target.width * target.scaleX;
+    const startViewHeight = target.height * target.scaleY;
+    const startAspect = startViewHeight > 0 ? startViewWidth / startViewHeight : 1;
+    const isCornerControl = control === 'tl' || control === 'tr' || control === 'bl' || control === 'br';
 
     // 1. Find the fixed point (opposite of the control) in local coordinates (relative to center)
     let localFixedX = 0;
@@ -312,41 +316,67 @@ export class Canvas {
       const p = this.getPointer(em);
       
       if (!isFinite(p.x) || !isFinite(p.y)) return;
+      const isMouseEvent = em instanceof MouseEvent;
+      const preserveAspect = isMouseEvent && em.shiftKey;
+      const resizeFromCenter = isMouseEvent && em.altKey;
       
-      // 3. Vector from fixed point to current pointer in global space
-      const dx = p.x - globalFixedX;
-      const dy = p.y - globalFixedY;
-
-      // 4. Rotate that vector back to local space
-      const localDx = dx * cos + dy * sin;
-      const localDy = -dx * sin + dy * cos;
-
       // 5. Determine new view dimensions
       let newViewWidth = target.width * target.scaleX;
       let newViewHeight = target.height * target.scaleY;
-
-      if (control.includes('l')) newViewWidth = -localDx;
-      else if (control.includes('r')) newViewWidth = localDx;
-
-      if (control.includes('t')) newViewHeight = -localDy;
-      else if (control.includes('b')) newViewHeight = localDy;
-
-      // Minimum size constraints
       const minW = isText ? 50 : 5;
       const minH = isText ? 20 : 5;
-      
-      // 6. Handle uniform scaling for corners
-      if (control === 'tl' || control === 'tr' || control === 'bl' || control === 'br') {
-        const scaleX = Math.abs(newViewWidth / (target.width * target.scaleX));
-        const scaleY = Math.abs(newViewHeight / (target.height * target.scaleY));
-        const uniformScale = Math.max(scaleX, scaleY);
-        
-        newViewWidth = target.width * target.scaleX * uniformScale;
-        newViewHeight = target.height * target.scaleY * uniformScale;
+
+      if (resizeFromCenter) {
+        // Alt/Option: center point stays fixed and the dragged side expands symmetrically.
+        const centerDx = p.x - origLeft;
+        const centerDy = p.y - origTop;
+        const localCenterX = centerDx * cos + centerDy * sin;
+        const localCenterY = -centerDx * sin + centerDy * cos;
+
+        if (control.includes('l') || control.includes('r')) newViewWidth = Math.abs(localCenterX) * 2;
+        if (control.includes('t') || control.includes('b')) newViewHeight = Math.abs(localCenterY) * 2;
+      } else {
+        // 3. Vector from fixed point to current pointer in global space
+        const dx = p.x - globalFixedX;
+        const dy = p.y - globalFixedY;
+
+        // 4. Rotate that vector back to local space
+        const localDx = dx * cos + dy * sin;
+        const localDy = -dx * sin + dy * cos;
+
+        if (control.includes('l')) newViewWidth = -localDx;
+        else if (control.includes('r')) newViewWidth = localDx;
+
+        if (control.includes('t')) newViewHeight = -localDy;
+        else if (control.includes('b')) newViewHeight = localDy;
       }
-      
-      newViewWidth = Math.max(minW, newViewWidth);
-      newViewHeight = Math.max(minH, newViewHeight);
+
+      // Shift: keep aspect ratio while resizing.
+      if (preserveAspect && isFinite(startAspect) && startAspect > 0) {
+        const hasHorizontal = control.includes('l') || control.includes('r');
+        const hasVertical = control.includes('t') || control.includes('b');
+
+        if (isCornerControl) {
+          const widthRatio = startViewWidth > 0 ? newViewWidth / startViewWidth : 1;
+          const heightRatio = startViewHeight > 0 ? newViewHeight / startViewHeight : 1;
+          if (widthRatio >= heightRatio) {
+            newViewWidth = Math.max(newViewWidth, minW, minH * startAspect);
+            newViewHeight = newViewWidth / startAspect;
+          } else {
+            newViewHeight = Math.max(newViewHeight, minH, minW / startAspect);
+            newViewWidth = newViewHeight * startAspect;
+          }
+        } else if (hasHorizontal && !hasVertical) {
+          newViewWidth = Math.max(newViewWidth, minW, minH * startAspect);
+          newViewHeight = newViewWidth / startAspect;
+        } else if (hasVertical && !hasHorizontal) {
+          newViewHeight = Math.max(newViewHeight, minH, minW / startAspect);
+          newViewWidth = newViewHeight * startAspect;
+        }
+      } else {
+        newViewWidth = Math.max(minW, newViewWidth);
+        newViewHeight = Math.max(minH, newViewHeight);
+      }
 
       // 7. Update object dimensions/scale
       if (isText) {
@@ -365,14 +395,19 @@ export class Canvas {
       const currentViewW = target.width * target.scaleX;
       const currentViewH = target.height * target.scaleY;
 
-      if (control.includes('l')) vCenterX = -currentViewW / 2;
-      else if (control.includes('r')) vCenterX = currentViewW / 2;
+      if (resizeFromCenter) {
+        target.left = origLeft;
+        target.top = origTop;
+      } else {
+        if (control.includes('l')) vCenterX = -currentViewW / 2;
+        else if (control.includes('r')) vCenterX = currentViewW / 2;
 
-      if (control.includes('t')) vCenterY = -currentViewH / 2;
-      else if (control.includes('b')) vCenterY = currentViewH / 2;
+        if (control.includes('t')) vCenterY = -currentViewH / 2;
+        else if (control.includes('b')) vCenterY = currentViewH / 2;
 
-      target.left = globalFixedX + (vCenterX * cos - vCenterY * sin);
-      target.top = globalFixedY + (vCenterX * sin + vCenterY * cos);
+        target.left = globalFixedX + (vCenterX * cos - vCenterY * sin);
+        target.top = globalFixedY + (vCenterX * sin + vCenterY * cos);
+      }
 
       this.fire('object:scaling', { target, e: em });
       this.requestRender();
