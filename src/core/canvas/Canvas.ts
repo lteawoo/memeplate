@@ -11,6 +11,7 @@ export class Canvas {
   private activeObject: CanvasObject | null = null;
   private width: number;
   private height: number;
+  private renderScale: number;
   private needsRedraw: boolean = true;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private eventListeners: Record<string, ((options?: any) => void)[]> = {};
@@ -22,6 +23,8 @@ export class Canvas {
     this.ctx = ctx;
     this.width = el.width;
     this.height = el.height;
+    this.renderScale = Math.max(1, window.devicePixelRatio || 1);
+    this.syncBackingStoreSize();
     
     this.renderLoop = this.renderLoop.bind(this);
     requestAnimationFrame(this.renderLoop);
@@ -43,6 +46,21 @@ export class Canvas {
 
   requestRender() {
     this.needsRedraw = true;
+  }
+
+  private syncBackingStoreSize() {
+    const pixelWidth = Math.max(1, Math.round(this.width * this.renderScale));
+    const pixelHeight = Math.max(1, Math.round(this.height * this.renderScale));
+    if (this.el.width !== pixelWidth) this.el.width = pixelWidth;
+    if (this.el.height !== pixelHeight) this.el.height = pixelHeight;
+  }
+
+  setRenderScale(scale: number) {
+    const safeScale = isFinite(scale) ? Math.max(1, scale) : 1;
+    if (Math.abs(this.renderScale - safeScale) < 0.001) return;
+    this.renderScale = safeScale;
+    this.syncBackingStoreSize();
+    this.requestRender();
   }
 
   /**
@@ -471,20 +489,21 @@ export class Canvas {
   clear() {
     this.objects = [];
     this.discardActiveObject();
-    this.ctx.clearRect(0, 0, this.width, this.height);
+    this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+    this.ctx.clearRect(0, 0, this.el.width, this.el.height);
   }
 
   setWidth(width: number) {
     if (!isFinite(width) || width <= 0) return;
     this.width = width;
-    this.el.width = width;
+    this.syncBackingStoreSize();
     this.requestRender();
   }
 
   setHeight(height: number) {
     if (!isFinite(height) || height <= 0) return;
     this.height = height;
-    this.el.height = height;
+    this.syncBackingStoreSize();
     this.requestRender();
   }
 
@@ -517,6 +536,7 @@ export class Canvas {
       
       // Clear the canvas - use actual canvas element dimensions
       this.ctx.clearRect(0, 0, this.el.width, this.el.height);
+      this.ctx.setTransform(this.renderScale, 0, 0, this.renderScale, 0, 0);
       
       // Draw all objects
       for (const obj of this.objects) {

@@ -31,6 +31,10 @@
   - [x] `useMemeEditor.ts`: Undo/Redo 키보드 effect 의존성 경고 제거
   - [x] `useMemeEditor.ts`: 이벤트/업로드 파라미터의 `any` 타입 제거
   - [x] `useMemeEditor.ts`: 미사용 에러 변수 정리 및 타입 캐스팅 정리
+- [x] **텍스트 렌더 품질 개선 (#37)**
+  - [x] `Canvas.ts`: render scale/backing store 동기화 로직 추가
+  - [x] `MemeCanvas.tsx`: 표시 배율 연동 `setRenderScale` 적용
+  - [x] `MemeCanvas.tsx`: 편집 textarea의 폰트/정렬/스타일 동기화
 - [x] **고정 크기 조절점 (#27)**
   - [x] `Canvas.ts`: 화면 배율 역보정 로직 (`getSceneScale`) 도입
   - [x] `Canvas.ts`: `drawControls` 핸들 크기 및 선 두께 보정

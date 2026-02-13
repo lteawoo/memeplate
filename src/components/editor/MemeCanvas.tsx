@@ -57,6 +57,13 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
   const displayHeight = intrinsicHeight ? Math.max(1, Math.round(intrinsicHeight * displayScale)) : 0;
 
   React.useEffect(() => {
+    if (!canvasInstance) return;
+    const dpr = Math.max(1, window.devicePixelRatio || 1);
+    const upscale = Math.max(1, displayScale);
+    canvasInstance.setRenderScale(Math.min(4, dpr * upscale));
+  }, [canvasInstance, displayScale]);
+
+  React.useEffect(() => {
     const viewport = canvasViewportRef.current;
     if (!viewport) return;
 
@@ -134,8 +141,8 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
       height: `${height}px`,
       fontSize: `${editingObject.fontSize * editingObject.scaleY * scaleY}px`,
       color: editingObject.fill,
-      textAlign: 'center' as const,
-      lineHeight: 1.2,
+      textAlign: editingObject.textAlign || ('center' as const),
+      lineHeight: editingObject.lineHeight || 1.2,
       background: 'transparent',
       border: 'none',
       outline: 'none',
@@ -146,8 +153,9 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
       zIndex: 1000,
       transform: `rotate(${editingObject.angle}deg)`,
       transformOrigin: 'center center',
-      fontFamily: 'inherit',
-      fontWeight: 'bold'
+      fontFamily: editingObject.fontFamily || 'Arial',
+      fontWeight: editingObject.fontWeight || 'normal',
+      fontStyle: editingObject.fontStyle || 'normal'
     };
   };
 
