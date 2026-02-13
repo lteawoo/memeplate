@@ -5,6 +5,9 @@
   - [x] 8방향 리사이즈 핸들
   - [x] 회전 핸들 (MTR)
   - [x] 마우스 커서 피드백 (move, resize, crosshair)
+  - [x] 리사이즈 UX 표준화 (코너 자유변형, 엣지 단일 축)
+  - [x] 단축키 modifier(`Shift`, `Alt/Option`) 동작은 스펙 제외
+  - [x] 회전 핸들(MTR) 히트 테스트 좌표 보정
 - [x] **텍스트 레이어 정립**
   - [x] 자동 줄바꿈 (Word Wrap)
   - [x] 고정 틀(Fixed Container) 방식: 내용 변경 시 크기 유지

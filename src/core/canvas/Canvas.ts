@@ -191,7 +191,7 @@ export class Canvas {
       return Math.abs(x - rx) <= handleSize && Math.abs(y - ry) <= handleSize;
     };
 
-    if (checkHandle(0, -halfH - 30)) return 'mtr'; // Rotation
+    if (checkHandle(0, -halfH - (30 * scale))) return 'mtr'; // Rotation
     if (checkHandle(-halfW, -halfH)) return 'tl';
     if (checkHandle(halfW, -halfH)) return 'tr';
     if (checkHandle(-halfW, halfH)) return 'bl';
@@ -313,6 +313,12 @@ export class Canvas {
       
       if (!isFinite(p.x) || !isFinite(p.y)) return;
       
+      // 5. Determine new view dimensions
+      let newViewWidth = target.width * target.scaleX;
+      let newViewHeight = target.height * target.scaleY;
+      const minW = isText ? 50 : 5;
+      const minH = isText ? 20 : 5;
+
       // 3. Vector from fixed point to current pointer in global space
       const dx = p.x - globalFixedX;
       const dy = p.y - globalFixedY;
@@ -321,30 +327,12 @@ export class Canvas {
       const localDx = dx * cos + dy * sin;
       const localDy = -dx * sin + dy * cos;
 
-      // 5. Determine new view dimensions
-      let newViewWidth = target.width * target.scaleX;
-      let newViewHeight = target.height * target.scaleY;
-
       if (control.includes('l')) newViewWidth = -localDx;
       else if (control.includes('r')) newViewWidth = localDx;
 
       if (control.includes('t')) newViewHeight = -localDy;
       else if (control.includes('b')) newViewHeight = localDy;
 
-      // Minimum size constraints
-      const minW = isText ? 50 : 5;
-      const minH = isText ? 20 : 5;
-      
-      // 6. Handle uniform scaling for corners
-      if (control === 'tl' || control === 'tr' || control === 'bl' || control === 'br') {
-        const scaleX = Math.abs(newViewWidth / (target.width * target.scaleX));
-        const scaleY = Math.abs(newViewHeight / (target.height * target.scaleY));
-        const uniformScale = Math.max(scaleX, scaleY);
-        
-        newViewWidth = target.width * target.scaleX * uniformScale;
-        newViewHeight = target.height * target.scaleY * uniformScale;
-      }
-      
       newViewWidth = Math.max(minW, newViewWidth);
       newViewHeight = Math.max(minH, newViewHeight);
 
