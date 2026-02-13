@@ -139,39 +139,12 @@ const MemeEditor: React.FC = () => {
                       />
                     </Tooltip>
                     <div className="mx-1 h-6 w-px bg-slate-200" />
-                    <Tooltip title="화면에 맞춤 (Ctrl/Cmd+0)">
-                      <Button
-                        size="small"
-                        type={zoomMode === 'fit' ? 'primary' : 'default'}
-                        onClick={() => setZoomMode('fit')}
-                      >
-                        Fit
-                      </Button>
-                    </Tooltip>
-                    <Tooltip title="실제 크기 (100%)">
-                      <Button
-                        size="small"
-                        type={zoomMode === 'manual' && zoomPercent === 100 ? 'primary' : 'default'}
-                        onClick={() => setManualZoom(100)}
-                      >
-                        100%
-                      </Button>
-                    </Tooltip>
-                    <div className="mx-1 h-6 w-px bg-slate-200" />
                     <Tooltip title="축소">
                       <Button
                         size="small"
                         shape="circle"
                         icon={<Icon path={mdiMinus} size={0.62} />}
                         onClick={() => nudgeZoom(-ZOOM_STEP)}
-                      />
-                    </Tooltip>
-                    <Tooltip title="확대">
-                      <Button
-                        size="small"
-                        shape="circle"
-                        icon={<Icon path={mdiPlus} size={0.62} />}
-                        onClick={() => nudgeZoom(ZOOM_STEP)}
                       />
                     </Tooltip>
                     <InputNumber
@@ -182,7 +155,7 @@ const MemeEditor: React.FC = () => {
                       controls={false}
                       value={zoomPercent}
                       suffix="%"
-                      className="ml-auto w-20"
+                      className="w-20"
                       onChange={(value) => {
                         if (typeof value !== 'number') return;
                         setManualZoom(value);
@@ -191,6 +164,24 @@ const MemeEditor: React.FC = () => {
                         setManualZoom(value);
                       }}
                     />
+                    <Tooltip title="확대">
+                      <Button
+                        size="small"
+                        shape="circle"
+                        icon={<Icon path={mdiPlus} size={0.62} />}
+                        onClick={() => nudgeZoom(ZOOM_STEP)}
+                      />
+                    </Tooltip>
+                    <div className="mx-1 h-6 w-px bg-slate-200" />
+                    <Tooltip title="화면에 맞춤 (Ctrl/Cmd+0)">
+                      <Button
+                        size="small"
+                        type={zoomMode === 'fit' ? 'primary' : 'default'}
+                        onClick={() => setZoomMode('fit')}
+                      >
+                        Fit
+                      </Button>
+                    </Tooltip>
                   </div>
                 </div>
               )}
@@ -254,29 +245,9 @@ const MemeEditor: React.FC = () => {
                       <div className="mx-1 h-5 w-px bg-slate-200" />
                       <Button
                         size="small"
-                        type={zoomMode === 'fit' ? 'primary' : 'default'}
-                        onClick={() => setZoomMode('fit')}
-                      >
-                        Fit
-                      </Button>
-                      <Button
-                        size="small"
-                        type={zoomMode === 'manual' && zoomPercent === 100 ? 'primary' : 'default'}
-                        onClick={() => setManualZoom(100)}
-                      >
-                        100%
-                      </Button>
-                      <Button
-                        size="small"
                         shape="circle"
                         icon={<Icon path={mdiMinus} size={0.62} />}
                         onClick={() => nudgeZoom(-ZOOM_STEP)}
-                      />
-                      <Button
-                        size="small"
-                        shape="circle"
-                        icon={<Icon path={mdiPlus} size={0.62} />}
-                        onClick={() => nudgeZoom(ZOOM_STEP)}
                       />
                       <InputNumber
                         size="small"
@@ -286,7 +257,7 @@ const MemeEditor: React.FC = () => {
                         controls={false}
                         value={zoomPercent}
                         suffix="%"
-                        className="ml-auto w-20"
+                        className="w-20"
                         onChange={(value) => {
                           if (typeof value !== 'number') return;
                           setManualZoom(value);
@@ -295,6 +266,20 @@ const MemeEditor: React.FC = () => {
                           setManualZoom(value);
                         }}
                       />
+                      <Button
+                        size="small"
+                        shape="circle"
+                        icon={<Icon path={mdiPlus} size={0.62} />}
+                        onClick={() => nudgeZoom(ZOOM_STEP)}
+                      />
+                      <div className="mx-1 h-5 w-px bg-slate-200" />
+                      <Button
+                        size="small"
+                        type={zoomMode === 'fit' ? 'primary' : 'default'}
+                        onClick={() => setZoomMode('fit')}
+                      >
+                        Fit
+                      </Button>
                     </div>
                   </div>
                 )}
