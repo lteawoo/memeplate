@@ -17,6 +17,10 @@
   - [x] 이벤트 중복 실행 방지 및 리소스 정리(Cleanup) 로직 구현
 
 ## 향후 과제
+- [x] **고정 크기 조절점 (#27)**
+  - [x] `Canvas.ts`: 화면 배율 역보정 로직 (`getSceneScale`) 도입
+  - [x] `Canvas.ts`: `drawControls` 핸들 크기 및 선 두께 보정
+  - [x] `Canvas.ts`: `findControl` 터치 영역 배율 대응
 - [x] **모바일 레이아웃 개편 (#25)**
   - [x] `MemeEditor.tsx`: 모바일 전용 오버레이(`fixed`) 제거 및 세로 배치 로직 구현
   - [x] `EditorLayout.tsx`: 모바일에서의 `flex-col` 및 `overflow` 속성 조정
