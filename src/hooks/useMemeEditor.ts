@@ -152,6 +152,7 @@ export const useMemeEditor = (messageApi: MessageInstance) => {
       setActiveObject(selected || null);
       if (selected) {
         setIsPanelOpen(true); 
+        setActiveTool('edit'); // Switch to edit tool to show properties/layers
         
         if (selected instanceof Textbox) {
           setColor(selected.fill as string); 
@@ -170,7 +171,7 @@ export const useMemeEditor = (messageApi: MessageInstance) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const enforceBoundaries = (e: any) => {
         const obj = e.target;
-        if (!obj || !canvasInstanceRef.current) return;
+        if (!obj || !canvasInstanceRef.current || !workspaceSizeRef.current.width) return;
 
         const width = obj.width * obj.scaleX;
         const height = obj.height * obj.scaleY;
@@ -178,29 +179,29 @@ export const useMemeEditor = (messageApi: MessageInstance) => {
         const boundLeft = obj.left - width / 2;
         const boundTop = obj.top - height / 2;
         
-        const minLeft = CANVAS_MARGIN;
-        const minTop = CANVAS_MARGIN;
-        const maxLeft = CANVAS_MARGIN + workspaceSizeRef.current.width;
-        const maxTop = CANVAS_MARGIN + workspaceSizeRef.current.height;
+        const minLeft = 0;
+        const minTop = 0;
+        const maxLeft = workspaceSizeRef.current.width;
+        const maxTop = workspaceSizeRef.current.height;
 
         let moved = false;
         let newLeft = obj.left;
         let newTop = obj.top;
 
         if (boundLeft < minLeft) {
-            newLeft += (minLeft - boundLeft);
+            newLeft = minLeft + width / 2;
             moved = true;
         }
         if (boundTop < minTop) {
-            newTop += (minTop - boundTop);
+            newTop = minTop + height / 2;
             moved = true;
         }
         if (boundLeft + width > maxLeft) {
-            newLeft -= (boundLeft + width - maxLeft);
+            newLeft = maxLeft - width / 2;
             moved = true;
         }
         if (boundTop + height > maxTop) {
-            newTop -= (boundTop + height - maxTop);
+            newTop = maxTop - height / 2;
             moved = true;
         }
 
@@ -244,29 +245,35 @@ export const useMemeEditor = (messageApi: MessageInstance) => {
     // 2. Load image and set up canvas
     CanvasImage.fromURL(url).then((img) => {
       const canvas = canvasInstanceRef.current!;
-      const containerPadding = (window.innerWidth < 768 ? 32 : 48); 
-      // Ensure container has dimensions. If 0 (hidden), fallback to window size or default
-      const containerW = containerRef.current?.clientWidth || window.innerWidth;
-      const containerH = containerRef.current?.clientHeight || window.innerHeight;
+      
+      // We want to keep a high logical resolution (e.g., around 1000-1500px)
+      // while letting CSS handle the visual scaling down.
+      const targetBaseSize = 1200; 
+      const imgRatio = img.width / img.height;
+      
+      let logicalW, logicalH;
+      if (imgRatio > 1) {
+        logicalW = targetBaseSize;
+        logicalH = targetBaseSize / imgRatio;
+      } else {
+        logicalH = targetBaseSize;
+        logicalW = targetBaseSize * imgRatio;
+      }
 
-      const ratio = Math.min((containerW - containerPadding) / img.width, (containerH - containerPadding) / img.height);
-      
-      const scaledW = img.width * ratio;
-      const scaledH = img.height * ratio;
-      
       canvas.setDimensions({ 
-        width: scaledW, 
-        height: scaledH 
+        width: logicalW, 
+        height: logicalH 
       });
       
-      const newSize = { width: scaledW, height: scaledH };
+      const newSize = { width: logicalW, height: logicalH };
       setWorkspaceSize(newSize);
       workspaceSizeRef.current = newSize;
 
-      img.set('scaleX', ratio);
-      img.set('scaleY', ratio);
-      img.set('left', scaledW / 2);
-      img.set('top', scaledH / 2);
+      const scale = logicalW / img.width;
+      img.set('scaleX', scale);
+      img.set('scaleY', scale);
+      img.set('left', logicalW / 2);
+      img.set('top', logicalH / 2);
       
       img.set('selectable', false);
       img.set('evented', false);

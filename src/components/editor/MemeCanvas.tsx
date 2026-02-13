@@ -61,13 +61,14 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
 
       {/* Canvas Container - Always in DOM but doesn't affect layout if no background */}
       <div 
-        className={`relative transition-all duration-300 ${hasBackground ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none absolute w-0 h-0 overflow-hidden'}`}
+        className={`relative transition-all duration-300 flex items-center justify-center overflow-hidden ${hasBackground ? 'opacity-100 scale-100 w-full h-full' : 'opacity-0 scale-95 pointer-events-none absolute w-0 h-0'}`}
         style={{ fontSize: 0 }}
         onClick={(e) => e.stopPropagation()}
       >
          <canvas 
             ref={canvasRef} 
-            className="border border-slate-100 shadow-sm bg-white" 
+            className="border border-slate-100 shadow-sm bg-white max-w-full max-h-full object-contain" 
+            style={{ touchAction: 'none' }}
          />
       </div>
 

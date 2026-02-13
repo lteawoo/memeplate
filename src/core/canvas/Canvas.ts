@@ -73,7 +73,7 @@ export class Canvas {
   
     private handleDown = (e: MouseEvent | TouchEvent) => {
       // Prevent double firing on touch devices (touchstart followed by mousedown)
-      if (e.type === 'touchstart') {
+      if (e.type === 'touchstart' && e.cancelable) {
         e.preventDefault();
       }
   
@@ -171,7 +171,7 @@ export class Canvas {
     const origTop = target.top;
 
     const handleMove = (em: MouseEvent | TouchEvent) => {
-      em.preventDefault();
+      if (em.cancelable) em.preventDefault();
       const p = this.getPointer(em);
       target.left = origLeft + (p.x - startX);
       target.top = origTop + (p.y - startY);
@@ -199,7 +199,7 @@ export class Canvas {
     const origAngle = target.angle;
 
     const handleMove = (em: MouseEvent | TouchEvent) => {
-      em.preventDefault();
+      if (em.cancelable) em.preventDefault();
       const p = this.getPointer(em);
       const currentAngle = Math.atan2(p.y - center.y, p.x - center.x);
       const diff = ((currentAngle - startAngle) * 180) / Math.PI;
@@ -222,87 +222,119 @@ export class Canvas {
     window.addEventListener('touchend', handleUp);
   }
 
-  private handleResize(target: CanvasObject, control: string, startX: number, startY: number) {
+  private handleResize(target: CanvasObject, control: string, _startX: number, _startY: number) {
     const isText = target.type === 'text';
     const origScaleX = target.scaleX;
     const origScaleY = target.scaleY;
-    const origWidth = target.width * origScaleX;
-    const origHeight = target.height * origScaleY;
+    const origWidth = target.width;
+    const origHeight = target.height;
+    const origLeft = target.left;
+    const origTop = target.top;
+    const origAngle = target.angle;
 
     // For text, we want to work with width/height directly.
     // If it has scale, commit it to width/height first.
     if (isText && (origScaleX !== 1 || origScaleY !== 1)) {
-      if (isFinite(origWidth) && isFinite(origHeight) && origWidth > 0 && origHeight > 0) {
-        target.width = origWidth;
-        target.height = origHeight;
+      const currentWidth = origWidth * origScaleX;
+      const currentHeight = origHeight * origScaleY;
+      if (isFinite(currentWidth) && isFinite(currentHeight) && currentWidth > 0 && currentHeight > 0) {
+        target.width = currentWidth;
+        target.height = currentHeight;
         target.scaleX = 1;
         target.scaleY = 1;
         this.requestRender();
       }
     }
 
+    const angleRad = (origAngle * Math.PI) / 180;
+    const cos = Math.cos(angleRad);
+    const sin = Math.sin(angleRad);
+
+    // 1. Find the fixed point (opposite of the control) in local coordinates (relative to center)
+    let localFixedX = 0;
+    let localFixedY = 0;
+
+    switch (control) {
+      case 'tl': localFixedX = target.width / 2; localFixedY = target.height / 2; break;
+      case 'tr': localFixedX = -target.width / 2; localFixedY = target.height / 2; break;
+      case 'bl': localFixedX = target.width / 2; localFixedY = -target.height / 2; break;
+      case 'br': localFixedX = -target.width / 2; localFixedY = -target.height / 2; break;
+      case 'mt': localFixedX = 0; localFixedY = target.height / 2; break;
+      case 'mb': localFixedX = 0; localFixedY = -target.height / 2; break;
+      case 'ml': localFixedX = target.width / 2; localFixedY = 0; break;
+      case 'mr': localFixedX = -target.width / 2; localFixedY = 0; break;
+    }
+
+    // 2. Convert local fixed point to global coordinates
+    const globalFixedX = origLeft + (localFixedX * target.scaleX * cos - localFixedY * target.scaleY * sin);
+    const globalFixedY = origTop + (localFixedX * target.scaleX * sin + localFixedY * target.scaleY * cos);
+
     const handleMove = (em: MouseEvent | TouchEvent) => {
-      em.preventDefault();
+      if (em.cancelable) em.preventDefault();
       const p = this.getPointer(em);
       
       if (!isFinite(p.x) || !isFinite(p.y)) return;
       
-      const dx = p.x - startX;
-      const dy = p.y - startY;
+      // 3. Vector from fixed point to current pointer in global space
+      const dx = p.x - globalFixedX;
+      const dy = p.y - globalFixedY;
 
-      if (isText) {
-        if (control === 'br' || control === 'tr' || control === 'tl' || control === 'bl') {
-          const dw = (control === 'br' || control === 'tr') ? dx * 2 : -dx * 2;
-          const dh = (control === 'br' || control === 'bl') ? dy * 2 : -dy * 2;
-          
-          const newWidth = origWidth + dw;
-          const newHeight = origHeight + dh;
-          
-          if (isFinite(newWidth) && isFinite(newHeight)) {
-            target.width = Math.max(50, newWidth);
-            target.height = Math.max(20, newHeight);
-          }
-        } else if (control === 'mr') {
-          const newWidth = origWidth + dx * 2;
-          if (isFinite(newWidth)) target.width = Math.max(50, newWidth);
-        } else if (control === 'ml') {
-          const newWidth = origWidth - dx * 2;
-          if (isFinite(newWidth)) target.width = Math.max(50, newWidth);
-        } else if (control === 'mb') {
-          const newHeight = origHeight + dy * 2;
-          if (isFinite(newHeight)) target.height = Math.max(20, newHeight);
-        } else if (control === 'mt') {
-          const newHeight = origHeight - dy * 2;
-          if (isFinite(newHeight)) target.height = Math.max(20, newHeight);
-        }
-      } else {
-        // Scaling logic for other objects
-        if (control === 'br' || control === 'tr' || control === 'tl' || control === 'bl') {
-          if (origWidth === 0) return;
-          const scale = (control === 'br' || control === 'tr') ? (origWidth + dx * 2) / origWidth : (origWidth - dx * 2) / origWidth;
-          const uniformScale = Math.max(0.1, scale);
-          if (isFinite(uniformScale)) {
-            target.scaleX = origScaleX * uniformScale;
-            target.scaleY = origScaleY * uniformScale;
-          }
-        } else if (control === 'mr') {
-          if (target.width === 0) return;
-          const scale = (origWidth + dx * 2) / target.width;
-          if (isFinite(scale)) target.scaleX = Math.max(0.1, scale);
-        } else if (control === 'ml') {
-          if (target.width === 0) return;
-          const scale = (origWidth - dx * 2) / target.width;
-          if (isFinite(scale)) target.scaleX = Math.max(0.1, scale);
-        } else if (control === 'mb') {
-          if (target.height === 0) return;
-          const scale = (origHeight + dy * 2) / target.height;
-          if (isFinite(scale)) target.scaleY = Math.max(0.1, scale);
-        } else if (control === 'mt') {
-          if (target.height === 0) return;
-          const scale = (origHeight - dy * 2) / target.height;
-          if (isFinite(scale)) target.scaleY = Math.max(0.1, scale);
-        }
+      // 4. Rotate that vector back to local space
+      const localDx = dx * cos + dy * sin;
+      const localDy = -dx * sin + dy * cos;
+
+      // 5. Determine new view dimensions
+      let newViewWidth = target.width * target.scaleX;
+      let newViewHeight = target.height * target.scaleY;
+
+      if (control.includes('l')) newViewWidth = -localDx;
+      else if (control.includes('r')) newViewWidth = localDx;
+
+      if (control.includes('t')) newViewHeight = -localDy;
+      else if (control.includes('b')) newViewHeight = localDy;
+
+      // Minimum size constraints
+      const minW = isText ? 50 : 5;
+      const minH = isText ? 20 : 5;
+      
+      // 6. Handle uniform scaling for corners
+      if (control === 'tl' || control === 'tr' || control === 'bl' || control === 'br') {
+        const scaleX = Math.abs(newViewWidth / (target.width * target.scaleX));
+        const scaleY = Math.abs(newViewHeight / (target.height * target.scaleY));
+        const uniformScale = Math.max(scaleX, scaleY);
+        
+        newViewWidth = target.width * target.scaleX * uniformScale;
+        newViewHeight = target.height * target.scaleY * uniformScale;
       }
+      
+      newViewWidth = Math.max(minW, newViewWidth);
+      newViewHeight = Math.max(minH, newViewHeight);
+
+      // 7. Update object dimensions/scale
+      if (isText) {
+        target.width = newViewWidth;
+        target.height = newViewHeight;
+        target.scaleX = 1;
+        target.scaleY = 1;
+      } else {
+        target.scaleX = newViewWidth / target.width;
+        target.scaleY = newViewHeight / target.height;
+      }
+
+      // 8. Update center (left, top)
+      let vCenterX = 0;
+      let vCenterY = 0;
+      const currentViewW = target.width * target.scaleX;
+      const currentViewH = target.height * target.scaleY;
+
+      if (control.includes('l')) vCenterX = -currentViewW / 2;
+      else if (control.includes('r')) vCenterX = currentViewW / 2;
+
+      if (control.includes('t')) vCenterY = -currentViewH / 2;
+      else if (control.includes('b')) vCenterY = currentViewH / 2;
+
+      target.left = globalFixedX + (vCenterX * cos - vCenterY * sin);
+      target.top = globalFixedY + (vCenterX * sin + vCenterY * cos);
 
       this.fire('object:scaling', { target, e: em });
       this.requestRender();
@@ -321,6 +353,7 @@ export class Canvas {
     window.addEventListener('touchmove', handleMove, { passive: false });
     window.addEventListener('touchend', handleUp);
   }
+
 
   private getPointer(e: MouseEvent | TouchEvent) {
     const rect = this.el.getBoundingClientRect();
@@ -387,12 +420,14 @@ export class Canvas {
   setActiveObject(object: CanvasObject) {
     if (object.selectable) {
       this.activeObject = object;
+      this.fire('selection:created', { selected: [object] });
       this.requestRender();
     }
   }
 
   discardActiveObject() {
     this.activeObject = null;
+    this.fire('selection:cleared', {});
     this.requestRender();
   }
 

@@ -188,7 +188,7 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
               
               <div className="flex flex-col overflow-y-auto max-h-[65vh] custom-scrollbar">
                 {[...layers].reverse().map((obj, idx) => {
-                  const isSelected = activeObject === obj;
+                  const isSelected = activeObject?.id === obj.id;
                   const isText = obj instanceof Textbox;
                   const isRect = obj instanceof Rect;
                   const isCircle = obj instanceof Circle;
@@ -198,7 +198,7 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
                       key={obj.id || idx} 
                       className={`
                         group flex flex-col p-1.5 transition-all border-b border-slate-50 last:border-b-0
-                        ${isSelected ? 'bg-blue-50/50' : 'bg-white hover:bg-slate-50/50'}
+                        ${isSelected ? 'bg-blue-50 border-l-4 border-l-blue-600' : 'bg-white hover:bg-slate-50/50 border-l-4 border-l-transparent'}
                       `}
                       onClick={() => selectLayer(obj)}
                     >
