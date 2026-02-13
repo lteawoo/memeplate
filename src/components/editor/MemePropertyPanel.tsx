@@ -224,17 +224,9 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
                         </div>
                         
                         {isText ? (
-                          <Input 
-                            value={(obj as Textbox).text} 
-                            onChange={(e) => {
-                                (obj as Textbox).set('text', e.target.value);
-                                updateProperty('text', e.target.value);
-                                selectLayer(obj);
-                            }}
-                            onKeyDown={(e) => e.stopPropagation()}
-                            className="flex-1 h-6 border-none bg-transparent hover:bg-slate-100/30 focus:bg-white transition-colors rounded text-[11px] font-bold p-1"
-                            placeholder="텍스트..."
-                          />
+                          <span className={`text-[11px] font-bold truncate flex-1 pl-1 ${isSelected ? 'text-blue-900' : 'text-slate-500'}`}>
+                            텍스트 레이어
+                          </span>
                         ) : (
                           <span className={`text-[11px] font-bold truncate flex-1 pl-1 ${isSelected ? 'text-blue-900' : 'text-slate-500'}`}>
                             {isRect ? '사각형' : isCircle ? '원형' : '도형'}
@@ -412,6 +404,22 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
                           />
                         </div>
                       </div>
+                      {isText && (
+                        <div className="mt-2 pl-[2.75rem]">
+                          <Input
+                            value={(obj as Textbox).text}
+                            onChange={(e) => {
+                                (obj as Textbox).set('text', e.target.value);
+                                updateProperty('text', e.target.value);
+                                selectLayer(obj);
+                            }}
+                            onKeyDown={(e) => e.stopPropagation()}
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-full h-8 border border-slate-200 bg-white hover:border-slate-300 focus:border-blue-400 transition-colors rounded-md text-xs font-semibold px-2"
+                            placeholder="텍스트..."
+                          />
+                        </div>
+                      )}
                     </div>
                   );
                 })}
