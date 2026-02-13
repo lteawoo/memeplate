@@ -18,6 +18,7 @@ export const useMemeEditor = (messageApi: MessageInstance) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
   const [activeTool, setActiveTool] = useState<ToolType>(null);
+  const [editingTextId, setEditingTextId] = useState<string | null>(null);
   
   // Selection State
   const [activeObject, setActiveObject] = useState<CanvasObject | null>(null);
@@ -209,6 +210,14 @@ export const useMemeEditor = (messageApi: MessageInstance) => {
         }
     };
 
+    canvas.on('mouse:dblclick', (opt: any) => {
+        if (opt.target instanceof Textbox) {
+            setEditingTextId(opt.target.id);
+            opt.target.set('visible', false);
+            canvas.requestRender();
+        }
+    });
+
     canvas.on('selection:created', handleSelection);
     canvas.on('selection:updated', handleSelection);
     canvas.on('selection:cleared', () => setActiveObject(null));
@@ -232,31 +241,18 @@ export const useMemeEditor = (messageApi: MessageInstance) => {
 
     CanvasImage.fromURL(url).then((img) => {
       const canvas = canvasInstanceRef.current!;
-      const targetBaseSize = 1200; 
-      const imgRatio = img.width / img.height;
-      
-      let logicalW, logicalH;
-      if (imgRatio > 1) {
-        logicalW = targetBaseSize;
-        logicalH = targetBaseSize / imgRatio;
-      } else {
-        logicalH = targetBaseSize;
-        logicalW = targetBaseSize * imgRatio;
-      }
+      const logicalW = img.element?.naturalWidth || img.width;
+      const logicalH = img.element?.naturalHeight || img.height;
 
       canvas.setDimensions({ width: logicalW, height: logicalH });
       const newSize = { width: logicalW, height: logicalH };
       setWorkspaceSize(newSize);
       workspaceSizeRef.current = newSize;
 
-      // Calculate scale to fit logical dimensions
-      const scaleX = logicalW / img.element!.naturalWidth;
-      const scaleY = logicalH / img.element!.naturalHeight;
-
-      img.set('width', img.element!.naturalWidth);
-      img.set('height', img.element!.naturalHeight);
-      img.set('scaleX', scaleX);
-      img.set('scaleY', scaleY);
+      img.set('width', logicalW);
+      img.set('height', logicalH);
+      img.set('scaleX', 1);
+      img.set('scaleY', 1);
       img.set('left', logicalW / 2);
       img.set('top', logicalH / 2);
       img.set('selectable', false);
@@ -407,11 +403,25 @@ export const useMemeEditor = (messageApi: MessageInstance) => {
     setLayers([...canvas.getObjects()]);
   };
 
+  const completeTextEdit = (id: string, newText: string) => {
+    if (!canvasInstanceRef.current) return;
+    const obj = canvasInstanceRef.current.getObjectById(id);
+    if (obj instanceof Textbox) {
+        obj.set('text', newText);
+        obj.set('visible', true);
+        canvasInstanceRef.current.requestRender();
+        saveHistory();
+    }
+    setEditingTextId(null);
+  };
+
   return {
     canvasRef,
     containerRef,
     activeTool,
     setActiveTool,
+    editingTextId,
+    completeTextEdit,
     isPanelOpen: false,
     setIsPanelOpen: () => {},
     activeObject,

@@ -16,14 +16,13 @@ const MemeEditor: React.FC = () => {
     containerRef,
     activeTool,
     setActiveTool,
-    isPanelOpen,
-    setIsPanelOpen,
     activeObject,
     layers,
     color,
     bgUrl,
     setBgUrl,
     hasBackground,
+    workspaceSize,
     historyIndex,
     history,
     undo,
@@ -38,7 +37,9 @@ const MemeEditor: React.FC = () => {
     downloadImage,
     copyToClipboard,
     changeZIndex,
-    canvasInstance
+    canvasInstance,
+    editingTextId,
+    completeTextEdit
   } = useMemeEditor(messageApi);
 
   const panelProps = {
@@ -96,6 +97,10 @@ const MemeEditor: React.FC = () => {
                   redo={redo}
                   canUndo={historyIndex > 0}
                   canRedo={historyIndex < history.length - 1}
+                  editingTextId={editingTextId}
+                  completeTextEdit={completeTextEdit}
+                  canvasInstance={canvasInstance}
+                  workspaceSize={workspaceSize}
                 />
             </div>
 
