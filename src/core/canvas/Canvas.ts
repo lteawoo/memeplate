@@ -79,8 +79,17 @@ export class Canvas {
       this.el.addEventListener('mousedown', this.handleDown);
       this.el.addEventListener('touchstart', this.handleDown, { passive: false });
       this.el.addEventListener('mousemove', this.handleMouseMove);
+      this.el.addEventListener('dblclick', this.handleDoubleClick);
     }
   
+    private handleDoubleClick = (e: MouseEvent) => {
+      const { x, y } = this.getPointer(e);
+      const target = this.findTarget(x, y);
+      if (target) {
+        this.fire('mouse:dblclick', { e, target, pointer: { x, y } });
+      }
+    };
+
     private handleDown = (e: MouseEvent | TouchEvent) => {
       // Prevent double firing on touch devices (touchstart followed by mousedown)
       if (e.type === 'touchstart' && e.cancelable) {
@@ -773,6 +782,7 @@ export class Canvas {
     this.el.removeEventListener('mousedown', this.handleDown);
     this.el.removeEventListener('touchstart', this.handleDown);
     this.el.removeEventListener('mousemove', this.handleMouseMove);
+    this.el.removeEventListener('dblclick', this.handleDoubleClick);
     this.objects = [];
   }
 }

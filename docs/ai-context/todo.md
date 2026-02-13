@@ -17,6 +17,16 @@
   - [x] 이벤트 중복 실행 방지 및 리소스 정리(Cleanup) 로직 구현
 
 ## 향후 과제
+- [x] **텍스트 더블 클릭 편집 (#29)**
+  - [x] `Canvas.ts`: `dblclick` 브라우저 이벤트 리스너 추가 및 커스텀 이벤트 발생
+  - [x] `useMemeEditor.ts`: `editingTextId` 상태 및 더블 클릭 핸들러 추가
+  - [x] `MemeCanvas.tsx`: 캔버스 상단에 동적 textarea 오버레이 구현
+  - [x] 텍스트 스타일(폰트 크기, 정렬 등) 동기화 로직 정교화
+- [x] **캔버스 표시/줌 UX 개선 (#30)**
+  - [x] `useMemeEditor.ts`: 업로드 시 캔버스 논리 크기를 원본 해상도 기준으로 설정
+  - [x] `MemeCanvas.tsx`: `Fit`/`100%` 토글 및 줌 퍼센트 표시 추가
+  - [x] `MemeCanvas.tsx`: `Ctrl/Cmd + 0` 단축키로 `Fit` 복귀 지원
+  - [x] `MemeEditor.tsx`: `workspaceSize` 전달로 표시 스케일 연동
 - [x] **고정 크기 조절점 (#27)**
   - [x] `Canvas.ts`: 화면 배율 역보정 로직 (`getSceneScale`) 도입
   - [x] `Canvas.ts`: `drawControls` 핸들 크기 및 선 두께 보정
