@@ -18,7 +18,6 @@ export const useMemeEditor = (messageApi: MessageInstance) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
   const [activeTool, setActiveTool] = useState<ToolType>(null);
-  const [isPanelOpen, setIsPanelOpen] = useState(false);
   
   // Selection State
   const [activeObject, setActiveObject] = useState<CanvasObject | null>(null);
@@ -151,7 +150,6 @@ export const useMemeEditor = (messageApi: MessageInstance) => {
       const selected = e.selected ? e.selected[0] : null;
       setActiveObject(selected || null);
       if (selected) {
-        setIsPanelOpen(true); 
         setActiveTool('edit'); // Switch to edit tool to show properties/layers
         
         if (selected instanceof Textbox) {
@@ -211,13 +209,6 @@ export const useMemeEditor = (messageApi: MessageInstance) => {
         }
     };
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    canvas.on('mouse:down', (opt: any) => {
-        if (window.innerWidth < 768 && !opt.target) {
-            setIsPanelOpen(false);
-        }
-    });
-
     canvas.on('selection:created', handleSelection);
     canvas.on('selection:updated', handleSelection);
     canvas.on('selection:cleared', () => setActiveObject(null));
@@ -232,22 +223,15 @@ export const useMemeEditor = (messageApi: MessageInstance) => {
   }, []);
 
   const setBackgroundImage = (url: string) => {
-    // 1. Update state first to ensure UI is ready (canvas container becomes visible)
     setHasBackground(true); 
     setBgUrl(url); 
     setActiveTool('background');
 
     if (!canvasInstanceRef.current) return;
-    
-    // Lock history to prevent intermediate states (remove + add) from being saved individually
     isHistoryLocked.current = true;
 
-    // 2. Load image and set up canvas
     CanvasImage.fromURL(url).then((img) => {
       const canvas = canvasInstanceRef.current!;
-      
-      // We want to keep a high logical resolution (e.g., around 1000-1500px)
-      // while letting CSS handle the visual scaling down.
       const targetBaseSize = 1200; 
       const imgRatio = img.width / img.height;
       
@@ -260,43 +244,37 @@ export const useMemeEditor = (messageApi: MessageInstance) => {
         logicalW = targetBaseSize * imgRatio;
       }
 
-      canvas.setDimensions({ 
-        width: logicalW, 
-        height: logicalH 
-      });
-      
+      canvas.setDimensions({ width: logicalW, height: logicalH });
       const newSize = { width: logicalW, height: logicalH };
       setWorkspaceSize(newSize);
       workspaceSizeRef.current = newSize;
 
-      const scale = logicalW / img.width;
-      img.set('scaleX', scale);
-      img.set('scaleY', scale);
+      // Calculate scale to fit logical dimensions
+      const scaleX = logicalW / img.element!.naturalWidth;
+      const scaleY = logicalH / img.element!.naturalHeight;
+
+      img.set('width', img.element!.naturalWidth);
+      img.set('height', img.element!.naturalHeight);
+      img.set('scaleX', scaleX);
+      img.set('scaleY', scaleY);
       img.set('left', logicalW / 2);
       img.set('top', logicalH / 2);
-      
       img.set('selectable', false);
       img.set('evented', false);
+      img.set('name', 'background');
       
       canvas.getObjects().filter(o => o.name === 'background').forEach(o => canvas.remove(o));
-      img.set('name', 'background');
       canvas.add(img);
       canvas.sendObjectToBack(img);
       canvas.renderAll();
-      
-      // Unlock history
       isHistoryLocked.current = false;
 
       setTimeout(() => {
-        if (canvasInstanceRef.current) {
-          canvasInstanceRef.current.requestRender();
-        }
+        if (canvasInstanceRef.current) canvasInstanceRef.current.requestRender();
       }, 100);
     }).catch((err) => {
       console.error('Failed to load image:', err);
       messageApi.error('이미지를 불러오는데 실패했습니다.');
-      
-      // Revert state
       setHasBackground(false);
       setBgUrl('');
       setActiveTool(null);
@@ -304,33 +282,19 @@ export const useMemeEditor = (messageApi: MessageInstance) => {
     });
   };
 
-  const handleToolClick = (tool: ToolType) => {
-    if (activeTool === tool && window.innerWidth < 768) {
-      setIsPanelOpen(!isPanelOpen); 
-    } else {
-      setActiveTool(tool);
-      setIsPanelOpen(true);
-    }
-  };
-
   const selectLayer = (obj: CanvasObject) => {
     if (!canvasInstanceRef.current) return;
     canvasInstanceRef.current.setActiveObject(obj);
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleImageUpload = (info: any) => {
     const file = info.file?.originFileObj || info.file || info;
     if (file instanceof File || file instanceof Blob) {
       const reader = new FileReader();
       reader.onload = (e) => {
-        if (e.target?.result) {
-          setBackgroundImage(e.target.result as string);
-        }
+        if (e.target?.result) setBackgroundImage(e.target.result as string);
       };
       reader.readAsDataURL(file);
-    } else {
-      console.error('Invalid file object:', file);
     }
   };
 
@@ -356,7 +320,6 @@ export const useMemeEditor = (messageApi: MessageInstance) => {
     if (!canvasInstanceRef.current) return;
     const active = canvasInstanceRef.current.getActiveObject();
     if (active) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         active.set(key as any, value);
         canvasInstanceRef.current.renderAll();
         if (key === 'fill') setColor(value as string);
@@ -378,19 +341,11 @@ export const useMemeEditor = (messageApi: MessageInstance) => {
     if (!canvasInstanceRef.current) return;
     const centerX = CANVAS_MARGIN + workspaceSize.width/2;
     const centerY = CANVAS_MARGIN + workspaceSize.height/2;
-    const common = { 
-      fill: '#ffffff', 
-      stroke: '#000000',
-      strokeWidth: 0,
-      name: 'shape'
-    };
+    const common = { fill: '#ffffff', stroke: '#000000', strokeWidth: 0, name: 'shape' };
     
     let shape;
-    if (type === 'rect') {
-        shape = new Rect({ ...common, left: centerX, top: centerY, width: 100, height: 100 });
-    } else {
-        shape = new Circle({ ...common, left: centerX, top: centerY, radius: 50 });
-    }
+    if (type === 'rect') shape = new Rect({ ...common, left: centerX, top: centerY, width: 100, height: 100 });
+    else shape = new Circle({ ...common, left: centerX, top: centerY, radius: 50 });
     
     canvasInstanceRef.current.add(shape); 
     canvasInstanceRef.current.setActiveObject(shape); 
@@ -399,9 +354,8 @@ export const useMemeEditor = (messageApi: MessageInstance) => {
   const downloadImage = async (format: 'png' | 'jpg' | 'webp' | 'pdf') => {
     if (!canvasInstanceRef.current) return;
     const canvas = canvasInstanceRef.current;
-    
     const dataURL = canvas.toDataURL({ 
-      format: (format === 'jpg' ? 'jpeg' : format) as 'png' | 'jpeg' | 'webp', 
+      format: (format === 'jpg' ? 'jpeg' : format) as any, 
       multiplier: 2,
       width: workspaceSize.width,
       height: workspaceSize.height
@@ -411,11 +365,15 @@ export const useMemeEditor = (messageApi: MessageInstance) => {
       try {
         messageApi.loading('PDF 생성 중...');
         const { default: jsPDF } = await import('jspdf');
-        const pdf = new jsPDF({ orientation: workspaceSize.width > workspaceSize.height ? 'landscape' : 'portrait', unit: 'px', format: [workspaceSize.width, workspaceSize.height] });
+        const pdf = new jsPDF({ 
+          orientation: workspaceSize.width > workspaceSize.height ? 'landscape' : 'portrait', 
+          unit: 'px', 
+          format: [workspaceSize.width, workspaceSize.height] 
+        });
         pdf.addImage(dataURL, 'PNG', 0, 0, workspaceSize.width, workspaceSize.height);
         pdf.save(`meme-${Date.now()}.pdf`);
         messageApi.success('PDF 다운로드 완료');
-      } catch (error) { console.error(error); messageApi.error('PDF 생성에 실패했습니다'); }
+      } catch (error) { messageApi.error('PDF 생성에 실패했습니다'); }
     } else {
       const link = document.createElement('a'); 
       link.download = `meme-${Date.now()}.${format}`;
@@ -428,29 +386,23 @@ export const useMemeEditor = (messageApi: MessageInstance) => {
   const copyToClipboard = async () => {
     if (!canvasInstanceRef.current) return;
     try {
-      const canvas = canvasInstanceRef.current;
-      const dataURL = canvas.toDataURL({ 
-          format: 'png', 
-          multiplier: 2,
-          width: workspaceSize.width,
-          height: workspaceSize.height
+      const dataURL = canvasInstanceRef.current.toDataURL({ 
+          format: 'png', multiplier: 2, width: workspaceSize.width, height: workspaceSize.height
       });
       const blob = await (await fetch(dataURL)).blob();
       await navigator.clipboard.write([ new ClipboardItem({ [blob.type]: blob }) ]);
       messageApi.success('클립보드에 복사되었습니다');
-    } catch (err) { console.error('Failed to copy: ', err); messageApi.error('복사에 실패했습니다'); }
+    } catch (err) { messageApi.error('복사에 실패했습니다'); }
   };
 
   const changeZIndex = (direction: 'forward' | 'backward' | 'front' | 'back') => {
     if (!canvasInstanceRef.current || !activeObject) return;
     const canvas = canvasInstanceRef.current;
-    const obj = activeObject;
-    
     switch(direction) {
-      case 'forward': canvas.bringObjectForward(obj); break;
-      case 'backward': canvas.sendObjectBackwards(obj); break;
-      case 'front': canvas.bringObjectToFront(obj); break;
-      case 'back': canvas.sendObjectToBack(obj); break;
+      case 'forward': canvas.bringObjectForward(activeObject); break;
+      case 'backward': canvas.sendObjectBackwards(activeObject); break;
+      case 'front': canvas.bringObjectToFront(activeObject); break;
+      case 'back': canvas.sendObjectToBack(activeObject); break;
     }
     setLayers([...canvas.getObjects()]);
   };
@@ -459,9 +411,9 @@ export const useMemeEditor = (messageApi: MessageInstance) => {
     canvasRef,
     containerRef,
     activeTool,
-    setActiveTool: handleToolClick,
-    isPanelOpen,
-    setIsPanelOpen,
+    setActiveTool,
+    isPanelOpen: false,
+    setIsPanelOpen: () => {},
     activeObject,
     layers,
     color,

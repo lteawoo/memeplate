@@ -17,6 +17,11 @@
   - [x] 이벤트 중복 실행 방지 및 리소스 정리(Cleanup) 로직 구현
 
 ## 향후 과제
+- [x] **모바일 레이아웃 개편 (#25)**
+  - [x] `MemeEditor.tsx`: 모바일 전용 오버레이(`fixed`) 제거 및 세로 배치 로직 구현
+  - [x] `EditorLayout.tsx`: 모바일에서의 `flex-col` 및 `overflow` 속성 조정
+  - [x] `MemeCanvas.tsx`: 모바일 스크롤 환경에 맞는 높이 최적화
+  - [x] `useMemeEditor.ts`: 패널 상태(`isPanelOpen`) 관련 불필요한 로직 제거
 - [ ] **에디터 기능 확장**
   - [ ] 텍스트 영역 클리핑 (틀 밖으로 나가는 글자 숨김)
   - [ ] 다중 선택(Multi-selection) 지원

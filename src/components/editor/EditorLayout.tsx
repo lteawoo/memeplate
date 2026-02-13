@@ -8,12 +8,12 @@ interface EditorLayoutProps {
 
 const EditorLayout: React.FC<EditorLayoutProps> = ({ sidebar, children }) => {
   return (
-    <Layout className="flex-1 overflow-hidden flex flex-col md:flex-row bg-white">
+    <Layout className="flex-1 flex flex-col md:flex-row bg-white overflow-y-auto md:overflow-hidden">
       {/* 
          Desktop: Sidebar is at the left.
-         Mobile: Handled by fixed bottom UI in MemeEditor.
+         Mobile: Stacked vertically.
       */}
-      <div className="flex-1 relative flex flex-col md:flex-row overflow-hidden">
+      <div className="flex-1 relative flex flex-col md:flex-row">
         {sidebar}
         {children}
       </div>
