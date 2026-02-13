@@ -15,8 +15,10 @@ interface MemeCanvasProps {
   completeTextEdit?: (id: string, newText: string) => void;
   canvasInstance?: Canvas | null;
   workspaceSize?: { width: number; height: number };
-  zoomMode?: 'fit' | 'actual';
+  zoomMode?: 'fit' | 'manual';
+  zoomPercent?: number;
   onZoomPercentChange?: (percent: number) => void;
+  onWheelZoom?: (deltaY: number) => void;
 }
 
 const MemeCanvas: React.FC<MemeCanvasProps> = ({ 
@@ -28,7 +30,9 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
   canvasInstance,
   workspaceSize,
   zoomMode = 'fit',
-  onZoomPercentChange
+  zoomPercent = 100,
+  onZoomPercentChange,
+  onWheelZoom
 }) => {
   const { token } = theme.useToken();
   const [editingText, setEditingText] = React.useState('');
@@ -52,7 +56,8 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
     return Math.min(viewportSize.width / intrinsicWidth, viewportSize.height / intrinsicHeight);
   }, [intrinsicWidth, intrinsicHeight, viewportSize.width, viewportSize.height]);
 
-  const displayScale = zoomMode === 'fit' ? fitScale : 1;
+  const manualScale = Math.max(0.2, Math.min(4, zoomPercent / 100));
+  const displayScale = zoomMode === 'fit' ? fitScale : manualScale;
   const displayWidth = intrinsicWidth ? Math.max(1, Math.round(intrinsicWidth * displayScale)) : 0;
   const displayHeight = intrinsicHeight ? Math.max(1, Math.round(intrinsicHeight * displayScale)) : 0;
 
@@ -171,10 +176,15 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
         className={`relative transition-all duration-300 flex items-center justify-center overflow-hidden ${hasBackground ? 'opacity-100 scale-100 w-full h-full' : 'opacity-0 scale-95 pointer-events-none absolute w-0 h-0'}`}
         style={{ fontSize: 0 }}
         onClick={(e) => e.stopPropagation()}
+        onWheel={(e) => {
+          if (!(e.ctrlKey || e.metaKey)) return;
+          e.preventDefault();
+          onWheelZoom?.(e.deltaY);
+        }}
       >
          <canvas 
             ref={canvasRef} 
-            className="border border-slate-100 shadow-sm bg-white"
+            className="border border-slate-100 shadow-sm bg-white transition-[width,height] duration-200 ease-out"
             style={{ 
               touchAction: 'none',
               width: displayWidth ? `${displayWidth}px` : undefined,

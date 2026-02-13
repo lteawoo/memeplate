@@ -35,6 +35,10 @@
   - [x] `Canvas.ts`: render scale/backing store 동기화 로직 추가
   - [x] `MemeCanvas.tsx`: 표시 배율 연동 `setRenderScale` 적용
   - [x] `MemeCanvas.tsx`: 편집 textarea의 폰트/정렬/스타일 동기화
+- [x] **줌 UX 고도화 (#39)**
+  - [x] `MemeEditor.tsx`: `fit/manual` 줌 상태 및 `- / + / 퍼센트 입력` 컨트롤 추가
+  - [x] `MemeCanvas.tsx`: 수동 줌 퍼센트 기반 표시 스케일 계산 추가
+  - [x] `MemeCanvas.tsx`: `Ctrl/Cmd + Wheel` 연속 줌 이벤트 연결
 - [x] **고정 크기 조절점 (#27)**
   - [x] `Canvas.ts`: 화면 배율 역보정 로직 (`getSceneScale`) 도입
   - [x] `Canvas.ts`: `drawControls` 핸들 크기 및 선 두께 보정

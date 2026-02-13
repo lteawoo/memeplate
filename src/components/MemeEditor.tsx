@@ -1,5 +1,5 @@
 import React from 'react';
-import { Layout, message, Button, Tooltip } from 'antd';
+import { Layout, message, Button, Tooltip, InputNumber } from 'antd';
 import Icon from '@mdi/react';
 import { mdiUndo, mdiRedo } from '@mdi/js';
 
@@ -11,8 +11,13 @@ import MemeCanvas from './editor/MemeCanvas';
 import { useMemeEditor } from '../hooks/useMemeEditor';
 
 const MemeEditor: React.FC = () => {
+  const ZOOM_MIN = 20;
+  const ZOOM_MAX = 400;
+  const ZOOM_STEP = 10;
+  const WHEEL_ZOOM_FACTOR = 0.08;
+
   const [messageApi, contextHolder] = message.useMessage();
-  const [zoomMode, setZoomMode] = React.useState<'fit' | 'actual'>('fit');
+  const [zoomMode, setZoomMode] = React.useState<'fit' | 'manual'>('fit');
   const [zoomPercent, setZoomPercent] = React.useState(100);
   
   const {
@@ -70,6 +75,25 @@ const MemeEditor: React.FC = () => {
     }
   }, [hasBackground]);
 
+  const clampZoomPercent = React.useCallback((value: number) => {
+    if (!isFinite(value)) return 100;
+    return Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Math.round(value)));
+  }, [ZOOM_MAX, ZOOM_MIN]);
+
+  const setManualZoom = React.useCallback((value: number) => {
+    setZoomMode('manual');
+    setZoomPercent(clampZoomPercent(value));
+  }, [clampZoomPercent]);
+
+  const nudgeZoom = React.useCallback((delta: number) => {
+    setManualZoom(zoomPercent + delta);
+  }, [setManualZoom, zoomPercent]);
+
+  const handleWheelZoom = React.useCallback((deltaY: number) => {
+    const next = zoomPercent - (deltaY * WHEEL_ZOOM_FACTOR);
+    setManualZoom(next);
+  }, [WHEEL_ZOOM_FACTOR, setManualZoom, zoomPercent]);
+
   React.useEffect(() => {
     const handleZoomReset = (e: KeyboardEvent) => {
       if (!(e.metaKey || e.ctrlKey)) return;
@@ -124,18 +148,39 @@ const MemeEditor: React.FC = () => {
                         Fit
                       </Button>
                     </Tooltip>
-                    <Tooltip title="원본 크기 (100%)">
+                    <Tooltip title="실제 크기 (100%)">
                       <Button
                         size="small"
-                        type={zoomMode === 'actual' ? 'primary' : 'default'}
-                        onClick={() => setZoomMode('actual')}
+                        type={zoomMode === 'manual' && zoomPercent === 100 ? 'primary' : 'default'}
+                        onClick={() => setManualZoom(100)}
                       >
                         100%
                       </Button>
                     </Tooltip>
-                    <span className="ml-auto min-w-12 text-right text-xs font-semibold text-slate-600">
-                      {zoomPercent}%
-                    </span>
+                    <div className="mx-1 h-6 w-px bg-slate-200" />
+                    <Tooltip title="축소">
+                      <Button size="small" onClick={() => nudgeZoom(-ZOOM_STEP)}>-</Button>
+                    </Tooltip>
+                    <Tooltip title="확대">
+                      <Button size="small" onClick={() => nudgeZoom(ZOOM_STEP)}>+</Button>
+                    </Tooltip>
+                    <InputNumber
+                      size="small"
+                      min={ZOOM_MIN}
+                      max={ZOOM_MAX}
+                      step={ZOOM_STEP}
+                      controls={false}
+                      value={zoomPercent}
+                      suffix="%"
+                      className="ml-auto w-20"
+                      onChange={(value) => {
+                        if (typeof value !== 'number') return;
+                        setManualZoom(value);
+                      }}
+                      onStep={(value) => {
+                        setManualZoom(value);
+                      }}
+                    />
                   </div>
                 </div>
               )}
@@ -164,7 +209,9 @@ const MemeEditor: React.FC = () => {
                   canvasInstance={canvasInstance}
                   workspaceSize={workspaceSize}
                   zoomMode={zoomMode}
+                  zoomPercent={zoomPercent}
                   onZoomPercentChange={setZoomPercent}
+                  onWheelZoom={handleWheelZoom}
                 />
             </div>
 
@@ -204,14 +251,30 @@ const MemeEditor: React.FC = () => {
                       </Button>
                       <Button
                         size="small"
-                        type={zoomMode === 'actual' ? 'primary' : 'default'}
-                        onClick={() => setZoomMode('actual')}
+                        type={zoomMode === 'manual' && zoomPercent === 100 ? 'primary' : 'default'}
+                        onClick={() => setManualZoom(100)}
                       >
                         100%
                       </Button>
-                      <span className="ml-auto min-w-10 text-right text-xs font-semibold text-slate-600">
-                        {zoomPercent}%
-                      </span>
+                      <Button size="small" onClick={() => nudgeZoom(-ZOOM_STEP)}>-</Button>
+                      <Button size="small" onClick={() => nudgeZoom(ZOOM_STEP)}>+</Button>
+                      <InputNumber
+                        size="small"
+                        min={ZOOM_MIN}
+                        max={ZOOM_MAX}
+                        step={ZOOM_STEP}
+                        controls={false}
+                        value={zoomPercent}
+                        suffix="%"
+                        className="ml-auto w-20"
+                        onChange={(value) => {
+                          if (typeof value !== 'number') return;
+                          setManualZoom(value);
+                        }}
+                        onStep={(value) => {
+                          setManualZoom(value);
+                        }}
+                      />
                     </div>
                   </div>
                 )}
