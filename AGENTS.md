@@ -1,4 +1,5 @@
-# AI 실행 환경 가이드 (AI Agent Execution Guide)
+**필수적으로 따라야함**
+1. docs/master_rule_v2.md (작업 규칙)
 
 ## 1. 실행 방법 (Execution Methods)
 
