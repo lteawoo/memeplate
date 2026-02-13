@@ -172,16 +172,6 @@ const MemeEditor: React.FC = () => {
                         onClick={() => nudgeZoom(ZOOM_STEP)}
                       />
                     </Tooltip>
-                    <div className="mx-1 h-6 w-px bg-slate-200" />
-                    <Tooltip title="화면에 맞춤 (Ctrl/Cmd+0)">
-                      <Button
-                        size="small"
-                        type={zoomMode === 'fit' ? 'primary' : 'default'}
-                        onClick={() => setZoomMode('fit')}
-                      >
-                        Fit
-                      </Button>
-                    </Tooltip>
                   </div>
                 </div>
               )}
@@ -272,14 +262,6 @@ const MemeEditor: React.FC = () => {
                         icon={<Icon path={mdiPlus} size={0.62} />}
                         onClick={() => nudgeZoom(ZOOM_STEP)}
                       />
-                      <div className="mx-1 h-5 w-px bg-slate-200" />
-                      <Button
-                        size="small"
-                        type={zoomMode === 'fit' ? 'primary' : 'default'}
-                        onClick={() => setZoomMode('fit')}
-                      >
-                        Fit
-                      </Button>
                     </div>
                   </div>
                 )}
