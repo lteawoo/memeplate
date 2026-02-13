@@ -13,7 +13,6 @@ import { useMemeEditor } from '../hooks/useMemeEditor';
 const MemeEditor: React.FC = () => {
   const [messageApi, contextHolder] = message.useMessage();
   const [zoomMode, setZoomMode] = React.useState<'fit' | 'actual'>('fit');
-  const [zoomPercent, setZoomPercent] = React.useState(100);
   
   const {
     canvasRef,
@@ -66,7 +65,6 @@ const MemeEditor: React.FC = () => {
   React.useEffect(() => {
     if (!hasBackground) {
       setZoomMode('fit');
-      setZoomPercent(100);
     }
   }, [hasBackground]);
 
@@ -133,9 +131,6 @@ const MemeEditor: React.FC = () => {
                         100%
                       </Button>
                     </Tooltip>
-                    <span className="ml-auto min-w-12 text-right text-xs font-semibold text-slate-600">
-                      {zoomPercent}%
-                    </span>
                   </div>
                 </div>
               )}
@@ -164,7 +159,6 @@ const MemeEditor: React.FC = () => {
                   canvasInstance={canvasInstance}
                   workspaceSize={workspaceSize}
                   zoomMode={zoomMode}
-                  onZoomPercentChange={setZoomPercent}
                 />
             </div>
 
@@ -209,9 +203,6 @@ const MemeEditor: React.FC = () => {
                       >
                         100%
                       </Button>
-                      <span className="ml-auto min-w-10 text-right text-xs font-semibold text-slate-600">
-                        {zoomPercent}%
-                      </span>
                     </div>
                   </div>
                 )}

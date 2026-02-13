@@ -16,7 +16,6 @@ interface MemeCanvasProps {
   canvasInstance?: Canvas | null;
   workspaceSize?: { width: number; height: number };
   zoomMode?: 'fit' | 'actual';
-  onZoomPercentChange?: (percent: number) => void;
 }
 
 const MemeCanvas: React.FC<MemeCanvasProps> = ({ 
@@ -27,12 +26,8 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
   completeTextEdit,
   canvasInstance,
   workspaceSize,
-  zoomMode = 'fit',
-  onZoomPercentChange
+  zoomMode = 'fit'
 }) => {
-  const AUTO_FIT_MAX_SCALE_NEAR = 1.1;
-  const AUTO_FIT_MAX_SCALE_MID = 1.25;
-  const AUTO_FIT_MAX_SCALE_FAR = 1.4;
   const { token } = theme.useToken();
   const [editingText, setEditingText] = React.useState('');
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
@@ -52,20 +47,10 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
     if (!intrinsicWidth || !intrinsicHeight || !viewportSize.width || !viewportSize.height) {
       return 1;
     }
-    const rawFitScale = Math.min(
+    return Math.min(
       viewportSize.width / intrinsicWidth,
       viewportSize.height / intrinsicHeight
     );
-
-    // Large originals (rawFitScale <= 1) should stay in fit mode to avoid over-zoom.
-    if (rawFitScale <= 1) return rawFitScale;
-
-    // Small originals can be auto-enlarged, but cap by ratio bands for stable readability.
-    let autoMaxScale = AUTO_FIT_MAX_SCALE_NEAR;
-    if (rawFitScale >= 1.75) autoMaxScale = AUTO_FIT_MAX_SCALE_FAR;
-    else if (rawFitScale >= 1.25) autoMaxScale = AUTO_FIT_MAX_SCALE_MID;
-
-    return Math.min(rawFitScale, autoMaxScale);
   }, [intrinsicWidth, intrinsicHeight, viewportSize.width, viewportSize.height]);
 
   const displayScale = zoomMode === 'fit' ? fitScale : 1;
@@ -116,14 +101,6 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
 
     return () => observer.disconnect();
   }, [canvasRef, displayWidth, displayHeight, hasBackground, zoomMode]);
-
-  React.useEffect(() => {
-    if (!hasBackground) {
-      onZoomPercentChange?.(100);
-      return;
-    }
-    onZoomPercentChange?.(Math.max(1, Math.round(displayScale * 100)));
-  }, [hasBackground, displayScale, onZoomPercentChange]);
 
   React.useEffect(() => {
     if (editingObject) {
