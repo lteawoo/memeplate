@@ -35,6 +35,25 @@
   - [x] `Canvas.ts`: render scale/backing store 동기화 로직 추가
   - [x] `MemeCanvas.tsx`: 표시 배율 연동 `setRenderScale` 적용
   - [x] `MemeCanvas.tsx`: 편집 textarea의 폰트/정렬/스타일 동기화
+- [x] **줌 UX 고도화 (#39)**
+  - [x] `MemeEditor.tsx`: `fit/manual` 줌 상태 및 `- / + / 퍼센트 입력` 컨트롤 추가
+  - [x] `MemeCanvas.tsx`: 수동 줌 퍼센트 기반 표시 스케일 계산 추가
+  - [x] `MemeCanvas.tsx`: `Ctrl/Cmd + Wheel` 연속 줌 이벤트 연결
+  - [x] `MemeCanvas.tsx`: Auto Fit 스케일 상한(100%) 적용으로 과확대 방지
+  - [x] `MemeCanvas.tsx`: 화면/원본 비율에 따른 Auto Fit 가변 상한(1.1/1.25/1.4) 적용
+  - [x] `MemeEditor.tsx`: 줌 UI 요소 제거(버튼/입력)
+  - [x] `MemeCanvas.tsx`: Auto Fit 단일 스케일 계산으로 단순화
+  - [x] `MemeEditor.tsx`: `Fit`/`100%` 컨트롤 및 퍼센트 표시 복원
+  - [x] `MemeCanvas.tsx`: `fit/actual` 표시 모드 재연결 및 기본 `fit` 복구
+  - [x] `MemeEditor.tsx`: 줌 퍼센트 표시 제거
+  - [x] `MemeCanvas.tsx`: Auto Fit 가변 상한 제거 및 순수 Fit 비율 복원
+  - [x] `MemeEditor.tsx`: `workspaceSize` 변경 시 `zoomMode`를 `fit`으로 자동 복귀
+  - [x] `EditorLayout.tsx`/`MemeEditor.tsx`/`MemeCanvas.tsx`: `min-w-0` 추가로 대형 캔버스가 레이아웃 폭을 밀어내는 문제 수정
+  - [x] `MemeCanvas.tsx`: `fit` 모드 표시 크기를 floor 계산으로 변경해 비클리핑 보장 강화
+- [x] **줌 정책 단순화 (Fit/100% 제거 + 최대 px 자동 스케일)**
+  - [x] `MemeEditor.tsx`: `zoomMode` 상태 및 `Fit`/`100%` 버튼 제거
+  - [x] `MemeCanvas.tsx`: 단일 `displayScale` 계산으로 통합
+  - [x] `MemeCanvas.tsx`: 최대 표시 변 길이 `800px` 상한 적용
 - [x] **고정 크기 조절점 (#27)**
   - [x] `Canvas.ts`: 화면 배율 역보정 로직 (`getSceneScale`) 도입
   - [x] `Canvas.ts`: `drawControls` 핸들 크기 및 선 두께 보정

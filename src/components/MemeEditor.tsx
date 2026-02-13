@@ -12,8 +12,6 @@ import { useMemeEditor } from '../hooks/useMemeEditor';
 
 const MemeEditor: React.FC = () => {
   const [messageApi, contextHolder] = message.useMessage();
-  const [zoomMode, setZoomMode] = React.useState<'fit' | 'actual'>('fit');
-  const [zoomPercent, setZoomPercent] = React.useState(100);
   
   const {
     canvasRef,
@@ -62,25 +60,6 @@ const MemeEditor: React.FC = () => {
     copyToClipboard,
     changeZIndex
   };
-
-  React.useEffect(() => {
-    if (!hasBackground) {
-      setZoomMode('fit');
-      setZoomPercent(100);
-    }
-  }, [hasBackground]);
-
-  React.useEffect(() => {
-    const handleZoomReset = (e: KeyboardEvent) => {
-      if (!(e.metaKey || e.ctrlKey)) return;
-      if (e.key !== '0') return;
-      e.preventDefault();
-      setZoomMode('fit');
-    };
-    window.addEventListener('keydown', handleZoomReset);
-    return () => window.removeEventListener('keydown', handleZoomReset);
-  }, []);
-
   return (
     <Layout className="h-screen flex flex-col bg-white">
       {contextHolder}
@@ -114,28 +93,6 @@ const MemeEditor: React.FC = () => {
                         disabled={historyIndex >= history.length - 1}
                       />
                     </Tooltip>
-                    <div className="mx-1 h-6 w-px bg-slate-200" />
-                    <Tooltip title="화면에 맞춤 (Ctrl/Cmd+0)">
-                      <Button
-                        size="small"
-                        type={zoomMode === 'fit' ? 'primary' : 'default'}
-                        onClick={() => setZoomMode('fit')}
-                      >
-                        Fit
-                      </Button>
-                    </Tooltip>
-                    <Tooltip title="원본 크기 (100%)">
-                      <Button
-                        size="small"
-                        type={zoomMode === 'actual' ? 'primary' : 'default'}
-                        onClick={() => setZoomMode('actual')}
-                      >
-                        100%
-                      </Button>
-                    </Tooltip>
-                    <span className="ml-auto min-w-12 text-right text-xs font-semibold text-slate-600">
-                      {zoomPercent}%
-                    </span>
                   </div>
                 </div>
               )}
@@ -145,7 +102,7 @@ const MemeEditor: React.FC = () => {
             </div>
           }
         >
-          <div className="flex-1 flex flex-col min-h-0">
+          <div className="flex-1 min-w-0 flex flex-col min-h-0">
             {/* Canvas Area */}
             <div 
               className="flex-1 flex flex-col relative"
@@ -163,8 +120,6 @@ const MemeEditor: React.FC = () => {
                   completeTextEdit={completeTextEdit}
                   canvasInstance={canvasInstance}
                   workspaceSize={workspaceSize}
-                  zoomMode={zoomMode}
-                  onZoomPercentChange={setZoomPercent}
                 />
             </div>
 
@@ -194,24 +149,6 @@ const MemeEditor: React.FC = () => {
                           size="small"
                         />
                       </Tooltip>
-                      <div className="mx-1 h-5 w-px bg-slate-200" />
-                      <Button
-                        size="small"
-                        type={zoomMode === 'fit' ? 'primary' : 'default'}
-                        onClick={() => setZoomMode('fit')}
-                      >
-                        Fit
-                      </Button>
-                      <Button
-                        size="small"
-                        type={zoomMode === 'actual' ? 'primary' : 'default'}
-                        onClick={() => setZoomMode('actual')}
-                      >
-                        100%
-                      </Button>
-                      <span className="ml-auto min-w-10 text-right text-xs font-semibold text-slate-600">
-                        {zoomPercent}%
-                      </span>
                     </div>
                   </div>
                 )}

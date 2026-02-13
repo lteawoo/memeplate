@@ -13,7 +13,7 @@ const EditorLayout: React.FC<EditorLayoutProps> = ({ sidebar, children }) => {
          Desktop: Sidebar is at the left.
          Mobile: Stacked vertically.
       */}
-      <div className="flex-1 relative flex flex-col md:flex-row">
+      <div className="flex-1 min-w-0 relative flex flex-col md:flex-row">
         {sidebar}
         {children}
       </div>
