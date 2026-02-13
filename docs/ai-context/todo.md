@@ -27,6 +27,10 @@
   - [x] `MemeCanvas.tsx`: `Fit`/`100%` 토글 및 줌 퍼센트 표시 추가
   - [x] `MemeCanvas.tsx`: `Ctrl/Cmd + 0` 단축키로 `Fit` 복귀 지원
   - [x] `MemeEditor.tsx`: `workspaceSize` 전달로 표시 스케일 연동
+- [x] **린트 경고 정리 (#33)**
+  - [x] `useMemeEditor.ts`: Undo/Redo 키보드 effect 의존성 경고 제거
+  - [x] `useMemeEditor.ts`: 이벤트/업로드 파라미터의 `any` 타입 제거
+  - [x] `useMemeEditor.ts`: 미사용 에러 변수 정리 및 타입 캐스팅 정리
 - [x] **고정 크기 조절점 (#27)**
   - [x] `Canvas.ts`: 화면 배율 역보정 로직 (`getSceneScale`) 도입
   - [x] `Canvas.ts`: `drawControls` 핸들 크기 및 선 두께 보정
