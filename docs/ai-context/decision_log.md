@@ -1,5 +1,19 @@
 # 결정 로그 (Decision Log)
 
+## [2026-02-13] 텍스트 선명도 개선을 위한 렌더 스케일(Backing Store) 도입
+- **결정**: 캔버스 CSS 표시 배율이 100%를 넘을 때도 텍스트가 흐려지지 않도록, 표시 배율과 `devicePixelRatio`를 반영한 렌더 스케일을 캔버스 백킹 스토어에 적용함.
+- **이유**:
+  1. **품질 유지**: CSS 확대만으로는 비트맵이 늘어나 텍스트가 흐려지므로, 고해상도 재렌더가 필요함.
+  2. **일관성**: Fit/100% 전환 시에도 텍스트 품질 편차를 줄여 사용자 체감 품질을 안정화함.
+- **구현 요약**:
+  - `Canvas.ts`: `renderScale`, `setRenderScale`, backing store 동기화(`syncBackingStoreSize`) 추가.
+  - `render()`에서 `setTransform(renderScale, ...)` 적용해 논리 좌표계는 유지하고 픽셀 밀도만 확장.
+  - `MemeCanvas.tsx`에서 `displayScale`과 `devicePixelRatio`를 조합해 `canvasInstance.setRenderScale(...)` 호출.
+
+## [2026-02-13] 텍스트 편집 오버레이 스타일 동기화 강화
+- **결정**: 더블클릭 편집 textarea 스타일을 텍스트 객체의 실제 속성(`textAlign`, `lineHeight`, `fontFamily`, `fontWeight`, `fontStyle`)과 동기화함.
+- **이유**: 편집 중 시각과 최종 캔버스 렌더가 다르면 품질 저하로 오해되기 쉬우므로, WYSIWYG 정합성을 우선함.
+
 ## [2026-02-13] lint 경고 0 기준 복구를 위한 `useMemeEditor` 타입/훅 정리
 - **결정**: `useMemeEditor.ts`에서 경고를 임시 비활성화하지 않고, 훅 의존성과 타입 정의를 보강해 `eslint --max-warnings 0` 기준을 직접 만족하도록 수정함.
 - **이유**:

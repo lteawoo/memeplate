@@ -25,6 +25,9 @@
   - [x] `useMemeEditor.ts`의 `react-hooks/exhaustive-deps` 경고 제거
   - [x] `useMemeEditor.ts`의 `no-explicit-any` 경고 제거
   - [x] `useMemeEditor.ts`의 `no-unused-vars` 경고 제거
+- [x] **텍스트 레이어 렌더 선명도 개선 (완료 - 이슈 #37)**
+  - [x] 고배율 표시 시 캔버스 백킹 스토어 렌더 스케일 적용
+  - [x] 편집 textarea 스타일을 텍스트 객체 스타일과 동기화
 
 ## 다음 작업
 - [ ] 텍스트 레이어 영역 클리핑(Clipping) 처리
