@@ -87,9 +87,20 @@
   - [x] 루트 스크립트 연결 (`npm run dev:api`, `npm run build:api`)
 - [x] **1.1 환경설정/헬스체크 정리**
   - [x] `.env.development` / `.env.production` 분리 로딩 구현
-  - [x] `server/.env.development.example`, `server/.env.production.example` 추가
+  - [x] `apps/api/.env.development.example`, `apps/api/.env.production.example` 추가
   - [x] `GET /healthz` 엔드포인트 추가
   - [x] 헬스체크 URL 수동 검증 (`/healthz`, `/api/v1/health`)
+- [x] **1.2 pnpm 모노레포 전환**
+  - [x] 워크스페이스 경로를 `apps/web`, `apps/api`로 재구성
+  - [x] 루트 `package.json`을 workspace 오케스트레이터로 전환
+  - [x] `pnpm-workspace.yaml` 및 `pnpm-lock.yaml` 추가
+  - [x] `package-lock.json` 계열 제거
+  - [x] `apps/api/README.md` 경로/실행 명령 갱신
+- [x] **1.3 프로덕션 배포 경로 통합**
+  - [x] API 서버에서 SPA 정적 서빙(`@fastify/static`) 구현
+  - [x] `WEB_DIST_DIR` 환경변수 추가 및 example 반영
+  - [x] SPA fallback 라우트(`/* -> index.html`, `/api*` 제외) 구현
+  - [x] 프로덕션 모드 수동 검증 (`/`, `/create`, `/api/v1/health`)
 - [ ] **2차 인증 구현**
   - [ ] Google OAuth 시작/콜백 엔드포인트 구현
   - [ ] 세션 쿠키 정책 확정 및 로그인 상태 조회 API 추가

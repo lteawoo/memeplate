@@ -34,8 +34,8 @@ dist-ssr
 .env
 .env.*
 !.env.example
-!server/.env.example
-!server/.env.*.example
+!apps/api/.env.example
+!apps/api/.env.*.example
 
 # Testing & Debugging
 coverage

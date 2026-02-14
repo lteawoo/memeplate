@@ -66,9 +66,21 @@
   - [x] API 타입 빌드/타입체크 통과
 - [x] **백엔드 환경설정 분리 및 헬스체크 URL 확장 (완료 - 백엔드 1.1)**
   - [x] `NODE_ENV` 기반 `.env.development` / `.env.production` 로딩 지원
-  - [x] `server/.env.*.example` 템플릿 파일 추가
+  - [x] `apps/api/.env.*.example` 템플릿 파일 추가
   - [x] 루트 헬스체크 URL `GET /healthz` 추가 (`/api/v1/health` 유지)
   - [x] 로컬 기동 후 헬스체크 2개 URL 응답 확인
+- [x] **pnpm 모노레포 구조 전환 (완료 - 백엔드/프론트 통합 운영 기반)**
+  - [x] 워크스페이스 구조 재배치: `apps/web`, `apps/api`
+  - [x] 루트 워크스페이스 설정 추가: `pnpm-workspace.yaml`, `packageManager: pnpm`
+  - [x] 루트 스크립트를 workspace filter 기반으로 정리 (`dev`, `dev:web`, `dev:api`, `build`, `lint`)
+  - [x] `pnpm dev` 실행 시 web+api 동시 기동으로 변경
+  - [x] `npm lock` 제거 및 `pnpm-lock.yaml` 생성
+  - [x] `pnpm build`, `pnpm lint`, `pnpm dev` + `/healthz` 응답 검증
+- [x] **프로덕션 단일 서버 배포 경로 정리 (완료 - API static SPA 서빙)**
+  - [x] `apps/api`에 `@fastify/static` 기반 정적 파일 서빙 추가
+  - [x] `NODE_ENV=production`에서 `apps/web/dist`를 API 서버가 직접 서빙
+  - [x] `/api/*`, `/healthz` 제외 GET 요청은 `index.html` fallback 처리
+  - [x] `NODE_ENV=production pnpm start` 기준 `/`, `/create`, `/api/v1/health` 응답 검증
 
 ## 다음 작업
 - [ ] Google OAuth 로그인 엔드포인트 구현 (`/api/v1/auth/*`)

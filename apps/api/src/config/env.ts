@@ -27,6 +27,7 @@ const EnvSchema = z.object({
   API_PORT: z.coerce.number().int().positive().default(8080),
   API_HOST: z.string().min(1).default('0.0.0.0'),
   WEB_ORIGIN: z.string().url().default('http://localhost:5174'),
+  WEB_DIST_DIR: optionalString,
   SUPABASE_URL: optionalUrl,
   SUPABASE_ANON_KEY: optionalString,
   SUPABASE_SERVICE_ROLE_KEY: optionalString
