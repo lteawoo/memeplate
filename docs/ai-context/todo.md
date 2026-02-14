@@ -78,3 +78,17 @@
 - [ ] **시스템 고도화**
   - [ ] 웹 워커(Web Worker) 기반 내보내기 처리
   - [ ] Undo/Redo 로직 정밀화
+
+## 백엔드 도입 (Fastify) [In Progress]
+- [x] **1차 스캐폴딩**
+  - [x] `server/` 패키지 초기화 (`Fastify + TS + Zod`)
+  - [x] API 진입점 및 라우트 모듈 생성 (`health`, `auth`, `templates`)
+  - [x] 환경변수 스키마 및 `.env.example` 추가
+  - [x] 루트 스크립트 연결 (`npm run dev:api`, `npm run build:api`)
+- [ ] **2차 인증 구현**
+  - [ ] Google OAuth 시작/콜백 엔드포인트 구현
+  - [ ] 세션 쿠키 정책 확정 및 로그인 상태 조회 API 추가
+- [ ] **3차 템플릿 도메인 구현**
+  - [ ] `TemplateRepository` Supabase 구현체 추가
+  - [ ] 내 템플릿 조회/등록/수정/삭제 API 구현
+  - [ ] 공개/비공개(공유) 정책 API 반영
