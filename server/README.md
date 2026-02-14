@@ -10,8 +10,17 @@ npm run dev
 
 기본 주소: `http://localhost:8080`
 
+## 환경 변수
+
+- 개발: `server/.env.development`
+- 운영: `server/.env.production`
+- 샘플: `server/.env.development.example`, `server/.env.production.example`
+
+서버는 `NODE_ENV` 값에 따라 `.env.{NODE_ENV}`를 우선 로드합니다.
+
 ## 엔드포인트
 
+- `GET /healthz`
 - `GET /api/v1/health`
 - `GET /api/v1/auth/google/start` (placeholder)
 - `GET /api/v1/auth/google/callback` (placeholder)

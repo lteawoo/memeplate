@@ -1,5 +1,16 @@
 # 결정 로그 (Decision Log)
 
+## [2026-02-14] 백엔드 env 전략 분리: `NODE_ENV` 기반 `.env.development`/`.env.production` 채택
+- **결정**: API 서버 환경변수 파일을 개발/운영으로 분리하고, 런타임에서 `NODE_ENV`에 해당하는 `.env.{NODE_ENV}`를 우선 로드하도록 변경함.
+- **이유**:
+  1. **운영 안전성**: 개발/운영 키 혼입 리스크를 줄이고 배포 시 설정 실수를 방지.
+  2. **협업 효율**: 팀원이 템플릿 파일(`.env.*.example`)을 기준으로 즉시 필요한 값만 채울 수 있음.
+  3. **초기 유연성**: Supabase 키가 비어 있어도 서버 기동/헬스체크가 가능하도록 optional 파싱을 보강.
+- **구현 요약**:
+  - `server/src/config/env.ts`에서 `.env` + `.env.{NODE_ENV}` 순차 로딩 및 빈 문자열 optional 처리 추가.
+  - `server/.env.development.example`, `server/.env.production.example` 추가.
+  - 헬스체크 URL을 `GET /healthz`로 추가하고 기존 `GET /api/v1/health`는 유지.
+
 ## [2026-02-14] 백엔드 분리 전략 채택: `Fastify + TypeScript + Zod` 스캐폴딩 우선
 - **결정**: 기존 React 프론트 구조를 유지하면서 `server/` 독립 패키지로 BFF(API 서버) 골격을 먼저 도입하고, 인증/템플릿 도메인을 모듈 단위로 분리함.
 - **이유**:

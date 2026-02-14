@@ -85,6 +85,11 @@
   - [x] API 진입점 및 라우트 모듈 생성 (`health`, `auth`, `templates`)
   - [x] 환경변수 스키마 및 `.env.example` 추가
   - [x] 루트 스크립트 연결 (`npm run dev:api`, `npm run build:api`)
+- [x] **1.1 환경설정/헬스체크 정리**
+  - [x] `.env.development` / `.env.production` 분리 로딩 구현
+  - [x] `server/.env.development.example`, `server/.env.production.example` 추가
+  - [x] `GET /healthz` 엔드포인트 추가
+  - [x] 헬스체크 URL 수동 검증 (`/healthz`, `/api/v1/health`)
 - [ ] **2차 인증 구현**
   - [ ] Google OAuth 시작/콜백 엔드포인트 구현
   - [ ] 세션 쿠키 정책 확정 및 로그인 상태 조회 API 추가

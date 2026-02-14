@@ -64,6 +64,11 @@
   - [x] 모듈 구조 분리 (`auth`, `templates`, `health`)
   - [x] 루트 스크립트 연결 (`dev:api`, `build:api`)
   - [x] API 타입 빌드/타입체크 통과
+- [x] **백엔드 환경설정 분리 및 헬스체크 URL 확장 (완료 - 백엔드 1.1)**
+  - [x] `NODE_ENV` 기반 `.env.development` / `.env.production` 로딩 지원
+  - [x] `server/.env.*.example` 템플릿 파일 추가
+  - [x] 루트 헬스체크 URL `GET /healthz` 추가 (`/api/v1/health` 유지)
+  - [x] 로컬 기동 후 헬스체크 2개 URL 응답 확인
 
 ## 다음 작업
 - [ ] Google OAuth 로그인 엔드포인트 구현 (`/api/v1/auth/*`)

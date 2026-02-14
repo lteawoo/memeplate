@@ -9,6 +9,13 @@ export const buildApp = () => {
     logger: true
   });
 
+  app.get('/healthz', async () => {
+    return {
+      ok: true,
+      service: 'memeplate-api'
+    };
+  });
+
   app.register(registerCors);
   app.register(healthRoutes, { prefix: '/api/v1' });
   app.register(authRoutes, { prefix: '/api/v1' });
