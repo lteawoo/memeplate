@@ -322,7 +322,7 @@ export const useMemeEditor = (messageApi: MessageInstance) => {
       fontSize: 40, 
       fill: '#ffffff', 
       stroke: '#000000', 
-      strokeWidth: 2, 
+      strokeWidth: 1, 
       name: 'text'
     });
     canvasInstanceRef.current.add(text); 
