@@ -102,8 +102,12 @@
   - [x] SPA fallback 라우트(`/* -> index.html`, `/api*` 제외) 구현
   - [x] 프로덕션 모드 수동 검증 (`/`, `/create`, `/api/v1/health`)
 - [ ] **2차 인증 구현**
-  - [ ] Google OAuth 시작/콜백 엔드포인트 구현
-  - [ ] 세션 쿠키 정책 확정 및 로그인 상태 조회 API 추가
+  - [x] Supabase 인증 스키마(SQL) 초안 작성 (`docs/ai-context/sql/2026-02-14_supabase_auth_schema.sql`)
+  - [x] Google OAuth start/callback 라우트 구현
+  - [x] 세션 쿠키 발급/해제 및 `auth/me` 조회 API 구현
+  - [x] `MainHeader` 로그인/로그아웃 UI 및 세션 상태 표시 연동
+  - [x] `/login` 페이지 추가 (Memeplate 로고 + 하단 구글 로그인 버튼)
+  - [ ] Supabase SQL 실행 및 초기 데이터 검증
 - [ ] **3차 템플릿 도메인 구현**
   - [ ] `TemplateRepository` Supabase 구현체 추가
   - [ ] 내 템플릿 조회/등록/수정/삭제 API 구현

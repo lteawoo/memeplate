@@ -23,9 +23,10 @@ pnpm --filter memeplate-api dev
 
 - `GET /healthz`
 - `GET /api/v1/health`
-- `GET /api/v1/auth/google/start` (placeholder)
-- `GET /api/v1/auth/google/callback` (placeholder)
-- `POST /api/v1/auth/logout` (placeholder)
+- `GET /api/v1/auth/google/start` (Google OAuth redirect)
+- `GET /api/v1/auth/google/callback` (Google OAuth callback + session issue)
+- `GET /api/v1/auth/me` (session check)
+- `POST /api/v1/auth/logout` (session revoke + cookie clear)
 - `GET /api/v1/templates/me` (placeholder)
 - `POST /api/v1/templates` (payload zod 검증 포함)
 - `PATCH /api/v1/templates/:templateId` (payload zod 검증 포함)
