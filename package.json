@@ -8,7 +8,9 @@
   },
   "scripts": {
     "dev": "vite",
+    "dev:api": "npm --prefix server run dev",
     "build": "tsc && vite build",
+    "build:api": "npm --prefix server run build",
     "preview": "vite preview",
     "lint": "eslint . --report-unused-disable-directives --max-warnings 0"
   },

@@ -1,5 +1,28 @@
 # 결정 로그 (Decision Log)
 
+## [2026-02-14] 백엔드 env 전략 분리: `NODE_ENV` 기반 `.env.development`/`.env.production` 채택
+- **결정**: API 서버 환경변수 파일을 개발/운영으로 분리하고, 런타임에서 `NODE_ENV`에 해당하는 `.env.{NODE_ENV}`를 우선 로드하도록 변경함.
+- **이유**:
+  1. **운영 안전성**: 개발/운영 키 혼입 리스크를 줄이고 배포 시 설정 실수를 방지.
+  2. **협업 효율**: 팀원이 템플릿 파일(`.env.*.example`)을 기준으로 즉시 필요한 값만 채울 수 있음.
+  3. **초기 유연성**: Supabase 키가 비어 있어도 서버 기동/헬스체크가 가능하도록 optional 파싱을 보강.
+- **구현 요약**:
+  - `server/src/config/env.ts`에서 `.env` + `.env.{NODE_ENV}` 순차 로딩 및 빈 문자열 optional 처리 추가.
+  - `server/.env.development.example`, `server/.env.production.example` 추가.
+  - 헬스체크 URL을 `GET /healthz`로 추가하고 기존 `GET /api/v1/health`는 유지.
+
+## [2026-02-14] 백엔드 분리 전략 채택: `Fastify + TypeScript + Zod` 스캐폴딩 우선
+- **결정**: 기존 React 프론트 구조를 유지하면서 `server/` 독립 패키지로 BFF(API 서버) 골격을 먼저 도입하고, 인증/템플릿 도메인을 모듈 단위로 분리함.
+- **이유**:
+  1. **단계적 전환 용이성**: 프론트 전체를 재작성하지 않고 API 경유 방식으로 점진 마이그레이션 가능.
+  2. **속도와 구조의 균형**: Nest 대비 보일러플레이트가 적어 MVP 속도가 빠르고, Express 대비 타입/검증 구조를 일찍 강제할 수 있음.
+  3. **교체 가능성 확보**: `TemplateRepository` 인터페이스를 선행해 Supabase 의존을 인프라 레이어로 격리함.
+- **구현 요약**:
+  - `server/src/modules/{auth,templates,health}` 모듈 구조 생성.
+  - `zod` 기반 요청 스키마(`CreateTemplateSchema`, `UpdateTemplateSchema`) 추가.
+  - 루트 스크립트에 API 실행/빌드 진입점(`dev:api`, `build:api`) 연결.
+  - 인증/템플릿 엔드포인트는 placeholder로 열어두고, 실제 구현은 후속 이슈로 분리.
+
 ## [2026-02-14] 텍스트 외곽선 단위를 `px`에서 `강도`로 전환하고 폰트 비례 렌더 적용
 - **결정**: 텍스트 레이어의 `strokeWidth` 입력 의미를 고정 px가 아닌 상대 강도 값으로 해석하고, 실제 렌더 선 두께는 최종 폰트 크기에 비례해 계산함.
 - **이유**:
