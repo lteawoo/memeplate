@@ -348,16 +348,16 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
                                   {/* 5. Stroke Width */}
                                   <div>
                                     <div className="flex justify-between items-center mb-1">
-                                      <Text className="text-[11px] text-slate-400 font-bold uppercase">외곽선 두께 (px)</Text>
+                                      <Text className="text-[11px] text-slate-400 font-bold uppercase">외곽선 강도</Text>
                                       <InputNumber
-                                        min={0} max={20} size="small" variant="borderless"
+                                        min={0} max={10} step={0.1} size="small" variant="borderless"
                                         value={(obj as Textbox).strokeWidth}
                                         onChange={(val) => val !== null && updateProperty('strokeWidth', val)}
                                         className="text-right font-bold w-16"
                                       />
                                     </div>
                                     <Slider
-                                      min={0} max={20} step={0.5}
+                                      min={0} max={10} step={0.1}
                                       value={(obj as Textbox).strokeWidth}
                                       onChange={(val) => updateProperty('strokeWidth', val)}
                                       tooltip={{ open: false }}

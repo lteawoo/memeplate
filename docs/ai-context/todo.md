@@ -68,6 +68,9 @@
   - [x] `EditorLayout.tsx`: 모바일에서의 `flex-col` 및 `overflow` 속성 조정
   - [x] `MemeCanvas.tsx`: 모바일 스크롤 환경에 맞는 높이 최적화
   - [x] `useMemeEditor.ts`: 패널 상태(`isPanelOpen`) 관련 불필요한 로직 제거
+- [x] **텍스트 외곽선 강도 기반 UI/렌더 전환**
+  - [x] `MemePropertyPanel.tsx`: 외곽선 입력/슬라이더 단위를 `px`에서 `강도`로 변경 (`0~10`)
+  - [x] `Textbox.ts`: `strokeWidth`를 폰트 크기 비례 실제 선 두께(px)로 변환해 렌더링
 - [ ] **에디터 기능 확장**
   - [ ] 텍스트 영역 클리핑 (틀 밖으로 나가는 글자 숨김)
   - [ ] 다중 선택(Multi-selection) 지원

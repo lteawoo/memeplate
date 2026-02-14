@@ -11,6 +11,16 @@ export interface TextOptions extends CanvasObjectOptions {
   lineHeight?: number;
 }
 
+const MIN_STROKE_PX = 0.35;
+const MAX_STROKE_PX = 8;
+const STROKE_SCALE_PER_FONT_SIZE = 0.03;
+
+const getAdaptiveStrokeWidth = (strokeIntensity: number, fontSize: number) => {
+  if (!isFinite(strokeIntensity) || strokeIntensity <= 0 || !isFinite(fontSize) || fontSize <= 0) return 0;
+  const scaled = strokeIntensity * fontSize * STROKE_SCALE_PER_FONT_SIZE;
+  return Math.max(MIN_STROKE_PX, Math.min(MAX_STROKE_PX, scaled));
+};
+
 export class Textbox extends CanvasObject {
   text: string;
   fontSize: number;
@@ -123,7 +133,7 @@ export class Textbox extends CanvasObject {
           
           if (this.stroke && this.stroke !== 'transparent' && this.strokeWidth > 0) {
             ctx.strokeStyle = this.stroke;
-            ctx.lineWidth = this.strokeWidth;
+            ctx.lineWidth = getAdaptiveStrokeWidth(this.strokeWidth, finalFontSize);
             ctx.strokeText(line, x, y);
           }
         }
