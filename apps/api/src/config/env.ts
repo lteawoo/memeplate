@@ -28,6 +28,11 @@ const EnvSchema = z.object({
   API_HOST: z.string().min(1).default('0.0.0.0'),
   WEB_ORIGIN: z.string().url().default('http://localhost:5174'),
   WEB_DIST_DIR: optionalString,
+  GOOGLE_CLIENT_ID: optionalString,
+  GOOGLE_CLIENT_SECRET: optionalString,
+  GOOGLE_REDIRECT_URI: optionalUrl,
+  AUTH_SESSION_SECRET: optionalString,
+  AUTH_SESSION_TTL_SECONDS: z.coerce.number().int().positive().default(60 * 60 * 24 * 7),
   SUPABASE_URL: optionalUrl,
   SUPABASE_ANON_KEY: optionalString,
   SUPABASE_SERVICE_ROLE_KEY: optionalString

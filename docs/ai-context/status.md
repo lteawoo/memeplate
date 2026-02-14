@@ -81,9 +81,20 @@
   - [x] `NODE_ENV=production`에서 `apps/web/dist`를 API 서버가 직접 서빙
   - [x] `/api/*`, `/healthz` 제외 GET 요청은 `index.html` fallback 처리
   - [x] `NODE_ENV=production pnpm start` 기준 `/`, `/create`, `/api/v1/health` 응답 검증
+- [x] **Supabase 인증 DB 스키마 초안 작성 (완료 - OAuth 다중 공급자 대응)**
+  - [x] `docs/ai-context/sql/2026-02-14_supabase_auth_schema.sql` 작성
+  - [x] `users` / `auth_identities` / `sessions` 스키마 및 인덱스 정의
+  - [x] 아바타 미저장 정책 반영
 
 ## 다음 작업
-- [ ] Google OAuth 로그인 엔드포인트 구현 (`/api/v1/auth/*`)
+- [ ] Google OAuth 로그인 엔드포인트 고도화 (`/api/v1/auth/*`)
+  - [x] `GET /api/v1/auth/google/start` 구현
+  - [x] `GET /api/v1/auth/google/callback` 구현
+  - [x] `GET /api/v1/auth/me` 구현
+  - [x] `POST /api/v1/auth/logout` 구현
+  - [x] 프론트 로그인 버튼/세션 복구 연동
+  - [x] `/login` 전용 화면 분리 및 하단 구글 로그인 CTA 배치
+- [ ] Supabase SQL 스키마 실제 반영 및 마이그레이션 실행
 - [ ] 템플릿 CRUD 엔드포인트 실제 구현 (`/api/v1/templates/*`)
 - [ ] Supabase Repository 구현체 연결 (현재 placeholder)
 - [ ] 텍스트 레이어 영역 클리핑(Clipping) 처리

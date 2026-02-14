@@ -1,20 +1,79 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Layout, Typography, Button, Drawer } from 'antd';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import Icon from '@mdi/react';
 import { mdiMenu } from '@mdi/js';
 
 const { Header } = Layout;
 const { Title } = Typography;
 
+type AuthUser = {
+  id: string;
+  email: string | null;
+  displayName: string | null;
+};
+
+type AuthMeResponse = {
+  authenticated: boolean;
+  user?: AuthUser;
+};
+
 const MainHeader: React.FC = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [authUser, setAuthUser] = useState<AuthUser | null>(null);
 
   const navLinks = [
     { to: '/', label: '홈' },
     { to: '/create', label: 'Memeplate 생성' },
   ];
+
+  const syncAuthSession = async () => {
+    try {
+      setIsAuthLoading(true);
+      const res = await fetch('/api/v1/auth/me', {
+        credentials: 'include'
+      });
+      if (!res.ok) {
+        setAuthUser(null);
+        return;
+      }
+      const payload = (await res.json()) as AuthMeResponse;
+      if (payload.authenticated && payload.user) {
+        setAuthUser(payload.user);
+      } else {
+        setAuthUser(null);
+      }
+    } catch {
+      setAuthUser(null);
+    } finally {
+      setIsAuthLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void syncAuthSession();
+  }, []);
+
+  const handleLogin = () => {
+    navigate('/login');
+  };
+
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/v1/auth/logout', {
+        method: 'POST',
+        credentials: 'include'
+      });
+    } finally {
+      await syncAuthSession();
+      setIsDrawerOpen(false);
+    }
+  };
+
+  const authDisplayName = authUser?.displayName || authUser?.email || '로그인 사용자';
 
   return (
     <Header 
@@ -42,6 +101,19 @@ const MainHeader: React.FC = () => {
         </nav>
       </div>
       
+      <div className="hidden md:flex items-center gap-3">
+        {isAuthLoading ? null : authUser ? (
+          <>
+            <span className="max-w-[260px] truncate text-sm font-semibold text-slate-600" title={authDisplayName}>
+              {authDisplayName}
+            </span>
+            <Button onClick={handleLogout}>로그아웃</Button>
+          </>
+        ) : (
+          <Button type="primary" onClick={handleLogin}>로그인</Button>
+        )}
+      </div>
+
       <div className="flex items-center gap-4 md:hidden">
         {/* Mobile Hamburger Menu */}
         <Button 
@@ -70,6 +142,16 @@ const MainHeader: React.FC = () => {
               {link.label}
             </Link>
           ))}
+          <div className="pt-6 border-t border-slate-200">
+            {isAuthLoading ? null : authUser ? (
+              <div className="flex flex-col gap-3">
+                <span className="text-sm font-semibold text-slate-600 break-all">{authDisplayName}</span>
+                <Button onClick={handleLogout}>로그아웃</Button>
+              </div>
+            ) : (
+              <Button type="primary" onClick={handleLogin}>로그인</Button>
+            )}
+          </div>
         </div>
       </Drawer>
     </Header>

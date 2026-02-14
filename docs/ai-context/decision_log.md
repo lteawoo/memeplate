@@ -1,5 +1,57 @@
 # 결정 로그 (Decision Log)
 
+## [2026-02-15] 프론트 인증 UX 1차: `MainHeader` 중심 로그인/로그아웃 연동
+- **결정**: 인증 UI를 별도 페이지로 분리하지 않고 공통 헤더(`MainHeader`)에 통합하여, 홈/에디터 어디서나 동일한 로그인 상태를 노출함.
+- **이유**:
+  1. **접근성**: 사용자 동선 어디에서든 로그인/로그아웃 접근이 가능해야 함.
+  2. **일관성**: 헤더 단일 진입점으로 모바일 Drawer/데스크탑 UI를 동일 정책으로 유지.
+  3. **구현 속도**: `auth/me` 기반 세션 복구를 최소 변경으로 즉시 적용 가능.
+- **구현 요약**:
+  - `apps/web/src/components/layout/MainHeader.tsx`에서 `/api/v1/auth/me` 호출로 세션 상태 복구.
+  - 비로그인 시 `Google 로그인` 버튼(`window.location = /api/v1/auth/google/start`) 노출.
+  - 로그인 시 사용자명/이메일 + `로그아웃` 버튼(`POST /api/v1/auth/logout`) 노출.
+  - 모바일 Drawer에도 동일 인증 액션을 반영.
+
+## [2026-02-15] 로그인 진입 UX 조정: 헤더 `로그인` -> `/login` 전용 화면
+- **결정**: 헤더의 로그인 액션을 즉시 OAuth 리다이렉트 방식에서 `/login` 페이지 이동 방식으로 변경함.
+- **이유**:
+  1. **명확한 진입점**: 사용자가 로그인 단계로 이동했다는 맥락을 명확히 인지 가능.
+  2. **확장 여지**: 추후 공급자 추가(예: Kakao/GitHub) 시 로그인 화면에서 선택지를 확장하기 쉬움.
+  3. **요구사항 정합성**: 전용 화면에 `Memeplate` 로고와 하단 CTA를 배치하는 UI 요구를 반영.
+- **구현 요약**:
+  - `apps/web/src/pages/LoginPage.tsx` 신규 추가.
+  - `/login` 라우트 등록(`apps/web/src/App.tsx`).
+  - `MainHeader`의 비로그인 버튼 라벨을 `로그인`으로 통일하고 `/login`으로 라우팅.
+  - `/login` 하단에 `구글 로그인` 버튼을 배치해 `/api/v1/auth/google/start`로 연결.
+
+## [2026-02-15] 인증 구현 1차: Google OAuth + 서버 세션 쿠키 전략 적용
+- **결정**: 인증 엔드포인트를 placeholder에서 실제 동작으로 전환하고, 세션은 `sessions` 테이블 + HttpOnly 쿠키(`mp_session`)로 관리함.
+- **이유**:
+  1. **보안성**: 브라우저 스토리지 대신 HttpOnly 쿠키를 사용해 토큰 노출 리스크를 완화.
+  2. **확장성**: 공급자 확장(`auth_identities`)과 세션 제어(`revoked_at`, `expires_at`)를 분리해 운영 제어를 단순화.
+  3. **개발 흐름 확보**: 프론트에서 즉시 사용할 수 있는 `auth/me` 기반 로그인 상태 조회 API를 먼저 제공.
+- **구현 요약**:
+  - `apps/api/src/modules/auth/routes.ts`에서 아래 엔드포인트 구현.
+    - `GET /api/v1/auth/google/start`
+    - `GET /api/v1/auth/google/callback`
+    - `GET /api/v1/auth/me`
+    - `POST /api/v1/auth/logout`
+  - Google token exchange/userinfo 호출 후 `users`/`auth_identities` upsert.
+  - `sessions` 저장 시 `session_token_hash`를 사용하고, 쿠키에는 원본 세션 토큰을 저장.
+  - state 검증(`mp_oauth_state`) 및 logout 시 세션 revoke 처리 추가.
+
+## [2026-02-14] Supabase 인증 DB 스키마 전략: `users + auth_identities + sessions` 분리 채택
+- **결정**: OAuth 공급자 확장 가능성을 고려해 사용자 기본 정보(`users`)와 공급자 식별자(`auth_identities`)를 분리하고, 서버 세션(`sessions`)을 독립 테이블로 관리함.
+- **이유**:
+  1. **공급자 확장성**: Google 외 공급자 추가 시 `users` 스키마 변경 없이 `auth_identities` 레코드만 확장 가능.
+  2. **정책 분리**: 사용자 공통 프로필과 공급자 종속 필드를 분리해 도메인 경계를 명확히 유지.
+  3. **운영 제어**: 세션 만료/강제 로그아웃/세션 무효화를 서버 측에서 일관되게 처리 가능.
+- **구현 요약**:
+  - `docs/ai-context/sql/2026-02-14_supabase_auth_schema.sql` 작성.
+  - `users(email, display_name)` 최소 컬럼만 유지하고 아바타 컬럼은 도입하지 않음.
+  - `auth_identities`에 `unique(provider, provider_user_id)` 및 `unique(user_id, provider)` 제약 적용.
+  - `sessions`에 `session_token_hash`, `expires_at`, `revoked_at` 기반 인덱스 추가.
+
 ## [2026-02-14] 패키지 운영 방식 전환: `pnpm` 기반 모노레포(`apps/web`, `apps/api`) 채택
 - **결정**: 기존 루트 단일 프론트 + `server/` 보조 패키지 구조를 `apps/web`(프론트), `apps/api`(백엔드) 워크스페이스 구조로 재배치하고, 루트는 오케스트레이션 전용 패키지로 전환함.
 - **이유**:
