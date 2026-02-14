@@ -1,5 +1,30 @@
 # 결정 로그 (Decision Log)
 
+## [2026-02-14] 패키지 운영 방식 전환: `pnpm` 기반 모노레포(`apps/web`, `apps/api`) 채택
+- **결정**: 기존 루트 단일 프론트 + `server/` 보조 패키지 구조를 `apps/web`(프론트), `apps/api`(백엔드) 워크스페이스 구조로 재배치하고, 루트는 오케스트레이션 전용 패키지로 전환함.
+- **이유**:
+  1. **확장성**: 인증/공유/템플릿 기능 확장 시 패키지 경계를 명확히 분리해 충돌을 줄임.
+  2. **일관된 의존성 관리**: `pnpm-lock.yaml` 단일 잠금으로 프론트/백엔드 의존성 버전 드리프트를 완화.
+  3. **명확한 실행 경로**: 루트 스크립트에서 workspace filter로 `web/api`를 구분 실행할 수 있음.
+- **구현 요약**:
+  - `pnpm-workspace.yaml` 추가, 루트 `package.json`에 `packageManager` 및 workspace 스크립트 정의.
+  - 루트 `dev`를 병렬 스크립트로 지정해 `pnpm dev` 한 번으로 `apps/web` + `apps/api` 동시 기동.
+  - 프론트 파일을 `apps/web`로, API 파일을 `apps/api`로 이동.
+  - `apps/web/package.json` 신규 생성, `npm` lock 파일 제거 후 `pnpm-lock.yaml` 생성.
+  - `apps/api/README.md`를 새 경로 기준으로 갱신.
+
+## [2026-02-14] 프로덕션 배포 방식 결정: API 서버가 SPA 정적 파일을 함께 서빙
+- **결정**: 운영 환경(`NODE_ENV=production`)에서는 `apps/api`가 `apps/web/dist`를 직접 정적 서빙하고, API 라우트 외 경로는 `index.html`로 fallback 처리함.
+- **이유**:
+  1. **배포 단순화**: 프론트/백엔드를 별도 프로세스로 분리하지 않고 단일 서버로 배포 가능.
+  2. **라우팅 일관성**: 클라이언트 라우팅(`/create` 등) 404를 제거하고 SPA 진입점을 보장.
+  3. **운영 명확성**: `/api/*`와 정적 라우트를 명확히 분리해 추후 리버스 프록시 구성도 단순화.
+- **구현 요약**:
+  - `apps/api`에 `@fastify/static` 의존성 추가.
+  - `WEB_DIST_DIR` 환경변수(기본 `../web/dist`) 추가.
+  - `GET /*` catch-all에서 파일 존재 시 정적 파일 전달, 미존재 시 `index.html` 반환.
+  - `/api*`, `/healthz` 경로는 fallback 대상에서 제외.
+
 ## [2026-02-14] 백엔드 env 전략 분리: `NODE_ENV` 기반 `.env.development`/`.env.production` 채택
 - **결정**: API 서버 환경변수 파일을 개발/운영으로 분리하고, 런타임에서 `NODE_ENV`에 해당하는 `.env.{NODE_ENV}`를 우선 로드하도록 변경함.
 - **이유**:
