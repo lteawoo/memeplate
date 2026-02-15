@@ -33,6 +33,10 @@
   - [x] `MemeCanvas.tsx`: `Ctrl/Cmd + Enter` 저장, `Esc` 취소/원복 추가
   - [x] `MemePropertyPanel.tsx`: 레이어 텍스트 입력을 `Input.TextArea`로 변경(최대 3줄)
   - [x] `MemeCanvas.tsx`: 캔버스 중앙정렬 레이아웃에서 편집 textarea 위치 계산에 캔버스 오프셋 보정
+- [x] **텍스트 레이아웃 공통화 (WYSIWYG 개선)**
+  - [x] `core/canvas/textLayout.ts` 공통 레이아웃 유틸 추가
+  - [x] `Textbox.ts` 렌더에서 공통 레이아웃 계산 재사용
+  - [x] `MemeCanvas.tsx` 편집 오버레이 폰트/세로 정렬 계산에서 공통 로직 재사용
 - [x] **텍스트 레이어 기본값/placeholder 정리**
   - [x] `useMemeEditor.ts`: 새 텍스트 레이어 기본 문자열 제거(빈 텍스트 생성)
   - [x] `MemePropertyPanel.tsx`: 텍스트 레이어 입력 placeholder를 `텍스트-{순번}`으로 표시

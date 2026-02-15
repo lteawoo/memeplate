@@ -3,6 +3,7 @@ import { Layout, Typography, theme } from 'antd';
 import Icon from '@mdi/react';
 import { mdiImage } from '@mdi/js';
 import { Canvas, Textbox } from '../../core/canvas';
+import { resolveTextLayout } from '../../core/canvas/textLayout';
 
 const { Content } = Layout;
 const { Title, Text } = Typography;
@@ -18,7 +19,6 @@ interface MemeCanvasProps {
 }
 
 const MAX_DISPLAY_EDGE_PX = 800;
-const MIN_TEXT_FONT_SIZE = 8;
 
 const MemeCanvas: React.FC<MemeCanvasProps> = ({ 
   canvasRef, 
@@ -127,72 +127,6 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
     }
   }, [editingObject]);
 
-  const getFittedFontSize = (obj: Textbox, text: string) => {
-    const ctx = document.createElement('canvas').getContext('2d');
-    if (!ctx) return Math.max(obj.fontSize || 40, MIN_TEXT_FONT_SIZE);
-
-    const safeWidth = Math.max(1, obj.width);
-    const safeHeight = Math.max(1, obj.height);
-    const baseSize = isFinite(obj.fontSize) ? obj.fontSize : 40;
-    const lineHeight = obj.lineHeight || 1.2;
-
-    const paragraphs = (text || '').split('\n');
-    let currentFontSize = Math.max(baseSize, MIN_TEXT_FONT_SIZE);
-    let iterations = 0;
-
-    while (currentFontSize >= MIN_TEXT_FONT_SIZE && iterations < 100) {
-      iterations += 1;
-      ctx.font = `${obj.fontStyle || 'normal'} ${obj.fontWeight || 'normal'} ${currentFontSize}px ${obj.fontFamily || 'Arial'}`;
-
-      const lines: string[] = [];
-      let fitsWidth = true;
-
-      for (const paragraph of paragraphs) {
-        const words = paragraph.split(/\s+/);
-        let currentLine = '';
-
-        if (words.length === 0) {
-          lines.push('');
-          continue;
-        }
-
-        for (let i = 0; i < words.length; i += 1) {
-          const word = words[i];
-          const testLine = currentLine ? `${currentLine} ${word}` : word;
-
-          if (ctx.measureText(word).width > safeWidth) {
-            fitsWidth = false;
-            break;
-          }
-
-          if (ctx.measureText(testLine).width > safeWidth && i > 0) {
-            lines.push(currentLine);
-            currentLine = word;
-          } else {
-            currentLine = testLine;
-          }
-        }
-
-        if (!fitsWidth) {
-          break;
-        }
-
-        lines.push(currentLine);
-      }
-
-      if (fitsWidth) {
-        const totalHeight = lines.length * currentFontSize * lineHeight;
-        if (totalHeight <= safeHeight || currentFontSize <= MIN_TEXT_FONT_SIZE) {
-          return Math.max(currentFontSize, MIN_TEXT_FONT_SIZE);
-        }
-      }
-
-      currentFontSize -= 1;
-    }
-
-    return MIN_TEXT_FONT_SIZE;
-  };
-
   const getLuminance = (hexColor: string) => {
     const raw = hexColor.replace('#', '').trim();
     const normalized = raw.length === 3 ? raw.split('').map((c) => c + c).join('') : raw;
@@ -227,11 +161,27 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
     const left = canvasCssOffset.left + editingObject.left * scaleX - width / 2;
     const top = canvasCssOffset.top + editingObject.top * scaleY - height / 2;
     
-    const fittedLogicalFontSize = getFittedFontSize(editingObject, editingText || editingObject.text);
-    const displayFontSize = Math.max(
-      12,
-      fittedLogicalFontSize * editingObject.scaleY * scaleY
-    );
+    const measureCtx = document.createElement('canvas').getContext('2d');
+    const layout = measureCtx ? resolveTextLayout(measureCtx, {
+      text: editingText,
+      width: editingObject.width,
+      height: editingObject.height,
+      fontSize: editingObject.fontSize,
+      fontFamily: editingObject.fontFamily,
+      fontWeight: editingObject.fontWeight,
+      fontStyle: editingObject.fontStyle,
+      lineHeight: editingObject.lineHeight,
+      verticalAlign: editingObject.verticalAlign
+    }) : null;
+    const fittedLogicalFontSize = layout?.fontSize || editingObject.fontSize || 40;
+    const displayFontSize = Math.max(8, fittedLogicalFontSize * editingObject.scaleY * scaleY);
+    const contentHeight = (layout?.totalHeight || 0) * editingObject.scaleY * scaleY;
+    const verticalPadding =
+      editingObject.verticalAlign === 'middle'
+        ? Math.max(0, (height - contentHeight) / 2)
+        : editingObject.verticalAlign === 'bottom'
+          ? Math.max(0, height - contentHeight)
+          : 0;
     const textColor = editingObject.fill || '#000000';
     const luminance = getLuminance(textColor);
     const contrastBg = luminance > 0.6 ? 'rgba(0, 0, 0, 0.28)' : 'rgba(255, 255, 255, 0.24)';
@@ -253,7 +203,10 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
       borderRadius: '6px',
       resize: 'none' as const,
       overflow: 'hidden',
-      padding: '4px 6px',
+      paddingTop: `${verticalPadding}px`,
+      paddingRight: '0px',
+      paddingBottom: '0px',
+      paddingLeft: '0px',
       margin: 0,
       zIndex: 1000,
       transform: `rotate(${editingObject.angle}deg)`,
