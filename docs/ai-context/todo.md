@@ -106,6 +106,7 @@
   - [x] Google OAuth start/callback 라우트 구현
   - [x] JWT(access/refresh) 쿠키 발급/검증/회전 구현
   - [x] `POST /api/v1/auth/refresh` API 구현
+  - [x] 공통 인증 미들웨어(`requireAuth`) 구현 및 템플릿 라우트 적용
   - [x] `MainHeader` 로그인/로그아웃 UI 및 세션 상태 표시 연동
   - [x] `/login` 페이지 추가 (Memeplate 로고 + 하단 구글 로그인 버튼)
   - [ ] Supabase SQL 실행 및 초기 데이터 검증

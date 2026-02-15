@@ -1,5 +1,16 @@
 # 결정 로그 (Decision Log)
 
+## [2026-02-16] 인증 처리 공통화: `requireAuth` 미들웨어 도입
+- **결정**: JWT access 쿠키 검증 로직을 라우트별 중복 구현 대신 공통 `requireAuth` preHandler로 분리하고, 템플릿 라우트에 우선 적용함.
+- **이유**:
+  1. **중복 제거**: 인증 검증 로직을 중앙화해 유지보수 비용을 줄임.
+  2. **일관성**: 인증 실패 응답을 단일 형식(`401 Authentication required`)으로 통일.
+  3. **확장성**: 이후 템플릿 CRUD/보호 API에 동일 미들웨어를 즉시 재사용 가능.
+- **구현 요약**:
+  - `apps/api/src/modules/auth/guard.ts` 추가 (`resolveAuthUser`, `requireAuth`).
+  - `apps/api/src/types/fastify-auth.d.ts` 추가로 `request.authUser` 타입 확장.
+  - `apps/api/src/modules/templates/routes.ts`의 모든 템플릿 엔드포인트에 `preHandler: requireAuth` 적용.
+
 ## [2026-02-15] 인증 구조 전환: 서버 세션 토큰에서 JWT(access/refresh) 기반으로 변경 (이슈 #53)
 - **결정**: 기존 `mp_session` 단일 세션 쿠키 + DB 조회 방식에서 `mp_access`/`mp_refresh` JWT 쿠키 구조로 전환함. refresh 토큰은 DB(`sessions`)에 해시로 저장하고 회전(rotation) 정책을 적용함.
 - **이유**:

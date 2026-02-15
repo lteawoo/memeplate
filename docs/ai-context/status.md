@@ -96,6 +96,7 @@
   - [x] 프론트 로그인 버튼/세션 복구 연동
   - [x] `/login` 전용 화면 분리 및 하단 구글 로그인 CTA 배치
   - [x] 세션 토큰 기반 인증을 JWT(access/refresh) 구조로 전환 (이슈 #53)
+  - [x] 인증 미들웨어(`requireAuth`) 공통화 및 템플릿 라우트 적용
 - [ ] Supabase SQL 스키마 실제 반영 및 마이그레이션 실행
 - [ ] 템플릿 CRUD 엔드포인트 실제 구현 (`/api/v1/templates/*`)
 - [ ] Supabase Repository 구현체 연결 (현재 placeholder)
