@@ -27,6 +27,12 @@
   - [x] `useMemeEditor.ts`: `editingTextId` 상태 및 더블 클릭 핸들러 추가
   - [x] `MemeCanvas.tsx`: 캔버스 상단에 동적 textarea 오버레이 구현
   - [x] 텍스트 스타일(폰트 크기, 정렬 등) 동기화 로직 정교화
+- [x] **텍스트 더블클릭 편집 UX 보강**
+  - [x] `MemeCanvas.tsx`: 편집 textarea 대비(배경/그림자/보더/캐럿) 강화
+  - [x] `MemeCanvas.tsx`: 편집 폰트 크기를 텍스트 박스 fit 결과와 동기화
+  - [x] `MemeCanvas.tsx`: `Ctrl/Cmd + Enter` 저장, `Esc` 취소/원복 추가
+  - [x] `MemePropertyPanel.tsx`: 레이어 텍스트 입력을 `Input.TextArea`로 변경(최대 3줄)
+  - [x] `MemeCanvas.tsx`: 캔버스 중앙정렬 레이아웃에서 편집 textarea 위치 계산에 캔버스 오프셋 보정
 - [x] **캔버스 표시/줌 UX 개선 (#30)**
   - [x] `useMemeEditor.ts`: 업로드 시 캔버스 논리 크기를 원본 해상도 기준으로 설정
   - [x] `MemeCanvas.tsx`: `Fit`/`100%` 토글 및 줌 퍼센트 표시 추가

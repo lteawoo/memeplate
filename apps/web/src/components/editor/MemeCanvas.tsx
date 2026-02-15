@@ -18,6 +18,7 @@ interface MemeCanvasProps {
 }
 
 const MAX_DISPLAY_EDGE_PX = 800;
+const MIN_TEXT_FONT_SIZE = 8;
 
 const MemeCanvas: React.FC<MemeCanvasProps> = ({ 
   canvasRef, 
@@ -30,10 +31,13 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
 }) => {
   const { token } = theme.useToken();
   const [editingText, setEditingText] = React.useState('');
+  const [editingOriginalText, setEditingOriginalText] = React.useState('');
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
+  const editCompletingRef = React.useRef(false);
   const canvasViewportRef = React.useRef<HTMLDivElement>(null);
   const [viewportSize, setViewportSize] = React.useState({ width: 0, height: 0 });
   const [canvasCssSize, setCanvasCssSize] = React.useState({ width: 0, height: 0 });
+  const [canvasCssOffset, setCanvasCssOffset] = React.useState({ left: 0, top: 0 });
 
   const editingObject = React.useMemo(() => {
     if (!editingTextId || !canvasInstance) return null;
@@ -95,9 +99,14 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
 
     const updateCanvasCssSize = () => {
       const rect = canvas.getBoundingClientRect();
+      const viewportRect = canvasViewportRef.current?.getBoundingClientRect();
       setCanvasCssSize({
         width: Math.max(0, rect.width),
         height: Math.max(0, rect.height)
+      });
+      setCanvasCssOffset({
+        left: viewportRect ? rect.left - viewportRect.left : 0,
+        top: viewportRect ? rect.top - viewportRect.top : 0
       });
     };
 
@@ -111,10 +120,97 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
   React.useEffect(() => {
     if (editingObject) {
       setEditingText(editingObject.text);
+      setEditingOriginalText(editingObject.text);
+      editCompletingRef.current = false;
       // Use setTimeout to ensure the textarea is rendered before focusing
       setTimeout(() => textareaRef.current?.focus(), 0);
     }
   }, [editingObject]);
+
+  const getFittedFontSize = (obj: Textbox, text: string) => {
+    const ctx = document.createElement('canvas').getContext('2d');
+    if (!ctx) return Math.max(obj.fontSize || 40, MIN_TEXT_FONT_SIZE);
+
+    const safeWidth = Math.max(1, obj.width);
+    const safeHeight = Math.max(1, obj.height);
+    const baseSize = isFinite(obj.fontSize) ? obj.fontSize : 40;
+    const lineHeight = obj.lineHeight || 1.2;
+
+    const paragraphs = (text || '').split('\n');
+    let currentFontSize = Math.max(baseSize, MIN_TEXT_FONT_SIZE);
+    let iterations = 0;
+
+    while (currentFontSize >= MIN_TEXT_FONT_SIZE && iterations < 100) {
+      iterations += 1;
+      ctx.font = `${obj.fontStyle || 'normal'} ${obj.fontWeight || 'normal'} ${currentFontSize}px ${obj.fontFamily || 'Arial'}`;
+
+      const lines: string[] = [];
+      let fitsWidth = true;
+
+      for (const paragraph of paragraphs) {
+        const words = paragraph.split(/\s+/);
+        let currentLine = '';
+
+        if (words.length === 0) {
+          lines.push('');
+          continue;
+        }
+
+        for (let i = 0; i < words.length; i += 1) {
+          const word = words[i];
+          const testLine = currentLine ? `${currentLine} ${word}` : word;
+
+          if (ctx.measureText(word).width > safeWidth) {
+            fitsWidth = false;
+            break;
+          }
+
+          if (ctx.measureText(testLine).width > safeWidth && i > 0) {
+            lines.push(currentLine);
+            currentLine = word;
+          } else {
+            currentLine = testLine;
+          }
+        }
+
+        if (!fitsWidth) {
+          break;
+        }
+
+        lines.push(currentLine);
+      }
+
+      if (fitsWidth) {
+        const totalHeight = lines.length * currentFontSize * lineHeight;
+        if (totalHeight <= safeHeight || currentFontSize <= MIN_TEXT_FONT_SIZE) {
+          return Math.max(currentFontSize, MIN_TEXT_FONT_SIZE);
+        }
+      }
+
+      currentFontSize -= 1;
+    }
+
+    return MIN_TEXT_FONT_SIZE;
+  };
+
+  const getLuminance = (hexColor: string) => {
+    const raw = hexColor.replace('#', '').trim();
+    const normalized = raw.length === 3 ? raw.split('').map((c) => c + c).join('') : raw;
+    if (!/^[0-9a-fA-F]{6}$/.test(normalized)) return 0.5;
+    const r = parseInt(normalized.slice(0, 2), 16) / 255;
+    const g = parseInt(normalized.slice(2, 4), 16) / 255;
+    const b = parseInt(normalized.slice(4, 6), 16) / 255;
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  };
+
+  const completeEditing = (text: string) => {
+    if (!editingTextId || !completeTextEdit || editCompletingRef.current) return;
+    editCompletingRef.current = true;
+    completeTextEdit(editingTextId, text);
+    requestAnimationFrame(() => {
+      editCompletingRef.current = false;
+    });
+  };
 
   const getTextareaStyle = () => {
     if (!editingObject || !intrinsicWidth || !intrinsicHeight || !canvasCssSize.width || !canvasCssSize.height) {
@@ -124,37 +220,50 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
     // Scale between logical and CSS pixels
     const scaleX = canvasCssSize.width / intrinsicWidth;
     const scaleY = canvasCssSize.height / intrinsicHeight;
-    
     const width = editingObject.width * editingObject.scaleX * scaleX;
     const height = editingObject.height * editingObject.scaleY * scaleY;
     
     // Position (Canvas center-based logic to CSS top-left)
-    const left = editingObject.left * scaleX - width / 2;
-    const top = editingObject.top * scaleY - height / 2;
+    const left = canvasCssOffset.left + editingObject.left * scaleX - width / 2;
+    const top = canvasCssOffset.top + editingObject.top * scaleY - height / 2;
     
+    const fittedLogicalFontSize = getFittedFontSize(editingObject, editingText || editingObject.text);
+    const displayFontSize = Math.max(
+      12,
+      fittedLogicalFontSize * editingObject.scaleY * scaleY
+    );
+    const textColor = editingObject.fill || '#000000';
+    const luminance = getLuminance(textColor);
+    const contrastBg = luminance > 0.6 ? 'rgba(0, 0, 0, 0.28)' : 'rgba(255, 255, 255, 0.24)';
+    const contrastShadow = luminance > 0.6 ? '0 1px 3px rgba(0,0,0,0.8)' : '0 1px 3px rgba(255,255,255,0.8)';
+
     return {
       position: 'absolute' as const,
       left: `${left}px`,
       top: `${top}px`,
       width: `${width}px`,
       height: `${height}px`,
-      fontSize: `${editingObject.fontSize * editingObject.scaleY * scaleY}px`,
-      color: editingObject.fill,
+      fontSize: `${displayFontSize}px`,
+      color: textColor,
       textAlign: editingObject.textAlign || ('center' as const),
       lineHeight: editingObject.lineHeight || 1.2,
-      background: 'transparent',
-      border: 'none',
+      background: contrastBg,
+      border: '1px dashed rgba(37, 99, 235, 0.8)',
       outline: 'none',
+      borderRadius: '6px',
       resize: 'none' as const,
       overflow: 'hidden',
-      padding: 0,
+      padding: '4px 6px',
       margin: 0,
       zIndex: 1000,
       transform: `rotate(${editingObject.angle}deg)`,
       transformOrigin: 'center center',
       fontFamily: editingObject.fontFamily || 'Arial',
       fontWeight: editingObject.fontWeight || 'normal',
-      fontStyle: editingObject.fontStyle || 'normal'
+      fontStyle: editingObject.fontStyle || 'normal',
+      textShadow: contrastShadow,
+      caretColor: luminance > 0.6 ? '#ffffff' : '#111827',
+      boxSizing: 'border-box' as const
     };
   };
 
@@ -193,18 +302,17 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
                canvasInstance?.requestRender();
              }}
              onBlur={() => {
-               if (editingTextId && completeTextEdit) {
-                 completeTextEdit(editingTextId, editingText);
-               }
+               completeEditing(editingText);
              }}
              onKeyDown={(e) => {
-               if (e.key === 'Enter' && !e.shiftKey) {
+               if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
                  e.preventDefault();
-                 textareaRef.current?.blur();
+                 completeEditing(editingText);
                }
                if (e.key === 'Escape') {
-                 // Cancel: revert to original (we should probably store original text if we want true cancel)
-                 textareaRef.current?.blur();
+                 e.preventDefault();
+                 setEditingText(editingOriginalText);
+                 completeEditing(editingOriginalText);
                }
              }}
            />
