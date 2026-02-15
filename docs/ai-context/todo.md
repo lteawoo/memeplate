@@ -33,6 +33,9 @@
   - [x] `MemeCanvas.tsx`: `Ctrl/Cmd + Enter` 저장, `Esc` 취소/원복 추가
   - [x] `MemePropertyPanel.tsx`: 레이어 텍스트 입력을 `Input.TextArea`로 변경(최대 3줄)
   - [x] `MemeCanvas.tsx`: 캔버스 중앙정렬 레이아웃에서 편집 textarea 위치 계산에 캔버스 오프셋 보정
+- [x] **텍스트 레이어 기본값/placeholder 정리**
+  - [x] `useMemeEditor.ts`: 새 텍스트 레이어 기본 문자열 제거(빈 텍스트 생성)
+  - [x] `MemePropertyPanel.tsx`: 텍스트 레이어 입력 placeholder를 `텍스트-{순번}`으로 표시
 - [x] **캔버스 표시/줌 UX 개선 (#30)**
   - [x] `useMemeEditor.ts`: 업로드 시 캔버스 논리 크기를 원본 해상도 기준으로 설정
   - [x] `MemeCanvas.tsx`: `Fit`/`100%` 토글 및 줌 퍼센트 표시 추가

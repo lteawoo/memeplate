@@ -83,6 +83,12 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
   } = props;
 
   const [downloadFormat, setDownloadFormat] = React.useState<FormatType>('png');
+  const textLayerOrder = React.useMemo(() => {
+    const textLayerIds = layers
+      .filter((layer): layer is Textbox => layer instanceof Textbox)
+      .map((layer) => layer.id);
+    return new Map(textLayerIds.map((id, index) => [id, index + 1]));
+  }, [layers]);
 
   const shapeItems: MenuProps['items'] = [
     {
@@ -192,6 +198,7 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
                   const isText = obj instanceof Textbox;
                   const isRect = obj instanceof Rect;
                   const isCircle = obj instanceof Circle;
+                  const textLayerNumber = textLayerOrder.get(obj.id) ?? 1;
                   
                   return (
                     <div 
@@ -417,7 +424,7 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
                             onClick={(e) => e.stopPropagation()}
                             autoSize={{ minRows: 1, maxRows: 3 }}
                             className="w-full border border-slate-200 bg-white hover:border-slate-300 focus:border-blue-400 transition-colors rounded-md text-xs font-semibold px-2 py-1"
-                            placeholder="텍스트..."
+                            placeholder={`텍스트-${textLayerNumber}`}
                           />
                         </div>
                       )}
