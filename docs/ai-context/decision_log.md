@@ -1,5 +1,30 @@
 # 결정 로그 (Decision Log)
 
+## [2026-02-16] 텍스트 더블클릭 편집 위치 오차 수정: 캔버스 오프셋 기반 좌표 계산
+- **결정**: 편집 textarea 절대좌표를 단순 캔버스 내부 좌표만으로 계산하지 않고, 캔버스가 뷰포트 내부에서 중앙 정렬되며 생기는 실제 오프셋(`canvasRect - viewportRect`)을 포함해 계산함.
+- **이유**:
+  1. **재현 버그**: 텍스트를 좌상단으로 이동 후 더블클릭하면 textarea가 위쪽으로 튀는 현상이 있었음.
+  2. **원인 명확성**: 기존 계산이 세로 letterbox 영역(중앙 정렬 여백)을 무시해 `top`이 오차만큼 당겨졌음.
+- **구현 요약**:
+  - `apps/web/src/components/editor/MemeCanvas.tsx`
+    - `canvasCssOffset` 상태 추가.
+    - `ResizeObserver` 기반 캔버스 측정 시 `canvasCssOffset`을 함께 계산.
+    - textarea `left/top` 계산에 해당 오프셋을 반영.
+
+## [2026-02-16] 텍스트 더블클릭 편집 UX 2차 보강: 가시성/크기/완료 동작 표준화
+- **결정**: 텍스트 더블클릭 편집 오버레이를 단순 입력창에서 "가시성 보강 + 렌더 크기 정합 + 명시적 완료/취소 단축키" 정책으로 강화함.
+- **이유**:
+  1. **가시성 안정화**: 흰 텍스트/밝은 배경 조합에서 편집 중 텍스트 식별이 어려웠음.
+  2. **정합성 개선**: 편집 모드 글자 크기가 실제 캔버스 렌더보다 크게 보여 WYSIWYG 체감이 깨졌음.
+  3. **조작 예측성**: 저장/취소 동작이 blur 중심이라 사용자가 완료 시점을 통제하기 어려웠음.
+- **구현 요약**:
+  - `apps/web/src/components/editor/MemeCanvas.tsx`
+    - 편집 textarea에 적응형 대비 스타일(배경/텍스트 그림자/대시 보더/캐럿) 적용.
+    - 텍스트박스 내부 fit 계산(`getFittedFontSize`) 기반으로 편집 폰트 크기 동기화.
+    - `Ctrl/Cmd + Enter` 저장, `Esc` 원복 취소, 중복 완료 호출 가드 추가.
+  - `apps/web/src/components/editor/MemePropertyPanel.tsx`
+    - 레이어 텍스트 입력을 단일라인 `Input`에서 `Input.TextArea(autoSize)`로 변경해 멀티라인 편집 일관성 확보.
+
 ## [2026-02-16] 인증 처리 공통화: `requireAuth` 미들웨어 도입
 - **결정**: JWT access 쿠키 검증 로직을 라우트별 중복 구현 대신 공통 `requireAuth` preHandler로 분리하고, 템플릿 라우트에 우선 적용함.
 - **이유**:

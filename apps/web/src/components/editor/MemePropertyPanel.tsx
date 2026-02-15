@@ -406,7 +406,7 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
                       </div>
                       {isText && (
                         <div className="mt-2 pl-[2.75rem]">
-                          <Input
+                          <Input.TextArea
                             value={(obj as Textbox).text}
                             onChange={(e) => {
                                 (obj as Textbox).set('text', e.target.value);
@@ -415,7 +415,8 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
                             }}
                             onKeyDown={(e) => e.stopPropagation()}
                             onClick={(e) => e.stopPropagation()}
-                            className="w-full h-8 border border-slate-200 bg-white hover:border-slate-300 focus:border-blue-400 transition-colors rounded-md text-xs font-semibold px-2"
+                            autoSize={{ minRows: 1, maxRows: 3 }}
+                            className="w-full border border-slate-200 bg-white hover:border-slate-300 focus:border-blue-400 transition-colors rounded-md text-xs font-semibold px-2 py-1"
                             placeholder="텍스트..."
                           />
                         </div>
