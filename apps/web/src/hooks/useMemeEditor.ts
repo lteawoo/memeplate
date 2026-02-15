@@ -314,7 +314,7 @@ export const useMemeEditor = (messageApi: MessageInstance) => {
   const addText = () => {
     if (!canvasInstanceRef.current) return;
     const canvasW = workspaceSize.width || 400;
-    const text = new Textbox('텍스트를 입력하세요', { 
+    const text = new Textbox('', { 
       left: CANVAS_MARGIN + canvasW / 2, 
       top: CANVAS_MARGIN + workspaceSize.height / 2, 
       width: Math.min(canvasW * 0.8, 400),
