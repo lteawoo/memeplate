@@ -1,14 +1,15 @@
 import type { FastifyPluginAsync } from 'fastify';
+import { requireAuth } from '../auth/guard.js';
 import { CreateTemplateSchema, UpdateTemplateSchema } from '../../types/template.js';
 
 export const templateRoutes: FastifyPluginAsync = async (app) => {
-  app.get('/templates/me', async (_req, reply) => {
+  app.get('/templates/me', { preHandler: requireAuth }, async (_req, reply) => {
     return reply.code(501).send({
       message: 'List my templates endpoint is not implemented yet.'
     });
   });
 
-  app.post('/templates', async (req, reply) => {
+  app.post('/templates', { preHandler: requireAuth }, async (req, reply) => {
     const parsed = CreateTemplateSchema.safeParse(req.body);
 
     if (!parsed.success) {
@@ -23,7 +24,7 @@ export const templateRoutes: FastifyPluginAsync = async (app) => {
     });
   });
 
-  app.patch('/templates/:templateId', async (req, reply) => {
+  app.patch('/templates/:templateId', { preHandler: requireAuth }, async (req, reply) => {
     const parsed = UpdateTemplateSchema.safeParse(req.body);
 
     if (!parsed.success) {
@@ -38,7 +39,7 @@ export const templateRoutes: FastifyPluginAsync = async (app) => {
     });
   });
 
-  app.delete('/templates/:templateId', async (_req, reply) => {
+  app.delete('/templates/:templateId', { preHandler: requireAuth }, async (_req, reply) => {
     return reply.code(501).send({
       message: 'Delete template endpoint is not implemented yet.'
     });
