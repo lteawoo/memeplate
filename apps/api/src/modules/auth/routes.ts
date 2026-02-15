@@ -1,20 +1,18 @@
 import { createHash, randomBytes } from 'node:crypto';
 import type { FastifyPluginAsync } from 'fastify';
+import jwt, { type JwtPayload } from 'jsonwebtoken';
 import { env } from '../../config/env.js';
 import { getSupabaseAdminClient } from '../../lib/supabaseAdmin.js';
 
 const GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
 const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const GOOGLE_USERINFO_URL = 'https://openidconnect.googleapis.com/v1/userinfo';
-const SESSION_COOKIE_NAME = 'mp_session';
+const ACCESS_COOKIE_NAME = 'mp_access';
+const REFRESH_COOKIE_NAME = 'mp_refresh';
 const OAUTH_STATE_COOKIE_NAME = 'mp_oauth_state';
 
 type GoogleTokenResponse = {
   access_token: string;
-  token_type: string;
-  expires_in: number;
-  id_token?: string;
-  scope?: string;
 };
 
 type GoogleUserInfo = {
@@ -23,18 +21,35 @@ type GoogleUserInfo = {
   name?: string;
 };
 
-type SessionRecord = {
-  id: string;
-  user_id: string;
-  session_token_hash: string;
-  expires_at: string;
-  revoked_at: string | null;
-};
-
 type UserRecord = {
   id: string;
   email: string | null;
   display_name: string | null;
+};
+
+type SessionRecord = {
+  id: string;
+  user_id: string;
+  expires_at: string;
+};
+
+type AccessClaims = JwtPayload & {
+  sub: string;
+  email?: string | null;
+  displayName?: string | null;
+};
+
+type RefreshClaims = JwtPayload & {
+  sub: string;
+  typ: 'refresh';
+  jti: string;
+};
+
+type JwtConfig = {
+  accessSecret: string;
+  refreshSecret: string;
+  accessTtlSec: number;
+  refreshTtlSec: number;
 };
 
 const toCookieDate = (date: Date) => date.toUTCString();
@@ -57,7 +72,7 @@ const parseCookieHeader = (cookieHeader: string | undefined) => {
   return parsed;
 };
 
-// Common cookie builder for both OAuth state and session token.
+// Common cookie builder for OAuth state + access/refresh tokens.
 const buildSetCookie = (name: string, value: string, maxAgeSec: number) => {
   const isSecure = env.NODE_ENV === 'production';
   const expiresAt = new Date(Date.now() + maxAgeSec * 1000);
@@ -75,7 +90,6 @@ const buildSetCookie = (name: string, value: string, maxAgeSec: number) => {
   return parts.join('; ');
 };
 
-// Expire cookie immediately on client.
 const buildClearCookie = (name: string) => {
   const isSecure = env.NODE_ENV === 'production';
   const parts = [
@@ -92,23 +106,63 @@ const buildClearCookie = (name: string) => {
   return parts.join('; ');
 };
 
-// Persist only hash in DB so raw session token is never stored server-side.
-const hashSessionToken = (token: string) => {
-  const secret = env.AUTH_SESSION_SECRET ?? '';
-  return createHash('sha256').update(`${secret}:${token}`).digest('hex');
+const getJwtConfig = (): JwtConfig => {
+  const accessSecret = env.JWT_ACCESS_SECRET ?? env.AUTH_SESSION_SECRET;
+  const refreshSecret = env.JWT_REFRESH_SECRET ?? env.AUTH_SESSION_SECRET;
+
+  if (!accessSecret || !refreshSecret) {
+    throw new Error('JWT secrets are missing. Fill JWT_ACCESS_SECRET and JWT_REFRESH_SECRET.');
+  }
+
+  return {
+    accessSecret,
+    refreshSecret,
+    accessTtlSec: env.JWT_ACCESS_TTL_SECONDS ?? 60 * 15,
+    refreshTtlSec: env.JWT_REFRESH_TTL_SECONDS ?? env.AUTH_SESSION_TTL_SECONDS
+  };
 };
 
-// Fail early when required auth env is missing.
-const ensureAuthConfig = () => {
+const ensureOAuthConfig = () => {
   if (!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET || !env.GOOGLE_REDIRECT_URI) {
     throw new Error('Google OAuth env is missing. Fill GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI.');
   }
-  if (!env.AUTH_SESSION_SECRET) {
-    throw new Error('AUTH_SESSION_SECRET is missing.');
+  getJwtConfig();
+};
+
+// DB에는 refresh 토큰 원문 대신 해시만 저장한다.
+const hashRefreshToken = (token: string, refreshSecret: string) =>
+  createHash('sha256').update(`${refreshSecret}:${token}`).digest('hex');
+
+const verifyAccessToken = (token: string, accessSecret: string): AccessClaims | null => {
+  try {
+    const decoded = jwt.verify(token, accessSecret);
+    if (!decoded || typeof decoded === 'string') {
+      return null;
+    }
+    if (typeof decoded.sub !== 'string') {
+      return null;
+    }
+    return decoded as AccessClaims;
+  } catch {
+    return null;
   }
 };
 
-// Resolve local user by Google identity, create user/identity if first login.
+const verifyRefreshToken = (token: string, refreshSecret: string): RefreshClaims | null => {
+  try {
+    const decoded = jwt.verify(token, refreshSecret);
+    if (!decoded || typeof decoded === 'string') {
+      return null;
+    }
+    if (typeof decoded.sub !== 'string' || decoded.typ !== 'refresh' || typeof decoded.jti !== 'string') {
+      return null;
+    }
+    return decoded as RefreshClaims;
+  } catch {
+    return null;
+  }
+};
+
 const upsertUserByGoogleIdentity = async (googleUser: GoogleUserInfo) => {
   const supabase = getSupabaseAdminClient();
   const provider = 'google';
@@ -159,7 +213,6 @@ const upsertUserByGoogleIdentity = async (googleUser: GoogleUserInfo) => {
   });
 
   if (insertIdentityError) {
-    // If another request inserted identity first, read the latest mapping.
     if (insertIdentityError.code === '23505') {
       const { data: existingIdentity, error: existingIdentityError } = await supabase
         .from('auth_identities')
@@ -190,66 +243,104 @@ const upsertUserByGoogleIdentity = async (googleUser: GoogleUserInfo) => {
   return insertedUser;
 };
 
-// Issue new session and store only token hash with expiry.
-const issueSession = async (userId: string) => {
+const issueTokenPair = async (user: UserRecord) => {
+  const { accessSecret, refreshSecret, accessTtlSec, refreshTtlSec } = getJwtConfig();
   const supabase = getSupabaseAdminClient();
-  const sessionToken = randomBytes(32).toString('hex');
-  const tokenHash = hashSessionToken(sessionToken);
-  const expiresAt = new Date(Date.now() + env.AUTH_SESSION_TTL_SECONDS * 1000);
+
+  const accessToken = jwt.sign(
+    {
+      sub: user.id,
+      email: user.email,
+      displayName: user.display_name
+    },
+    accessSecret,
+    { expiresIn: accessTtlSec }
+  );
+
+  const refreshToken = jwt.sign(
+    {
+      sub: user.id,
+      typ: 'refresh',
+      jti: randomBytes(16).toString('hex')
+    },
+    refreshSecret,
+    { expiresIn: refreshTtlSec }
+  );
+
+  const refreshHash = hashRefreshToken(refreshToken, refreshSecret);
+  const refreshExpiresAt = new Date(Date.now() + refreshTtlSec * 1000);
 
   const { error: sessionError } = await supabase.from('sessions').insert({
-    user_id: userId,
-    session_token_hash: tokenHash,
-    expires_at: expiresAt.toISOString()
+    user_id: user.id,
+    session_token_hash: refreshHash,
+    expires_at: refreshExpiresAt.toISOString()
   });
 
   if (sessionError) {
     throw sessionError;
   }
 
-  return { sessionToken, expiresAt };
+  return {
+    accessToken,
+    refreshToken,
+    accessTtlSec,
+    refreshTtlSec
+  };
 };
 
-// Validate active session token and resolve current user.
-const findActiveSessionUser = async (sessionToken: string) => {
+const getActiveRefreshSession = async (refreshToken: string) => {
+  const { refreshSecret } = getJwtConfig();
   const supabase = getSupabaseAdminClient();
-  const tokenHash = hashSessionToken(sessionToken);
+  const refreshHash = hashRefreshToken(refreshToken, refreshSecret);
   const nowIso = new Date().toISOString();
 
-  const { data: session, error: sessionError } = await supabase
+  const { data: session, error } = await supabase
     .from('sessions')
-    .select('id, user_id, session_token_hash, expires_at, revoked_at')
-    .eq('session_token_hash', tokenHash)
+    .select('id, user_id, expires_at')
+    .eq('session_token_hash', refreshHash)
     .is('revoked_at', null)
     .gt('expires_at', nowIso)
     .maybeSingle<SessionRecord>();
 
-  if (sessionError) {
-    throw sessionError;
+  if (error) {
+    throw error;
   }
 
-  if (!session) {
-    return null;
-  }
+  return session ?? null;
+};
 
-  const { data: user, error: userError } = await supabase
+const revokeRefreshSession = async (refreshToken: string) => {
+  const { refreshSecret } = getJwtConfig();
+  const supabase = getSupabaseAdminClient();
+  const refreshHash = hashRefreshToken(refreshToken, refreshSecret);
+
+  await supabase
+    .from('sessions')
+    .update({ revoked_at: new Date().toISOString() })
+    .eq('session_token_hash', refreshHash)
+    .is('revoked_at', null);
+};
+
+const loadUserById = async (userId: string) => {
+  const supabase = getSupabaseAdminClient();
+  const { data, error } = await supabase
     .from('users')
     .select('id, email, display_name')
-    .eq('id', session.user_id)
-    .maybeSingle<UserRecord>();
+    .eq('id', userId)
+    .single<UserRecord>();
 
-  if (userError) {
-    throw userError;
+  if (error) {
+    throw error;
   }
 
-  return user ?? null;
+  return data;
 };
 
 export const authRoutes: FastifyPluginAsync = async (app) => {
   app.get('/auth/google/start', async (_req, reply) => {
     try {
-      ensureAuthConfig();
-      // CSRF protection for OAuth callback.
+      ensureOAuthConfig();
+      // OAuth callback CSRF protection.
       const state = randomBytes(16).toString('hex');
       const query = new URLSearchParams({
         client_id: env.GOOGLE_CLIENT_ID as string,
@@ -271,8 +362,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 
   app.get('/auth/google/callback', async (req, reply) => {
     try {
-      ensureAuthConfig();
-
+      ensureOAuthConfig();
       const query = req.query as {
         code?: string;
         state?: string;
@@ -293,7 +383,6 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
         return reply.code(400).send({ message: 'Invalid OAuth state.' });
       }
 
-      // Exchange authorization code for access token.
       const tokenRes = await fetch(GOOGLE_TOKEN_URL, {
         method: 'POST',
         headers: {
@@ -319,7 +408,6 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
         return reply.code(400).send({ message: 'Google access token is missing.' });
       }
 
-      // Fetch Google user profile and map to local user.
       const userInfoRes = await fetch(GOOGLE_USERINFO_URL, {
         headers: {
           Authorization: `Bearer ${tokenJson.access_token}`
@@ -338,12 +426,12 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       }
 
       const user = await upsertUserByGoogleIdentity(userInfo);
-      const { sessionToken } = await issueSession(user.id);
+      const { accessToken, refreshToken, accessTtlSec, refreshTtlSec } = await issueTokenPair(user);
 
-      // Clear one-time OAuth state and issue login session cookie.
       reply.header('Set-Cookie', [
         buildClearCookie(OAUTH_STATE_COOKIE_NAME),
-        buildSetCookie(SESSION_COOKIE_NAME, sessionToken, env.AUTH_SESSION_TTL_SECONDS)
+        buildSetCookie(ACCESS_COOKIE_NAME, accessToken, accessTtlSec),
+        buildSetCookie(REFRESH_COOKIE_NAME, refreshToken, refreshTtlSec)
       ]);
       return reply.redirect(env.WEB_ORIGIN);
     } catch (error) {
@@ -354,24 +442,25 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 
   app.get('/auth/me', async (req, reply) => {
     try {
+      const { accessSecret } = getJwtConfig();
       const cookies = parseCookieHeader(req.headers.cookie);
-      const sessionToken = cookies[SESSION_COOKIE_NAME];
-      if (!sessionToken) {
+      const accessToken = cookies[ACCESS_COOKIE_NAME];
+
+      if (!accessToken) {
         return reply.code(200).send({ authenticated: false });
       }
 
-      const user = await findActiveSessionUser(sessionToken);
-      if (!user) {
-        reply.header('Set-Cookie', buildClearCookie(SESSION_COOKIE_NAME));
+      const claims = verifyAccessToken(accessToken, accessSecret);
+      if (!claims) {
         return reply.code(200).send({ authenticated: false });
       }
 
       return reply.code(200).send({
         authenticated: true,
         user: {
-          id: user.id,
-          email: user.email,
-          displayName: user.display_name
+          id: claims.sub,
+          email: claims.email ?? null,
+          displayName: claims.displayName ?? null
         }
       });
     } catch (error) {
@@ -380,23 +469,65 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
     }
   });
 
+  app.post('/auth/refresh', async (req, reply) => {
+    try {
+      const { refreshSecret } = getJwtConfig();
+      const cookies = parseCookieHeader(req.headers.cookie);
+      const refreshToken = cookies[REFRESH_COOKIE_NAME];
+
+      if (!refreshToken) {
+        return reply.code(401).send({ message: 'Refresh token is missing.' });
+      }
+
+      const refreshClaims = verifyRefreshToken(refreshToken, refreshSecret);
+      if (!refreshClaims) {
+        reply.header('Set-Cookie', [
+          buildClearCookie(ACCESS_COOKIE_NAME),
+          buildClearCookie(REFRESH_COOKIE_NAME)
+        ]);
+        return reply.code(401).send({ message: 'Invalid refresh token.' });
+      }
+
+      const session = await getActiveRefreshSession(refreshToken);
+      if (!session || session.user_id !== refreshClaims.sub) {
+        reply.header('Set-Cookie', [
+          buildClearCookie(ACCESS_COOKIE_NAME),
+          buildClearCookie(REFRESH_COOKIE_NAME)
+        ]);
+        return reply.code(401).send({ message: 'Refresh session is not active.' });
+      }
+
+      const user = await loadUserById(refreshClaims.sub);
+
+      // Refresh token rotation.
+      await revokeRefreshSession(refreshToken);
+      const next = await issueTokenPair(user);
+
+      reply.header('Set-Cookie', [
+        buildSetCookie(ACCESS_COOKIE_NAME, next.accessToken, next.accessTtlSec),
+        buildSetCookie(REFRESH_COOKIE_NAME, next.refreshToken, next.refreshTtlSec)
+      ]);
+
+      return reply.code(200).send({ ok: true });
+    } catch (error) {
+      app.log.error(error);
+      return reply.code(500).send({ message: 'Token refresh failed.' });
+    }
+  });
+
   app.post('/auth/logout', async (req, reply) => {
     try {
       const cookies = parseCookieHeader(req.headers.cookie);
-      const sessionToken = cookies[SESSION_COOKIE_NAME];
+      const refreshToken = cookies[REFRESH_COOKIE_NAME];
 
-      if (sessionToken) {
-        const supabase = getSupabaseAdminClient();
-        const tokenHash = hashSessionToken(sessionToken);
-        // Soft-revoke session record.
-        await supabase
-          .from('sessions')
-          .update({ revoked_at: new Date().toISOString() })
-          .eq('session_token_hash', tokenHash)
-          .is('revoked_at', null);
+      if (refreshToken) {
+        await revokeRefreshSession(refreshToken);
       }
 
-      reply.header('Set-Cookie', buildClearCookie(SESSION_COOKIE_NAME));
+      reply.header('Set-Cookie', [
+        buildClearCookie(ACCESS_COOKIE_NAME),
+        buildClearCookie(REFRESH_COOKIE_NAME)
+      ]);
       return reply.code(200).send({ ok: true });
     } catch (error) {
       app.log.error(error);
