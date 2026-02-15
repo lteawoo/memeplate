@@ -124,6 +124,9 @@
   - [x] `/login` 페이지 추가 (Memeplate 로고 + 하단 구글 로그인 버튼)
   - [ ] Supabase SQL 실행 및 초기 데이터 검증
 - [ ] **3차 템플릿 도메인 구현**
-  - [ ] `TemplateRepository` Supabase 구현체 추가
-  - [ ] 내 템플릿 조회/등록/수정/삭제 API 구현
-  - [ ] 공개/비공개(공유) 정책 API 반영
+  - [x] `TemplateRepository` Supabase 구현체 추가
+  - [x] 내 템플릿 조회/등록/수정/삭제 API 구현
+  - [x] 공개 템플릿 목록 API 구현 (`GET /templates/public`)
+  - [x] 공유 slug 상세 조회 API 구현 (`GET /templates/s/:shareSlug`)
+  - [x] 에디터 공유 탭 API 연동(저장/업데이트/공유링크복사)
+  - [ ] 템플릿 목록/관리 전용 화면 구현 (`/templates`, `/my/templates`)

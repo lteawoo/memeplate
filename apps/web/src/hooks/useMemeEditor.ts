@@ -17,6 +17,24 @@ interface CanvasDoubleClickEvent {
   target?: CanvasObject;
 }
 
+type TemplateVisibility = 'private' | 'public';
+
+type TemplateRecord = {
+  id: string;
+  title: string;
+  visibility: TemplateVisibility;
+  shareSlug: string;
+};
+
+type TemplateResponse = {
+  template: {
+    id: string;
+    title: string;
+    visibility: TemplateVisibility;
+    shareSlug: string;
+  };
+};
+
 type UploadInput = File | Blob | {
   file?: File | Blob | {
     originFileObj?: File | Blob;
@@ -41,6 +59,8 @@ export const useMemeEditor = (messageApi: MessageInstance) => {
   const [hasBackground, setHasBackground] = useState(false);
   const [workspaceSize, setWorkspaceSize] = useState({ width: 0, height: 0 });
   const workspaceSizeRef = useRef({ width: 0, height: 0 });
+  const [savedTemplate, setSavedTemplate] = useState<TemplateRecord | null>(null);
+  const [isTemplateSaving, setIsTemplateSaving] = useState(false);
 
   // History State
   const [history, setHistory] = useState<HistoryItem[]>([]);
@@ -413,6 +433,88 @@ export const useMemeEditor = (messageApi: MessageInstance) => {
     }
   };
 
+  const saveTemplate = async (title: string, visibility: TemplateVisibility) => {
+    if (!canvasInstanceRef.current) return null;
+    if (!title.trim()) {
+      messageApi.error('템플릿 제목을 입력하세요.');
+      return null;
+    }
+
+    try {
+      setIsTemplateSaving(true);
+      const canvas = canvasInstanceRef.current;
+      const content = canvas.toJSON(true) as Record<string, unknown>;
+      const thumbnailDataUrl = canvas.toDataURL({
+        format: 'webp',
+        multiplier: 1,
+        width: workspaceSize.width,
+        height: workspaceSize.height
+      });
+
+      const body = JSON.stringify({
+        title: title.trim(),
+        content,
+        visibility,
+        thumbnailDataUrl
+      });
+
+      const endpoint = savedTemplate
+        ? `/api/v1/templates/${savedTemplate.id}`
+        : '/api/v1/templates';
+      const method = savedTemplate ? 'PATCH' : 'POST';
+
+      const res = await fetch(endpoint, {
+        method,
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body
+      });
+
+      if (res.status === 401) {
+        messageApi.error('로그인이 필요합니다.');
+        return null;
+      }
+
+      if (!res.ok) {
+        const payload = (await res.json().catch(() => ({}))) as { message?: string };
+        throw new Error(payload.message || '템플릿 저장에 실패했습니다.');
+      }
+
+      const payload = (await res.json()) as TemplateResponse;
+      const template = {
+        id: payload.template.id,
+        title: payload.template.title,
+        visibility: payload.template.visibility,
+        shareSlug: payload.template.shareSlug
+      };
+      setSavedTemplate(template);
+      messageApi.success('템플릿이 저장되었습니다.');
+      return template;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : '템플릿 저장에 실패했습니다.';
+      messageApi.error(msg);
+      return null;
+    } finally {
+      setIsTemplateSaving(false);
+    }
+  };
+
+  const copyTemplateShareLink = async () => {
+    if (!savedTemplate?.shareSlug) {
+      messageApi.warning('공유 가능한 템플릿이 없습니다.');
+      return;
+    }
+    const shareUrl = `${window.location.origin}/templates/s/${savedTemplate.shareSlug}`;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      messageApi.success('템플릿 공유 링크가 복사되었습니다.');
+    } catch {
+      messageApi.error('링크 복사에 실패했습니다.');
+    }
+  };
+
   const changeZIndex = (direction: 'forward' | 'backward' | 'front' | 'back') => {
     if (!canvasInstanceRef.current || !activeObject) return;
     const canvas = canvasInstanceRef.current;
@@ -467,6 +569,10 @@ export const useMemeEditor = (messageApi: MessageInstance) => {
     downloadImage,
     copyToClipboard,
     changeZIndex,
+    saveTemplate,
+    copyTemplateShareLink,
+    savedTemplate,
+    isTemplateSaving,
     canvasInstance: canvasInstanceRef.current
   };
 };

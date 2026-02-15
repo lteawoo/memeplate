@@ -38,6 +38,10 @@ const MemeEditor: React.FC = () => {
     addShape,
     downloadImage,
     copyToClipboard,
+    saveTemplate,
+    copyTemplateShareLink,
+    savedTemplate,
+    isTemplateSaving,
     changeZIndex,
     canvasInstance,
     editingTextId,
@@ -58,6 +62,10 @@ const MemeEditor: React.FC = () => {
     addShape,
     downloadImage,
     copyToClipboard,
+    saveTemplate,
+    copyTemplateShareLink,
+    savedTemplate,
+    isTemplateSaving,
     changeZIndex
   };
   return (

@@ -94,6 +94,12 @@
   - [x] `docs/ai-context/sql/2026-02-14_supabase_auth_schema.sql` 작성
   - [x] `users` / `auth_identities` / `sessions` 스키마 및 인덱스 정의
   - [x] 아바타 미저장 정책 반영
+- [x] **템플릿 공유 MVP 1차 (완료 - 이슈 #62)**
+  - [x] `templates` 스키마 SQL 초안 작성 (`docs/ai-context/sql/2026-02-16_templates_share_schema.sql`)
+  - [x] Templates Supabase repository 구현 및 API 실동작 전환
+  - [x] 공개 템플릿 목록/공유 slug 조회 API 추가
+  - [x] 에디터 공유 탭에서 템플릿 저장/업데이트/공유 링크 복사 연동
+  - [x] R2 업로드 env 스키마 연결 + 썸네일 Data URL 업로드 유틸 추가
 
 ## 다음 작업
 - [ ] Google OAuth 로그인 엔드포인트 고도화 (`/api/v1/auth/*`)
@@ -107,8 +113,7 @@
   - [x] 세션 토큰 기반 인증을 JWT(access/refresh) 구조로 전환 (이슈 #53)
   - [x] 인증 미들웨어(`requireAuth`) 공통화 및 템플릿 라우트 적용
 - [ ] Supabase SQL 스키마 실제 반영 및 마이그레이션 실행
-- [ ] 템플릿 CRUD 엔드포인트 실제 구현 (`/api/v1/templates/*`)
-- [ ] Supabase Repository 구현체 연결 (현재 placeholder)
+- [ ] 템플릿 전용 화면 구현 (`/templates`, `/my/templates`, `/templates/s/:shareSlug`)
 - [ ] 텍스트 레이어 영역 클리핑(Clipping) 처리
 - [ ] 레이어 스타일 상세 설정 (그림자, 외곽선 자동색/자동그림자 고도화)
 - [ ] 성능 최적화 (Dirty Rect 알고리즘 도입 검토)

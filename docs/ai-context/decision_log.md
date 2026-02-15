@@ -1,5 +1,34 @@
 # 결정 로그 (Decision Log)
 
+## [2026-02-16] 템플릿 공유 MVP 1차: Supabase templates + 공개/개인 API + 에디터 공유 탭 연동
+- **결정**: 템플릿 공유 기능을 우선 백엔드 중심으로 완성하고, 에디터 공유 탭에서 바로 저장/공개전환/링크복사를 사용할 수 있도록 연결함.
+- **이유**:
+  1. **기능 우선순위 정합성**: 목록/관리 페이지보다 저장/공유 API를 먼저 확보해야 실제 데이터 흐름 검증 가능.
+  2. **권한 경계 명확화**: `requireAuth`를 기반으로 소유자 쓰기(`me`/`create`/`patch`/`delete`)와 공개 읽기(`public`/`shareSlug`)를 분리.
+  3. **확장성**: 이후 `/templates`, `/my/templates` UI는 이미 확보된 API를 재사용해 구현 가능.
+- **구현 요약**:
+  - SQL: `docs/ai-context/sql/2026-02-16_templates_share_schema.sql` 추가.
+  - API: `apps/api/src/modules/templates/routes.ts`에서 `501` placeholder 제거 후 실제 CRUD/공개조회 구현.
+  - Repository: `apps/api/src/modules/templates/supabaseRepository.ts` 추가.
+  - 프론트: `apps/web/src/hooks/useMemeEditor.ts`, `apps/web/src/components/editor/MemePropertyPanel.tsx`에 공유 탭 연동 추가.
+
+## [2026-02-16] R2 썸네일 업로드 전략: Data URL 수신 후 백엔드 업로드, DB에는 공개 URL만 저장
+- **결정**: 프론트에서 `thumbnailDataUrl`을 전송하면 API 서버가 R2에 업로드하고, 템플릿에는 `thumbnail_url`(스토리지 공개 URL)만 저장하도록 구성함.
+- **이유**:
+  1. **DB 경량화**: Base64 원문을 DB에 저장하지 않아 템플릿 레코드 크기와 쿼리 비용을 줄임.
+  2. **전송/캐시 효율**: 썸네일은 CDN 캐시 가능한 URL로 관리하는 것이 목록 성능에 유리.
+  3. **정책 정합성**: 스토리지 URL 저장 원칙을 코드 레벨에서 강제.
+- **구현 요약**:
+  - `apps/api/src/lib/r2.ts` 추가 (mime/용량 검증 + R2 업로드).
+  - `apps/api/src/config/env.ts`에 `R2_*` env 스키마 연결.
+  - 템플릿 create/update에서 `thumbnailDataUrl` 처리 후 `thumbnailUrl`로 치환 저장.
+
+## [2026-02-16] 의존성 추가: `@aws-sdk/client-s3` 도입
+- **결정**: R2 업로드를 위해 API 패키지에 `@aws-sdk/client-s3`를 추가함.
+- **이유**:
+  1. **호환성**: Cloudflare R2가 S3 호환 API를 제공하므로 표준 SDK 사용이 가장 안전함.
+  2. **유지보수성**: 직접 서명 구현 대비 코드 복잡도와 장애 위험을 줄임.
+
 ## [2026-02-16] 텍스트 편집 WYSIWYG 개선: 공통 레이아웃 엔진 재사용
 - **결정**: 텍스트 줄바꿈/폰트축소/세로정렬 계산을 `Textbox.draw`와 편집 오버레이가 각각 따로 계산하지 않고, 공통 유틸(`textLayout`)을 함께 사용하도록 통합함.
 - **이유**:
