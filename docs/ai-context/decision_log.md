@@ -1,5 +1,21 @@
 # 결정 로그 (Decision Log)
 
+## [2026-02-15] 인증 구조 전환: 서버 세션 토큰에서 JWT(access/refresh) 기반으로 변경 (이슈 #53)
+- **결정**: 기존 `mp_session` 단일 세션 쿠키 + DB 조회 방식에서 `mp_access`/`mp_refresh` JWT 쿠키 구조로 전환함. refresh 토큰은 DB(`sessions`)에 해시로 저장하고 회전(rotation) 정책을 적용함.
+- **이유**:
+  1. **성능/확장성**: `auth/me`는 access JWT 서명 검증만으로 처리해 요청당 DB 의존을 줄일 수 있음.
+  2. **보안성**: refresh 토큰 원문을 저장하지 않고 해시만 저장해 유출 리스크를 완화.
+  3. **운영 제어**: refresh revoke/만료를 통해 로그아웃 및 세션 무효화를 계속 서버 측에서 통제 가능.
+- **구현 요약**:
+  - `apps/api/src/modules/auth/routes.ts`
+    - `GET /api/v1/auth/google/start`
+    - `GET /api/v1/auth/google/callback` (JWT 발급)
+    - `GET /api/v1/auth/me` (access JWT 검증)
+    - `POST /api/v1/auth/refresh` (refresh JWT 회전)
+    - `POST /api/v1/auth/logout` (refresh revoke + 쿠키 삭제)
+  - `apps/api/src/config/env.ts`에 JWT 관련 env(`JWT_*`) 추가.
+  - `apps/api/.env*.example`에 JWT 항목 추가.
+
 ## [2026-02-15] 프론트 인증 UX 1차: `MainHeader` 중심 로그인/로그아웃 연동
 - **결정**: 인증 UI를 별도 페이지로 분리하지 않고 공통 헤더(`MainHeader`)에 통합하여, 홈/에디터 어디서나 동일한 로그인 상태를 노출함.
 - **이유**:

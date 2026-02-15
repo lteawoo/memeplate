@@ -18,15 +18,18 @@ pnpm --filter memeplate-api dev
 서버는 `NODE_ENV` 값에 따라 `.env.{NODE_ENV}`를 우선 로드합니다.
 
 - `WEB_DIST_DIR`: 프로덕션에서 SPA 정적 파일 경로 (기본값 `../web/dist`)
+- `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`: JWT 서명 키
+- `JWT_ACCESS_TTL_SECONDS`, `JWT_REFRESH_TTL_SECONDS`: JWT 만료 시간(초)
 
 ## 엔드포인트
 
 - `GET /healthz`
 - `GET /api/v1/health`
 - `GET /api/v1/auth/google/start` (Google OAuth redirect)
-- `GET /api/v1/auth/google/callback` (Google OAuth callback + session issue)
-- `GET /api/v1/auth/me` (session check)
-- `POST /api/v1/auth/logout` (session revoke + cookie clear)
+- `GET /api/v1/auth/google/callback` (Google OAuth callback + JWT/cookie issue)
+- `GET /api/v1/auth/me` (access JWT check)
+- `POST /api/v1/auth/refresh` (refresh JWT rotation)
+- `POST /api/v1/auth/logout` (refresh revoke + cookie clear)
 - `GET /api/v1/templates/me` (placeholder)
 - `POST /api/v1/templates` (payload zod 검증 포함)
 - `PATCH /api/v1/templates/:templateId` (payload zod 검증 포함)
