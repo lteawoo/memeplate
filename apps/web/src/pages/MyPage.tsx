@@ -2,6 +2,7 @@ import React from 'react';
 import { Alert, Button, Card, Spin, Typography } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import MySectionLayout from '../components/layout/MySectionLayout';
+import { fetchAuthMeWithRefresh } from '../lib/apiFetch';
 const { Text } = Typography;
 
 type AuthUser = {
@@ -26,32 +27,22 @@ const MyPage: React.FC = () => {
       setIsLoading(true);
       setError(null);
       try {
-        const res = await fetch('/api/v1/auth/me', { credentials: 'include' });
-        if (!res.ok) {
-          if (res.status === 401) {
-            setError('로그인이 필요합니다.');
-            setUser(null);
-            return;
-          }
-          throw new Error('사용자 정보를 불러오지 못했습니다.');
-        }
-        const payload = (await res.json()) as AuthMeResponse;
+        const payload = (await fetchAuthMeWithRefresh()) as AuthMeResponse;
         if (!payload.authenticated || !payload.user) {
-          setError('로그인이 필요합니다.');
-          setUser(null);
+          navigate('/');
           return;
         }
         setUser(payload.user);
       } catch (err) {
-        setError(err instanceof Error ? err.message : '사용자 정보를 불러오지 못했습니다.');
-        setUser(null);
+        const msg = err instanceof Error ? err.message : '사용자 정보를 불러오지 못했습니다.';
+        setError(msg);
       } finally {
         setIsLoading(false);
       }
     };
 
     void loadMe();
-  }, []);
+  }, [navigate]);
 
   return (
     <MySectionLayout

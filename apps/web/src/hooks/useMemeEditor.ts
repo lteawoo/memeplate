@@ -4,10 +4,13 @@ import type { CanvasObjectOptions } from '../core/canvas';
 import type { ToolType } from '../components/editor/MemeToolbar';
 import { message } from 'antd';
 import type { TemplateRecord, TemplateVisibility } from '../types/template';
+import { apiFetch } from '../lib/apiFetch';
 
 type MessageInstance = ReturnType<typeof message.useMessage>[0];
 
 const CANVAS_MARGIN = 0;
+const TEMPLATE_THUMBNAIL_LONG_EDGE = 1280;
+const TEMPLATE_THUMBNAIL_QUALITY = 0.82;
 
 interface HistoryItem {
   json: string;
@@ -107,6 +110,18 @@ const sanitizeTemplateNode = (node: unknown): unknown => {
 
 const sanitizeTemplateContent = (content: Record<string, unknown>): Record<string, unknown> =>
   sanitizeTemplateNode(content) as Record<string, unknown>;
+
+const getThumbnailSize = (width: number, height: number) => {
+  const longEdge = Math.max(width, height);
+  if (!Number.isFinite(longEdge) || longEdge <= 0 || longEdge <= TEMPLATE_THUMBNAIL_LONG_EDGE) {
+    return { width, height };
+  }
+  const scale = TEMPLATE_THUMBNAIL_LONG_EDGE / longEdge;
+  return {
+    width: Math.max(1, Math.round(width * scale)),
+    height: Math.max(1, Math.round(height * scale))
+  };
+};
 
 const createBackgroundImageObject = (src: string, width: number, height: number): Record<string, unknown> => ({
   id: crypto.randomUUID(),
@@ -637,12 +652,25 @@ export const useMemeEditor = (messageApi: MessageInstance, options?: UseMemeEdit
       setIsTemplateSaving(true);
       const canvas = canvasInstanceRef.current;
       const content = sanitizeTemplateContent(canvas.toJSON(true) as Record<string, unknown>);
-      const thumbnailDataUrl = canvas.toDataURL({
-        format: 'webp',
-        multiplier: 1,
-        width: workspaceSize.width,
-        height: workspaceSize.height
-      });
+      const textObjects = canvas
+        .getObjects()
+        .filter((obj) => obj instanceof Textbox || obj.type === 'text')
+        .map((obj) => ({ obj, visible: obj.visible }));
+
+      let thumbnailDataUrl = '';
+      try {
+        textObjects.forEach(({ obj }) => obj.set('visible', false));
+        const thumbnailSize = getThumbnailSize(workspaceSize.width, workspaceSize.height);
+        thumbnailDataUrl = canvas.toDataURL({
+          format: 'webp',
+          multiplier: 1,
+          width: thumbnailSize.width,
+          height: thumbnailSize.height,
+          quality: TEMPLATE_THUMBNAIL_QUALITY
+        });
+      } finally {
+        textObjects.forEach(({ obj, visible }) => obj.set('visible', visible));
+      }
 
       const body = JSON.stringify({
         title: title.trim(),
@@ -656,9 +684,8 @@ export const useMemeEditor = (messageApi: MessageInstance, options?: UseMemeEdit
         : '/api/v1/templates';
       const method = savedTemplate ? 'PATCH' : 'POST';
 
-      const res = await fetch(endpoint, {
+      const res = await apiFetch(endpoint, {
         method,
-        credentials: 'include',
         headers: {
           'Content-Type': 'application/json'
         },

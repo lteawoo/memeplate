@@ -3,6 +3,7 @@ import { Alert, Spin } from 'antd';
 import { useSearchParams } from 'react-router-dom';
 import MemeEditor from '../components/MemeEditor';
 import type { TemplateResponse, TemplateRecord } from '../types/template';
+import { apiFetch } from '../lib/apiFetch';
 type EditorLoadMode = 'mine' | 'public';
 
 const EditorPage: React.FC = () => {
@@ -31,9 +32,9 @@ const EditorPage: React.FC = () => {
         : `/api/v1/templates/s/${shareSlug}`;
 
       try {
-        const res = await fetch(endpoint, {
-          credentials: templateId ? 'include' : 'same-origin'
-        });
+        const res = templateId
+          ? await apiFetch(endpoint)
+          : await fetch(endpoint, { credentials: 'same-origin' });
         if (!res.ok) {
           const payload = (await res.json().catch(() => ({}))) as { message?: string };
           throw new Error(payload.message || '밈플릿을 불러오지 못했습니다.');

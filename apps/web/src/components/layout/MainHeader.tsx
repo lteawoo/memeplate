@@ -3,6 +3,7 @@ import { Layout, Typography, Button, Drawer, Dropdown } from 'antd';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import Icon from '@mdi/react';
 import { mdiMenu, mdiChevronDown } from '@mdi/js';
+import { apiFetch, fetchAuthMeWithRefresh } from '../../lib/apiFetch';
 
 const { Header } = Layout;
 const { Title } = Typography;
@@ -11,11 +12,6 @@ type AuthUser = {
   id: string;
   email: string | null;
   displayName: string | null;
-};
-
-type AuthMeResponse = {
-  authenticated: boolean;
-  user?: AuthUser;
 };
 
 const MainHeader: React.FC = () => {
@@ -34,14 +30,7 @@ const MainHeader: React.FC = () => {
   const syncAuthSession = async () => {
     try {
       setIsAuthLoading(true);
-      const res = await fetch('/api/v1/auth/me', {
-        credentials: 'include'
-      });
-      if (!res.ok) {
-        setAuthUser(null);
-        return;
-      }
-      const payload = (await res.json()) as AuthMeResponse;
+      const payload = await fetchAuthMeWithRefresh();
       if (payload.authenticated && payload.user) {
         setAuthUser(payload.user);
       } else {
@@ -64,10 +53,9 @@ const MainHeader: React.FC = () => {
 
   const handleLogout = async () => {
     try {
-      await fetch('/api/v1/auth/logout', {
+      await apiFetch('/api/v1/auth/logout', {
         method: 'POST',
-        credentials: 'include'
-      });
+      }, { retryOnUnauthorized: false, redirectOnAuthFailure: false });
     } finally {
       await syncAuthSession();
       setIsDrawerOpen(false);

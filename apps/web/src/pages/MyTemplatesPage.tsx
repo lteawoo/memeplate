@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import MySectionLayout from '../components/layout/MySectionLayout';
 import TemplateThumbnailCard from '../components/TemplateThumbnailCard';
 import type { TemplateRecord, TemplatesResponse, TemplateVisibility } from '../types/template';
+import { apiFetch } from '../lib/apiFetch';
 
 const { Title, Text } = Typography;
 
@@ -54,10 +55,9 @@ const MyTemplatesPage: React.FC = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/v1/templates/me', { credentials: 'include' });
+      const res = await apiFetch('/api/v1/templates/me');
       if (res.status === 401) {
-        setError('로그인이 필요합니다.');
-        setTemplates([]);
+        navigate('/');
         return;
       }
       if (!res.ok) {
@@ -71,16 +71,15 @@ const MyTemplatesPage: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [navigate]);
 
   React.useEffect(() => {
     void loadTemplates();
   }, [loadTemplates]);
 
   const updateVisibility = async (templateId: string, visibility: TemplateVisibility) => {
-    const res = await fetch(`/api/v1/templates/${templateId}`, {
+    const res = await apiFetch(`/api/v1/templates/${templateId}`, {
       method: 'PATCH',
-      credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ visibility })
     });
@@ -91,10 +90,7 @@ const MyTemplatesPage: React.FC = () => {
   };
 
   const deleteTemplate = async (templateId: string) => {
-    const res = await fetch(`/api/v1/templates/${templateId}`, {
-      method: 'DELETE',
-      credentials: 'include'
-    });
+    const res = await apiFetch(`/api/v1/templates/${templateId}`, { method: 'DELETE' });
     if (!res.ok) {
       const payload = (await res.json().catch(() => ({}))) as { message?: string };
       throw new Error(payload.message || '밈플릿 삭제에 실패했습니다.');

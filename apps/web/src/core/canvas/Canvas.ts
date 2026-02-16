@@ -647,9 +647,12 @@ export class Canvas {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   toDataURL(options: any = {}) {
-    // Basic implementation ignoring most options for now except format/quality
-    // For crop/multiplier, it's more complex.
-    // If specific crop is requested, we might need a temporary canvas.
+    const format = options.format === 'jpg' ? 'jpeg' : (options.format || 'png');
+    const mimeType = `image/${format}`;
+    const quality =
+      typeof options.quality === 'number' && Number.isFinite(options.quality)
+        ? Math.max(0, Math.min(1, options.quality))
+        : undefined;
     
     if (options.left !== undefined || options.top !== undefined || options.width !== undefined || options.height !== undefined) {
       // Create temp canvas for cropping
@@ -681,10 +684,18 @@ export class Canvas {
         }
       });
       
-      return tempCanvas.toDataURL(`image/${options.format === 'jpg' ? 'jpeg' : (options.format || 'png')}`);
+      if (quality !== undefined && (format === 'jpeg' || format === 'webp')) {
+        return tempCanvas.toDataURL(mimeType, quality);
+      }
+
+      return tempCanvas.toDataURL(mimeType);
     }
 
-    return this.el.toDataURL(`image/${options.format === 'jpg' ? 'jpeg' : (options.format || 'png')}`);
+    if (quality !== undefined && (format === 'jpeg' || format === 'webp')) {
+      return this.el.toDataURL(mimeType, quality);
+    }
+
+    return this.el.toDataURL(mimeType);
   }
 
   toJSON(includeBackground: boolean = true) {

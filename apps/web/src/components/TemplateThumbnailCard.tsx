@@ -29,6 +29,8 @@ const TemplateThumbnailCard: React.FC<TemplateThumbnailCardProps> = ({
                 src={template.thumbnailUrl}
                 alt={template.title}
                 className="max-h-full w-full object-contain"
+                draggable={false}
+                onDragStart={(e) => e.preventDefault()}
               />
             </div>
           ) : (
@@ -51,4 +53,3 @@ const TemplateThumbnailCard: React.FC<TemplateThumbnailCardProps> = ({
 };
 
 export default TemplateThumbnailCard;
-
