@@ -8,6 +8,7 @@ import {
 } from '../../types/template.js';
 import { createSupabaseTemplateRepository } from './supabaseRepository.js';
 import { uploadTemplateThumbnailDataUrl } from '../../lib/r2.js';
+import { sanitizeTemplateContent } from './sanitizeTemplateContent.js';
 
 export const templateRoutes: FastifyPluginAsync = async (app) => {
   const repository = createSupabaseTemplateRepository();
@@ -41,6 +42,23 @@ export const templateRoutes: FastifyPluginAsync = async (app) => {
     return reply.send({ templates });
   });
 
+  app.get('/templates/:templateId', { preHandler: requireAuth }, async (req, reply) => {
+    const paramsParsed = TemplateIdParamSchema.safeParse(req.params);
+    if (!paramsParsed.success) {
+      return reply.code(400).send({
+        message: 'Invalid template id',
+        issues: paramsParsed.error.issues
+      });
+    }
+
+    const template = await repository.getMineById(req.authUser!.id, paramsParsed.data.templateId);
+    if (!template) {
+      return reply.code(404).send({ message: 'Template not found.' });
+    }
+
+    return reply.send({ template });
+  });
+
   app.post('/templates', { preHandler: requireAuth }, async (req, reply) => {
     const parsed = CreateTemplateSchema.safeParse(req.body);
 
@@ -58,6 +76,7 @@ export const templateRoutes: FastifyPluginAsync = async (app) => {
 
     const created = await repository.create(req.authUser!.id, {
       ...input,
+      content: sanitizeTemplateContent(input.content),
       thumbnailUrl
     });
 
@@ -87,8 +106,13 @@ export const templateRoutes: FastifyPluginAsync = async (app) => {
       ? await uploadTemplateThumbnailDataUrl(req.authUser!.id, thumbnailDataUrl)
       : input.thumbnailUrl;
 
+    const normalizedContent = input.content
+      ? sanitizeTemplateContent(input.content)
+      : undefined;
+
     const updated = await repository.update(req.authUser!.id, paramsParsed.data.templateId, {
       ...input,
+      content: normalizedContent,
       thumbnailUrl
     });
 

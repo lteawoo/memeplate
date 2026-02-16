@@ -7,7 +7,7 @@ type TemplateRow = {
   id: string;
   owner_id: string;
   title: string;
-  content: Record<string, unknown>;
+  content?: Record<string, unknown>;
   thumbnail_url: string | null;
   visibility: 'private' | 'public';
   share_slug: string;
@@ -19,7 +19,7 @@ const toRecord = (row: TemplateRow): TemplateRecord => ({
   id: row.id,
   ownerId: row.owner_id,
   title: row.title,
-  content: row.content,
+  content: row.content ?? {},
   thumbnailUrl: row.thumbnail_url ?? undefined,
   visibility: row.visibility,
   shareSlug: row.share_slug,
@@ -36,7 +36,7 @@ export const createSupabaseTemplateRepository = (): TemplateRepository => {
     async listMine(userId) {
       const { data, error } = await supabase
         .from('templates')
-        .select('id, owner_id, title, content, thumbnail_url, visibility, share_slug, created_at, updated_at')
+        .select('id, owner_id, title, thumbnail_url, visibility, share_slug, created_at, updated_at')
         .eq('owner_id', userId)
         .is('deleted_at', null)
         .order('updated_at', { ascending: false });
@@ -45,10 +45,23 @@ export const createSupabaseTemplateRepository = (): TemplateRepository => {
       return (data ?? []).map((row) => toRecord(row as TemplateRow));
     },
 
-    async listPublic(limit) {
+    async getMineById(userId, templateId) {
       const { data, error } = await supabase
         .from('templates')
         .select('id, owner_id, title, content, thumbnail_url, visibility, share_slug, created_at, updated_at')
+        .eq('id', templateId)
+        .eq('owner_id', userId)
+        .is('deleted_at', null)
+        .maybeSingle();
+
+      if (error) throw error;
+      return data ? toRecord(data as TemplateRow) : null;
+    },
+
+    async listPublic(limit) {
+      const { data, error } = await supabase
+        .from('templates')
+        .select('id, owner_id, title, thumbnail_url, visibility, share_slug, created_at, updated_at')
         .eq('visibility', 'public')
         .is('deleted_at', null)
         .order('updated_at', { ascending: false })
@@ -97,12 +110,14 @@ export const createSupabaseTemplateRepository = (): TemplateRepository => {
         content: Record<string, unknown>;
         thumbnail_url: string | null;
         visibility: 'private' | 'public';
+        updated_at: string;
       }> = {};
 
       if (input.title !== undefined) patch.title = input.title;
       if (input.content !== undefined) patch.content = input.content;
       if (input.thumbnailUrl !== undefined) patch.thumbnail_url = input.thumbnailUrl ?? null;
       if (input.visibility !== undefined) patch.visibility = input.visibility;
+      patch.updated_at = new Date().toISOString();
 
       const { data, error } = await supabase
         .from('templates')

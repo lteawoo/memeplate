@@ -121,6 +121,9 @@
   - [x] `POST /api/v1/auth/refresh` API 구현
   - [x] 공통 인증 미들웨어(`requireAuth`) 구현 및 템플릿 라우트 적용
   - [x] `MainHeader` 로그인/로그아웃 UI 및 세션 상태 표시 연동
+  - [x] 우측 상단 사용자 이름 메뉴(마이페이지/내 템플릿/로그아웃) 연결
+  - [x] `마이페이지(/my)` 화면 추가
+  - [x] `/my`, `/my/templates` 공통 좌측 사이드 메뉴 레이아웃 적용
   - [x] `/login` 페이지 추가 (Memeplate 로고 + 하단 구글 로그인 버튼)
   - [ ] Supabase SQL 실행 및 초기 데이터 검증
 - [ ] **3차 템플릿 도메인 구현**
@@ -129,4 +132,6 @@
   - [x] 공개 템플릿 목록 API 구현 (`GET /templates/public`)
   - [x] 공유 slug 상세 조회 API 구현 (`GET /templates/s/:shareSlug`)
   - [x] 에디터 공유 탭 API 연동(저장/업데이트/공유링크복사)
+  - [x] 공개 템플릿 시작 경로(`shareSlug`)에서 배경 미복원 케이스 fallback 처리(썸네일 기반 background 객체 주입)
+  - [x] 공개 템플릿 시작 시 기본 활성 도구를 `편집`으로 설정
   - [ ] 템플릿 목록/관리 전용 화면 구현 (`/templates`, `/my/templates`)

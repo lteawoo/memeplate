@@ -3,6 +3,7 @@
 -- 1) share slug는 한글 제목 기반이 아니라 영숫자 토큰 기반
 -- 2) 삭제는 soft delete(deleted_at) 사용
 -- 3) 목록 기본 정렬은 최신순(updated_at desc)
+-- 4) 텍스트 레이어 실제 문구는 앱에서 저장 직전 ''로 정규화
 
 begin;
 
@@ -20,12 +21,6 @@ create table if not exists public.templates (
   updated_at timestamptz not null default now(),
   deleted_at timestamptz
 );
-
-drop trigger if exists trg_templates_updated_at on public.templates;
-create trigger trg_templates_updated_at
-before update on public.templates
-for each row
-execute function public.set_updated_at();
 
 create index if not exists idx_templates_owner_updated
   on public.templates(owner_id, updated_at desc)

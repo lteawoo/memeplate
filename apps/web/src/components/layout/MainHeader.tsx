@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Layout, Typography, Button, Drawer } from 'antd';
+import { Layout, Typography, Button, Drawer, Dropdown } from 'antd';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import Icon from '@mdi/react';
-import { mdiMenu } from '@mdi/js';
+import { mdiMenu, mdiChevronDown } from '@mdi/js';
 
 const { Header } = Layout;
 const { Title } = Typography;
@@ -28,6 +28,7 @@ const MainHeader: React.FC = () => {
   const navLinks = [
     { to: '/', label: '홈' },
     { to: '/create', label: 'Memeplate 생성' },
+    { to: '/templates', label: '밈플릿 목록' },
   ];
 
   const syncAuthSession = async () => {
@@ -74,6 +75,23 @@ const MainHeader: React.FC = () => {
   };
 
   const authDisplayName = authUser?.displayName || authUser?.email || '로그인 사용자';
+  const userMenuItems = [
+    {
+      key: 'mypage',
+      label: '마이페이지',
+      onClick: () => navigate('/my')
+    },
+    {
+      key: 'my-templates',
+      label: '내 밈플릿',
+      onClick: () => navigate('/my/templates')
+    },
+    {
+      key: 'logout',
+      label: '로그아웃',
+      onClick: () => { void handleLogout(); }
+    }
+  ];
 
   return (
     <Header 
@@ -103,12 +121,14 @@ const MainHeader: React.FC = () => {
       
       <div className="hidden md:flex items-center gap-3">
         {isAuthLoading ? null : authUser ? (
-          <>
-            <span className="max-w-[260px] truncate text-sm font-semibold text-slate-600" title={authDisplayName}>
-              {authDisplayName}
-            </span>
-            <Button onClick={handleLogout}>로그아웃</Button>
-          </>
+          <Dropdown menu={{ items: userMenuItems }} trigger={['click']} placement="bottomRight">
+            <Button type="text" className="flex items-center gap-1 px-2">
+              <span className="max-w-[260px] truncate text-sm font-semibold text-slate-700" title={authDisplayName}>
+                {authDisplayName}
+              </span>
+              <Icon path={mdiChevronDown} size={0.7} />
+            </Button>
+          </Dropdown>
         ) : (
           <Button type="primary" onClick={handleLogin}>로그인</Button>
         )}
@@ -146,7 +166,19 @@ const MainHeader: React.FC = () => {
             {isAuthLoading ? null : authUser ? (
               <div className="flex flex-col gap-3">
                 <span className="text-sm font-semibold text-slate-600 break-all">{authDisplayName}</span>
-                <Button onClick={handleLogout}>로그아웃</Button>
+                <Button onClick={() => {
+                  navigate('/my');
+                  setIsDrawerOpen(false);
+                }}>
+                  마이페이지
+                </Button>
+                <Button onClick={() => {
+                  navigate('/my/templates');
+                  setIsDrawerOpen(false);
+                }}>
+                  내 밈플릿
+                </Button>
+                <Button onClick={() => { void handleLogout(); }}>로그아웃</Button>
               </div>
             ) : (
               <Button type="primary" onClick={handleLogin}>로그인</Button>

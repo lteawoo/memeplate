@@ -92,7 +92,7 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
   } = props;
 
   const [downloadFormat, setDownloadFormat] = React.useState<FormatType>('png');
-  const [templateTitle, setTemplateTitle] = React.useState('새 템플릿');
+  const [templateTitle, setTemplateTitle] = React.useState('새 밈플릿');
   const [templateVisibility, setTemplateVisibility] = React.useState<'private' | 'public'>('private');
   const textLayerOrder = React.useMemo(() => {
     const textLayerIds = layers
@@ -462,12 +462,12 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
         return (
           <div className="flex flex-col gap-8 w-full">
             <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <Text strong className="text-slate-700">템플릿 공유</Text>
+              <Text strong className="text-slate-700">밈플릿 공유</Text>
               <Input
                 value={templateTitle}
                 onChange={(e) => setTemplateTitle(e.target.value)}
                 maxLength={100}
-                placeholder="템플릿 제목"
+                placeholder="밈플릿 제목"
               />
               <Segmented
                 value={templateVisibility}
@@ -485,7 +485,7 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
                 onClick={() => void saveTemplate(templateTitle, templateVisibility)}
                 className="h-11 rounded-xl font-bold"
               >
-                {savedTemplate ? '템플릿 업데이트' : '템플릿 저장'}
+                {savedTemplate ? '밈플릿 업데이트' : '밈플릿 저장'}
               </Button>
               {savedTemplate?.visibility === 'public' && (
                 <Button

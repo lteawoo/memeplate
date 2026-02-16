@@ -3,6 +3,7 @@ import { Canvas, CanvasObject, Rect, Circle, Textbox, CanvasImage } from '../cor
 import type { CanvasObjectOptions } from '../core/canvas';
 import type { ToolType } from '../components/editor/MemeToolbar';
 import { message } from 'antd';
+import type { TemplateRecord, TemplateVisibility } from '../types/template';
 
 type MessageInstance = ReturnType<typeof message.useMessage>[0];
 
@@ -17,15 +18,6 @@ interface CanvasDoubleClickEvent {
   target?: CanvasObject;
 }
 
-type TemplateVisibility = 'private' | 'public';
-
-type TemplateRecord = {
-  id: string;
-  title: string;
-  visibility: TemplateVisibility;
-  shareSlug: string;
-};
-
 type TemplateResponse = {
   template: {
     id: string;
@@ -35,13 +27,111 @@ type TemplateResponse = {
   };
 };
 
+type EditorLoadMode = 'mine' | 'public';
+
+interface UseMemeEditorOptions {
+  initialTemplate?: TemplateRecord | null;
+  initialTemplateMode?: EditorLoadMode;
+}
+
+type SavedTemplateMeta = {
+  id: string;
+  title: string;
+  visibility: TemplateVisibility;
+  shareSlug: string;
+};
+
 type UploadInput = File | Blob | {
   file?: File | Blob | {
     originFileObj?: File | Blob;
   };
 };
 
-export const useMemeEditor = (messageApi: MessageInstance) => {
+const isObject = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
+const toCanvasSafeImageSrc = (src: string): string => {
+  if (!src || src.startsWith('data:') || src.startsWith('blob:')) {
+    return src;
+  }
+
+  try {
+    const parsed = new URL(src, window.location.origin);
+    if (parsed.origin === window.location.origin) {
+      return parsed.toString();
+    }
+    return `/api/v1/assets/proxy?url=${encodeURIComponent(parsed.toString())}`;
+  } catch {
+    return src;
+  }
+};
+
+const toPersistedImageSrc = (src: string): string => {
+  if (!src) return src;
+  try {
+    const parsed = new URL(src, window.location.origin);
+    if (parsed.pathname !== '/api/v1/assets/proxy') {
+      return src;
+    }
+    const original = parsed.searchParams.get('url');
+    return original || src;
+  } catch {
+    return src;
+  }
+};
+
+const sanitizeTemplateNode = (node: unknown): unknown => {
+  if (Array.isArray(node)) {
+    return node.map((item) => sanitizeTemplateNode(item));
+  }
+
+  if (!isObject(node)) {
+    return node;
+  }
+
+  const next: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(node)) {
+    next[key] = sanitizeTemplateNode(value);
+  }
+
+  if (next.type === 'text' && typeof next.text === 'string') {
+    next.text = '';
+  }
+
+  if (next.type === 'image' && typeof next.src === 'string') {
+    next.src = toPersistedImageSrc(next.src);
+  }
+
+  return next;
+};
+
+const sanitizeTemplateContent = (content: Record<string, unknown>): Record<string, unknown> =>
+  sanitizeTemplateNode(content) as Record<string, unknown>;
+
+const createBackgroundImageObject = (src: string, width: number, height: number): Record<string, unknown> => ({
+  id: crypto.randomUUID(),
+  type: 'image',
+  name: 'background',
+  src: toCanvasSafeImageSrc(src),
+  left: width / 2,
+  top: height / 2,
+  width,
+  height,
+  scaleX: 1,
+  scaleY: 1,
+  angle: 0,
+  fill: 'transparent',
+  stroke: 'transparent',
+  strokeWidth: 0,
+  opacity: 1,
+  selectable: false,
+  evented: false,
+  visible: true
+});
+
+export const useMemeEditor = (messageApi: MessageInstance, options?: UseMemeEditorOptions) => {
+  const initialTemplate = options?.initialTemplate ?? null;
+  const initialTemplateMode = options?.initialTemplateMode;
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const canvasInstanceRef = useRef<Canvas | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -59,7 +149,7 @@ export const useMemeEditor = (messageApi: MessageInstance) => {
   const [hasBackground, setHasBackground] = useState(false);
   const [workspaceSize, setWorkspaceSize] = useState({ width: 0, height: 0 });
   const workspaceSizeRef = useRef({ width: 0, height: 0 });
-  const [savedTemplate, setSavedTemplate] = useState<TemplateRecord | null>(null);
+  const [savedTemplate, setSavedTemplate] = useState<SavedTemplateMeta | null>(null);
   const [isTemplateSaving, setIsTemplateSaving] = useState(false);
 
   // History State
@@ -68,6 +158,8 @@ export const useMemeEditor = (messageApi: MessageInstance) => {
   const isHistoryLocked = useRef(false);
   const historyRef = useRef<HistoryItem[]>([]);
   const indexRef = useRef(-1);
+  const loadedTemplateKeyRef = useRef<string | null>(null);
+  const [isCanvasReady, setIsCanvasReady] = useState(false);
 
   const saveHistory = () => {
     if (isHistoryLocked.current || !canvasInstanceRef.current) return;
@@ -166,6 +258,7 @@ export const useMemeEditor = (messageApi: MessageInstance) => {
     canvas.setHeight(600);
     
     canvasInstanceRef.current = canvas;
+    setIsCanvasReady(true);
 
     const initialJson = JSON.stringify(canvas.toJSON(false)); // Exclude background
     const initialItem: HistoryItem = { json: initialJson, selectedId: null };
@@ -259,8 +352,101 @@ export const useMemeEditor = (messageApi: MessageInstance) => {
     
     canvas.on('object:moving', enforceBoundaries);
 
-    return () => { canvas.dispose(); canvasInstanceRef.current = null; };
+    return () => {
+      canvas.dispose();
+      canvasInstanceRef.current = null;
+      setIsCanvasReady(false);
+    };
   }, []);
+
+  useEffect(() => {
+    const canvas = canvasInstanceRef.current;
+    if (!isCanvasReady || !canvas || !initialTemplate?.content) return;
+
+    const templateKey = `${initialTemplateMode || 'public'}:${initialTemplate.id}`;
+    if (loadedTemplateKeyRef.current === templateKey) return;
+    loadedTemplateKeyRef.current = templateKey;
+
+    const contentToLoad = structuredClone(initialTemplate.content) as Record<string, unknown>;
+    const width = Number(contentToLoad.width);
+    const height = Number(contentToLoad.height);
+    const safeWidth = Number.isFinite(width) && width > 0 ? width : 600;
+    const safeHeight = Number.isFinite(height) && height > 0 ? height : 600;
+
+    const objects = Array.isArray(contentToLoad.objects) ? contentToLoad.objects as Array<Record<string, unknown>> : [];
+    contentToLoad.objects = objects;
+
+    let hasImageObject = false;
+    if (initialTemplate.thumbnailUrl) {
+      objects.forEach((obj) => {
+        if (
+          obj.type === 'image' &&
+          (obj.name === 'background' || obj.name === 'image') &&
+          (typeof obj.src !== 'string' || obj.src.trim() === '')
+        ) {
+          obj.src = toCanvasSafeImageSrc(initialTemplate.thumbnailUrl);
+        }
+        if (
+          obj.type === 'image' &&
+          typeof obj.src === 'string' &&
+          obj.src.trim() !== ''
+        ) {
+          hasImageObject = true;
+        }
+      });
+
+      if (!hasImageObject) {
+        objects.unshift(createBackgroundImageObject(initialTemplate.thumbnailUrl, safeWidth, safeHeight));
+      }
+    }
+
+    objects.forEach((obj) => {
+      if (obj.type === 'image' && typeof obj.src === 'string' && obj.src.trim() !== '') {
+        obj.src = toCanvasSafeImageSrc(obj.src);
+      }
+    });
+
+    isHistoryLocked.current = true;
+    void canvas.loadFromJSON(contentToLoad, false).then(() => {
+      if (Number.isFinite(width) && Number.isFinite(height) && width > 0 && height > 0) {
+        canvas.setDimensions({ width, height });
+        const newSize = { width, height };
+        setWorkspaceSize(newSize);
+        workspaceSizeRef.current = newSize;
+      }
+
+      const loadedObjects = canvas.getObjects();
+      const hasBg = loadedObjects.some((obj) => obj.name === 'background' || obj.type === 'image');
+      setHasBackground(hasBg);
+      setLayers(loadedObjects);
+      canvas.discardActiveObject();
+      canvas.requestRender();
+      setActiveTool(hasBg ? 'edit' : 'background');
+
+      const initialJson = JSON.stringify(canvas.toJSON(false));
+      const initialItem: HistoryItem = { json: initialJson, selectedId: null };
+      historyRef.current = [initialItem];
+      indexRef.current = 0;
+      setHistory([initialItem]);
+      setHistoryIndex(0);
+
+      if (initialTemplateMode === 'mine') {
+        setSavedTemplate({
+          id: initialTemplate.id,
+          title: initialTemplate.title,
+          visibility: initialTemplate.visibility,
+          shareSlug: initialTemplate.shareSlug
+        });
+      } else {
+        setSavedTemplate(null);
+      }
+
+      isHistoryLocked.current = false;
+    }).catch((err) => {
+      console.error('Failed to load template content:', err);
+      isHistoryLocked.current = false;
+    });
+  }, [initialTemplate, initialTemplateMode, isCanvasReady]);
 
   const setBackgroundImage = (url: string) => {
     setHasBackground(true); 
@@ -270,7 +456,9 @@ export const useMemeEditor = (messageApi: MessageInstance) => {
     if (!canvasInstanceRef.current) return;
     isHistoryLocked.current = true;
 
-    CanvasImage.fromURL(url).then((img) => {
+    const safeImageUrl = toCanvasSafeImageSrc(url);
+
+    CanvasImage.fromURL(safeImageUrl).then((img) => {
       const canvas = canvasInstanceRef.current!;
       const logicalW = img.element?.naturalWidth || img.width;
       const logicalH = img.element?.naturalHeight || img.height;
@@ -436,14 +624,14 @@ export const useMemeEditor = (messageApi: MessageInstance) => {
   const saveTemplate = async (title: string, visibility: TemplateVisibility) => {
     if (!canvasInstanceRef.current) return null;
     if (!title.trim()) {
-      messageApi.error('템플릿 제목을 입력하세요.');
+      messageApi.error('밈플릿 제목을 입력하세요.');
       return null;
     }
 
     try {
       setIsTemplateSaving(true);
       const canvas = canvasInstanceRef.current;
-      const content = canvas.toJSON(true) as Record<string, unknown>;
+      const content = sanitizeTemplateContent(canvas.toJSON(true) as Record<string, unknown>);
       const thumbnailDataUrl = canvas.toDataURL({
         format: 'webp',
         multiplier: 1,
@@ -479,7 +667,7 @@ export const useMemeEditor = (messageApi: MessageInstance) => {
 
       if (!res.ok) {
         const payload = (await res.json().catch(() => ({}))) as { message?: string };
-        throw new Error(payload.message || '템플릿 저장에 실패했습니다.');
+        throw new Error(payload.message || '밈플릿 저장에 실패했습니다.');
       }
 
       const payload = (await res.json()) as TemplateResponse;
@@ -490,10 +678,10 @@ export const useMemeEditor = (messageApi: MessageInstance) => {
         shareSlug: payload.template.shareSlug
       };
       setSavedTemplate(template);
-      messageApi.success('템플릿이 저장되었습니다.');
+      messageApi.success('밈플릿이 저장되었습니다.');
       return template;
     } catch (err) {
-      const msg = err instanceof Error ? err.message : '템플릿 저장에 실패했습니다.';
+      const msg = err instanceof Error ? err.message : '밈플릿 저장에 실패했습니다.';
       messageApi.error(msg);
       return null;
     } finally {
@@ -503,13 +691,13 @@ export const useMemeEditor = (messageApi: MessageInstance) => {
 
   const copyTemplateShareLink = async () => {
     if (!savedTemplate?.shareSlug) {
-      messageApi.warning('공유 가능한 템플릿이 없습니다.');
+      messageApi.warning('공유 가능한 밈플릿이 없습니다.');
       return;
     }
     const shareUrl = `${window.location.origin}/templates/s/${savedTemplate.shareSlug}`;
     try {
       await navigator.clipboard.writeText(shareUrl);
-      messageApi.success('템플릿 공유 링크가 복사되었습니다.');
+      messageApi.success('밈플릿 공유 링크가 복사되었습니다.');
     } catch {
       messageApi.error('링크 복사에 실패했습니다.');
     }
