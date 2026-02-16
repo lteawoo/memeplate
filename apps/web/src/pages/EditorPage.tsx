@@ -45,21 +45,7 @@ const EditorPage: React.FC = () => {
           setTemplateMode('mine');
           return;
         }
-
-        const meRes = await fetch('/api/v1/auth/me', { credentials: 'include' });
-        if (!meRes.ok) {
-          setTemplateMode('public');
-          return;
-        }
-        const mePayload = (await meRes.json()) as {
-          authenticated?: boolean;
-          user?: { id?: string };
-        };
-        const isOwner =
-          Boolean(mePayload.authenticated) &&
-          Boolean(mePayload.user?.id) &&
-          mePayload.user?.id === payload.template.ownerId;
-        setTemplateMode(isOwner ? 'mine' : 'public');
+        setTemplateMode('public');
       } catch (err) {
         const msg = err instanceof Error ? err.message : '밈플릿을 불러오지 못했습니다.';
         setLoadError(msg);

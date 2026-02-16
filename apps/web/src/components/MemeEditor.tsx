@@ -48,6 +48,7 @@ const MemeEditor: React.FC<MemeEditorProps> = ({ initialTemplate, initialTemplat
     copyTemplateShareLink,
     savedTemplate,
     isTemplateSaving,
+    isTemplateSaveDisabled,
     changeZIndex,
     canvasInstance,
     editingTextId,
@@ -72,6 +73,7 @@ const MemeEditor: React.FC<MemeEditorProps> = ({ initialTemplate, initialTemplat
     copyTemplateShareLink,
     savedTemplate,
     isTemplateSaving,
+    isTemplateSaveDisabled,
     changeZIndex
   };
   return (

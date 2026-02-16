@@ -151,6 +151,7 @@ export const useMemeEditor = (messageApi: MessageInstance, options?: UseMemeEdit
   const workspaceSizeRef = useRef({ width: 0, height: 0 });
   const [savedTemplate, setSavedTemplate] = useState<SavedTemplateMeta | null>(null);
   const [isTemplateSaving, setIsTemplateSaving] = useState(false);
+  const isTemplateSaveDisabled = initialTemplateMode === 'public';
 
   // History State
   const [history, setHistory] = useState<HistoryItem[]>([]);
@@ -623,6 +624,10 @@ export const useMemeEditor = (messageApi: MessageInstance, options?: UseMemeEdit
 
   const saveTemplate = async (title: string, visibility: TemplateVisibility) => {
     if (!canvasInstanceRef.current) return null;
+    if (isTemplateSaveDisabled) {
+      messageApi.warning('공개 밈플릿으로 시작한 작업은 밈플릿 저장/공유를 지원하지 않습니다.');
+      return null;
+    }
     if (!title.trim()) {
       messageApi.error('밈플릿 제목을 입력하세요.');
       return null;
@@ -761,6 +766,7 @@ export const useMemeEditor = (messageApi: MessageInstance, options?: UseMemeEdit
     copyTemplateShareLink,
     savedTemplate,
     isTemplateSaving,
+    isTemplateSaveDisabled,
     canvasInstance: canvasInstanceRef.current
   };
 };
