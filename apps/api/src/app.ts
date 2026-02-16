@@ -11,7 +11,8 @@ import { assetRoutes } from './modules/assets/routes.js';
 
 export const buildApp = () => {
   const app = Fastify({
-    logger: true
+    logger: true,
+    bodyLimit: 5 * 1024 * 1024
   });
 
   app.get('/healthz', async () => {
