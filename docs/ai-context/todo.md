@@ -130,6 +130,7 @@
   - [x] `TemplateRepository` Supabase 구현체 추가
   - [x] 내 밈플릿 조회/등록/수정/삭제 API 구현
   - [x] 공개 밈플릿 목록 API 구현 (`GET /templates/public`)
+  - [x] 공개 목록 지표 필드 응답 추가 (`viewCount`, `likeCount`)
   - [x] 공유 slug 상세 조회 API 구현 (`GET /templates/s/:shareSlug`)
   - [x] 에디터 공유 탭 API 연동(저장/업데이트/공유링크복사)
   - [x] 공개 밈플릿 시작 경로(`shareSlug`)에서 배경 미복원 케이스 fallback 처리(썸네일 기반 background 객체 주입)

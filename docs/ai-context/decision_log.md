@@ -1,5 +1,34 @@
 # 결정 로그 (Decision Log)
 
+## [2026-02-16] 조회수 증가 처리 분리: 상세 조회 API와 카운트 증가 API를 분리 운영
+- **결정**: `GET /templates/s/:shareSlug`는 상세 조회만 담당하고, 조회수 증가는 `POST /templates/s/:shareSlug/view`로 분리함.
+- **이유**:
+  1. **책임 분리**: 조회(read)와 변경(write)을 분리해 API 의미를 명확히 유지.
+  2. **프론트 제어 용이성**: 상세 진입 시점/조건에서 조회수 증가 타이밍을 클라이언트에서 명시적으로 제어 가능.
+- **구현 요약**:
+  - 백엔드: repository에 `incrementViewCountByShareSlug` 추가, routes에 view 증가 엔드포인트 추가.
+  - 프론트: `TemplateShareDetailPage` 진입 시 slug 단위 1회 호출(ref guard) 후 로컬 상태의 `viewCount`를 동기화.
+
+## [2026-02-16] 밈플릿 지표 필드 추가: `view_count`, `like_count` 도입
+- **결정**: 밈플릿 목록 카드의 조회/좋아요 수치 표시를 위해 `templates` 테이블과 API 응답에 카운트 필드를 추가함.
+- **이유**:
+  1. **UI 데이터 정합성**: 목록 카드에 노출되는 수치가 하드코딩 `0`이 아니라 실제 필드 기반이어야 함.
+  2. **확장성 확보**: 이후 조회수 증가/좋아요 토글 로직을 별도 API로 붙일 때 스키마를 재변경하지 않아도 됨.
+- **구현 요약**:
+  - SQL: `docs/ai-context/sql/2026-02-16_templates_metrics_columns.sql` 추가.
+  - 기본 스키마: `docs/ai-context/sql/2026-02-16_templates_share_schema.sql`에 컬럼 반영.
+  - API: `supabaseRepository` select/insert/toRecord에 `view_count`, `like_count` 매핑 추가.
+
+## [2026-02-16] 밈플릿 목록 상호작용 단순화: 버튼 액션 제거, 카드 클릭 상세 진입
+- **결정**: 밈플릿 목록 카드의 `상세 보기`, `이 밈플릿 사용` 버튼을 제거하고 카드 전체 클릭 시 상세 페이지로 이동하도록 변경함.
+- **이유**:
+  1. **밀도 개선**: 카드 하단 액션 영역을 제거해 콘텐츠 중심 레이아웃으로 단순화.
+  2. **일관성**: 목록 탐색 단계에서는 상세 진입을 단일 동작으로 통일하는 편이 예측 가능함.
+- **구현 요약**:
+  - `TemplatesPage` 카드 액션 제거 및 `onClick -> /templates/s/:shareSlug` 적용.
+  - 카드 메타를 `제목` + `작성자 / 조회수·좋아요` 2줄로 재구성.
+  - 그리드를 `repeat(auto-fill, minmax(240px, 1fr))`로 변경해 화면 가로폭에 맞춰 자동 배치.
+
 ## [2026-02-16] 마이페이지 역할 정리: 내 밈플릿 이동 CTA 제거, 프로필 수정 우선
 - **결정**: `/my`에서는 내 밈플릿 이동 버튼을 제거하고, `displayName` 수정 기능을 직접 제공하도록 변경함.
 - **이유**:

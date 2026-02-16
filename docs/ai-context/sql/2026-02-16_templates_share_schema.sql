@@ -15,6 +15,8 @@ create table if not exists public.templates (
   title text not null check (char_length(title) between 1 and 100),
   content jsonb not null,
   thumbnail_url text,
+  view_count integer not null default 0 check (view_count >= 0),
+  like_count integer not null default 0 check (like_count >= 0),
   visibility text not null default 'private' check (visibility in ('private', 'public')),
   share_slug text not null unique,
   created_at timestamptz not null default now(),

@@ -35,8 +35,8 @@ const TemplatesPage: React.FC = () => {
       <Content className="mx-auto w-full max-w-6xl px-6 py-8">
         <div className="mb-6 flex items-end justify-between gap-3">
           <div>
-            <Title level={2} className="!mb-1">공개 밈플릿</Title>
-            <Text type="secondary">최신순으로 공개 밈플릿을 확인하고 바로 편집할 수 있습니다.</Text>
+            <Title level={2} className="!mb-1">밈플릿</Title>
+            <Text type="secondary">최신순으로 밈플릿을 확인하고 바로 편집할 수 있습니다.</Text>
           </div>
           <Button type="primary" onClick={() => navigate('/create')}>새로 만들기</Button>
         </div>
@@ -44,20 +44,27 @@ const TemplatesPage: React.FC = () => {
         {isLoading ? (
           <div className="py-20 text-center"><Spin size="large" /></div>
         ) : templates.length === 0 ? (
-          <Empty description="공개 밈플릿이 없습니다." />
+          <Empty description="밈플릿이 없습니다." />
         ) : (
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <div
+            className="grid gap-4"
+            style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))' }}
+          >
             {templates.map((template) => (
               <TemplateThumbnailCard
                 key={template.id}
                 template={template}
                 hoverable
-                showMeta
-                actions={[
-                  <Button key="view" type="link" onClick={() => navigate(`/templates/s/${template.shareSlug}`)}>상세 보기</Button>,
-                  <Button key="edit" type="link" onClick={() => navigate(`/create?shareSlug=${template.shareSlug}`)}>이 밈플릿 사용</Button>
-                ]}
-              />
+                onClick={() => navigate(`/templates/s/${template.shareSlug}`)}
+              >
+                <div className="space-y-2">
+                  <div className="line-clamp-1 text-sm font-semibold text-slate-900">{template.title}</div>
+                  <div className="flex items-center justify-between gap-2 text-xs text-slate-500">
+                    <span className="truncate">작성자 {template.ownerDisplayName || '-'}</span>
+                    <span className="shrink-0">조회 {(template.viewCount ?? 0).toLocaleString()} · 좋아요 {(template.likeCount ?? 0).toLocaleString()}</span>
+                  </div>
+                </div>
+              </TemplateThumbnailCard>
             ))}
           </div>
         )}

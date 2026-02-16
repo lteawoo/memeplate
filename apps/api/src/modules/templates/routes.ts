@@ -37,6 +37,23 @@ export const templateRoutes: FastifyPluginAsync = async (app) => {
     return reply.send({ template });
   });
 
+  app.post('/templates/s/:shareSlug/view', async (req, reply) => {
+    const paramsParsed = TemplateShareSlugParamSchema.safeParse(req.params);
+    if (!paramsParsed.success) {
+      return reply.code(400).send({
+        message: 'Invalid share slug',
+        issues: paramsParsed.error.issues
+      });
+    }
+
+    const viewCount = await repository.incrementViewCountByShareSlug(paramsParsed.data.shareSlug);
+    if (viewCount === null) {
+      return reply.code(404).send({ message: 'Template not found.' });
+    }
+
+    return reply.code(200).send({ viewCount });
+  });
+
   app.get('/templates/me', { preHandler: requireAuth }, async (req, reply) => {
     const templates = await repository.listMine(req.authUser!.id);
     return reply.send({ templates });
