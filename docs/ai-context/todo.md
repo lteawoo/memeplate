@@ -89,6 +89,7 @@
   - [ ] 다중 선택(Multi-selection) 지원
   - [ ] 그룹화(Grouping) 기능
 - [ ] **시스템 고도화**
+  - [x] API 보안 하드닝 1차 (`helmet`, `rate-limit`, asset proxy SSRF 방어)
   - [ ] 웹 워커(Web Worker) 기반 내보내기 처리
   - [ ] Undo/Redo 로직 정밀화
 

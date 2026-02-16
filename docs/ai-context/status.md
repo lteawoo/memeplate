@@ -123,6 +123,11 @@
   - [x] `POST /api/v1/templates/s/:shareSlug/view` API 추가
   - [x] 상세 페이지 진입 시 조회수 증가 API 1회 호출
   - [x] 상세정보에 조회수/좋아요 항목 노출
+- [x] **보안/UX 1차 하드닝 (완료 - 2026-02-16)**
+  - [x] `@fastify/helmet` 적용 (기본 보안 헤더)
+  - [x] `@fastify/rate-limit` 적용 + 인증/조회수 라우트별 제한
+  - [x] 이미지 프록시 제거 및 원본 URL 직접 로딩 전환 (`/assets/proxy` 삭제)
+  - [x] 밈플릿 목록 로딩 실패 상태를 빈 목록과 분리(재시도 버튼 추가)
 
 ## 다음 작업
 - [ ] Google OAuth 로그인 엔드포인트 고도화 (`/api/v1/auth/*`)

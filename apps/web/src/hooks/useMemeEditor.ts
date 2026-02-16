@@ -54,19 +54,7 @@ const isObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
 const toCanvasSafeImageSrc = (src: string): string => {
-  if (!src || src.startsWith('data:') || src.startsWith('blob:')) {
-    return src;
-  }
-
-  try {
-    const parsed = new URL(src, window.location.origin);
-    if (parsed.origin === window.location.origin) {
-      return parsed.toString();
-    }
-    return `/api/v1/assets/proxy?url=${encodeURIComponent(parsed.toString())}`;
-  } catch {
-    return src;
-  }
+  return src;
 };
 
 const toPersistedImageSrc = (src: string): string => {
