@@ -3,6 +3,7 @@ import type { CreateTemplateInput, UpdateTemplateInput } from '../../types/templ
 export interface TemplateRecord {
   id: string;
   ownerId: string;
+  ownerDisplayName?: string;
   title: string;
   content: Record<string, unknown>;
   thumbnailUrl?: string;

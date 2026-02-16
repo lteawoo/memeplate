@@ -105,6 +105,9 @@
   - [x] 썸네일 생성 시 긴 변 `1280px` 리사이즈 적용
   - [x] 썸네일 `webp` 품질 압축(`quality=0.82`) 적용
   - [x] 캔버스 export에서 `quality` 옵션 반영하도록 `toDataURL` 보강
+- [x] **밈플릿 상세 작성자명 표시 보강 (완료 - 2026-02-16)**
+  - [x] 템플릿 API 응답에 `ownerDisplayName` 포함
+  - [x] 상세정보 UI에서 `ownerDisplayName -> ownerId` 우선순위로 표기
 
 ## 다음 작업
 - [ ] Google OAuth 로그인 엔드포인트 고도화 (`/api/v1/auth/*`)
