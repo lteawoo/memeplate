@@ -1,10 +1,40 @@
 import React from 'react';
-import { Alert, Button, Card, Empty, Popconfirm, Segmented, Spin, Typography, message } from 'antd';
+import { Alert, Button, Drawer, Empty, Popconfirm, Segmented, Spin, Typography, message } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import MySectionLayout from '../components/layout/MySectionLayout';
+import TemplateThumbnailCard from '../components/TemplateThumbnailCard';
 import type { TemplateRecord, TemplatesResponse, TemplateVisibility } from '../types/template';
 
 const { Title, Text } = Typography;
+
+type ImageMeta = {
+  format: string;
+  resolution: string;
+  fileSize: string;
+};
+
+const toProxyImageUrl = (url: string) => `/api/v1/assets/proxy?url=${encodeURIComponent(url)}`;
+
+const formatBytes = (bytes: number) => {
+  if (!Number.isFinite(bytes) || bytes <= 0) return '-';
+  const units = ['B', 'KB', 'MB', 'GB'];
+  let value = bytes;
+  let unitIndex = 0;
+  while (value >= 1024 && unitIndex < units.length - 1) {
+    value /= 1024;
+    unitIndex += 1;
+  }
+  return `${value.toFixed(unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`;
+};
+
+const formatMimeToLabel = (contentType: string | null, fallbackUrl?: string) => {
+  if (contentType?.includes('/')) {
+    return contentType.split('/')[1].toUpperCase();
+  }
+  if (!fallbackUrl) return '-';
+  const ext = fallbackUrl.split('?')[0].split('.').pop();
+  return ext ? ext.toUpperCase() : '-';
+};
 
 const MyTemplatesPage: React.FC = () => {
   const navigate = useNavigate();
@@ -12,6 +42,13 @@ const MyTemplatesPage: React.FC = () => {
   const [templates, setTemplates] = React.useState<TemplateRecord[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
+  const [detailTarget, setDetailTarget] = React.useState<TemplateRecord | null>(null);
+  const [detailMetaLoading, setDetailMetaLoading] = React.useState(false);
+  const [detailMeta, setDetailMeta] = React.useState<ImageMeta>({
+    format: '-',
+    resolution: '-',
+    fileSize: '-'
+  });
 
   const loadTemplates = React.useCallback(async () => {
     setIsLoading(true);
@@ -64,6 +101,46 @@ const MyTemplatesPage: React.FC = () => {
     }
   };
 
+  React.useEffect(() => {
+    const loadDetailMeta = async () => {
+      if (!detailTarget?.thumbnailUrl) {
+        setDetailMeta({ format: '-', resolution: '-', fileSize: '-' });
+        return;
+      }
+
+      setDetailMetaLoading(true);
+      const proxiedUrl = toProxyImageUrl(detailTarget.thumbnailUrl);
+      try {
+        const [imageInfo, response] = await Promise.all([
+          new Promise<{ width: number; height: number }>((resolve, reject) => {
+            const image = new Image();
+            image.onload = () => resolve({ width: image.naturalWidth, height: image.naturalHeight });
+            image.onerror = reject;
+            image.src = proxiedUrl;
+          }),
+          fetch(proxiedUrl)
+        ]);
+
+        const blob = await response.blob();
+        setDetailMeta({
+          format: formatMimeToLabel(response.headers.get('content-type'), detailTarget.thumbnailUrl),
+          resolution: `${imageInfo.width} x ${imageInfo.height}`,
+          fileSize: formatBytes(blob.size)
+        });
+      } catch {
+        setDetailMeta({
+          format: formatMimeToLabel(null, detailTarget.thumbnailUrl),
+          resolution: '-',
+          fileSize: '-'
+        });
+      } finally {
+        setDetailMetaLoading(false);
+      }
+    };
+
+    void loadDetailMeta();
+  }, [detailTarget]);
+
   return (
     <MySectionLayout
       title="내 밈플릿 관리"
@@ -80,17 +157,9 @@ const MyTemplatesPage: React.FC = () => {
       ) : (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
           {templates.map((template) => (
-            <Card
+            <TemplateThumbnailCard
               key={template.id}
-              cover={
-                template.thumbnailUrl ? (
-                  <img src={template.thumbnailUrl} alt={template.title} className="h-48 w-full object-cover" />
-                ) : (
-                  <div className="h-48 w-full bg-slate-100 flex items-center justify-center text-slate-400">
-                    No Preview
-                  </div>
-                )
-              }
+              template={template}
             >
               <div className="flex flex-col gap-3">
                 <div>
@@ -122,6 +191,7 @@ const MyTemplatesPage: React.FC = () => {
                 />
 
                 <div className="flex flex-wrap gap-2">
+                  <Button onClick={() => setDetailTarget(template)}>상세정보</Button>
                   <Button onClick={() => navigate(`/create?templateId=${template.id}`)}>편집</Button>
                   <Button
                     disabled={template.visibility !== 'public'}
@@ -154,10 +224,63 @@ const MyTemplatesPage: React.FC = () => {
                   </Popconfirm>
                 </div>
               </div>
-            </Card>
+            </TemplateThumbnailCard>
           ))}
         </div>
       )}
+      <Drawer
+        title={detailTarget ? `${detailTarget.title} 상세정보` : '상세정보'}
+        placement="right"
+        width={420}
+        onClose={() => setDetailTarget(null)}
+        open={Boolean(detailTarget)}
+      >
+        {detailTarget ? (
+          <div className="space-y-4">
+            <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+              {detailTarget.thumbnailUrl ? (
+                <div className="flex items-center justify-center p-3">
+                  <img
+                    src={detailTarget.thumbnailUrl}
+                    alt={detailTarget.title}
+                    className="max-h-[360px] w-full object-contain"
+                  />
+                </div>
+              ) : (
+                <div className="h-52 flex items-center justify-center text-slate-400">미리보기 없음</div>
+              )}
+            </div>
+            {detailMetaLoading ? (
+              <div className="py-6 text-center"><Spin /></div>
+            ) : (
+              <div className="space-y-3 text-sm">
+                <div className="flex items-start justify-between gap-3">
+                  <span className="text-slate-500">만든 사람</span>
+                  <span className="text-right font-medium text-slate-800">{detailTarget.ownerId || '-'}</span>
+                </div>
+                <div className="flex items-start justify-between gap-3">
+                  <span className="text-slate-500">생성일</span>
+                  <span className="text-right font-medium text-slate-800">
+                    {detailTarget.createdAt ? new Date(detailTarget.createdAt).toLocaleString() : '-'}
+                  </span>
+                </div>
+                <div className="flex items-start justify-between gap-3">
+                  <span className="text-slate-500">이미지 포맷</span>
+                  <span className="text-right font-medium text-slate-800">{detailMeta.format}</span>
+                </div>
+                <div className="flex items-start justify-between gap-3">
+                  <span className="text-slate-500">해상도</span>
+                  <span className="text-right font-medium text-slate-800">{detailMeta.resolution}</span>
+                </div>
+                <div className="flex items-start justify-between gap-3">
+                  <span className="text-slate-500">파일 사이즈</span>
+                  <span className="text-right font-medium text-slate-800">{detailMeta.fileSize}</span>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : null}
+      </Drawer>
     </MySectionLayout>
   );
 };

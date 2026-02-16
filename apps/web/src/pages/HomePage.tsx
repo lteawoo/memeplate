@@ -30,7 +30,7 @@ const HomePage: React.FC = () => {
             onClick={() => navigate('/create')}
             className="h-16 px-10 text-xl font-bold rounded-2xl shadow-xl shadow-blue-500/20 flex items-center gap-3 mx-auto"
           >
-            Memeplate 생성
+            밈플릿 생성
           </Button>
         </div>
       </Content>

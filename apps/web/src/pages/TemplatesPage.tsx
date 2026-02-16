@@ -1,7 +1,8 @@
 import React from 'react';
-import { Button, Card, Empty, Layout, Spin, Typography } from 'antd';
+import { Button, Empty, Layout, Spin, Typography } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import MainHeader from '../components/layout/MainHeader';
+import TemplateThumbnailCard from '../components/TemplateThumbnailCard';
 import type { TemplateRecord, TemplatesResponse } from '../types/template';
 
 const { Content } = Layout;
@@ -47,28 +48,16 @@ const TemplatesPage: React.FC = () => {
         ) : (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
             {templates.map((template) => (
-              <Card
+              <TemplateThumbnailCard
                 key={template.id}
+                template={template}
                 hoverable
-                cover={
-                  template.thumbnailUrl ? (
-                    <img src={template.thumbnailUrl} alt={template.title} className="h-48 w-full object-cover" />
-                  ) : (
-                    <div className="h-48 w-full bg-slate-100 flex items-center justify-center text-slate-400">
-                      No Preview
-                    </div>
-                  )
-                }
+                showMeta
                 actions={[
                   <Button key="view" type="link" onClick={() => navigate(`/templates/s/${template.shareSlug}`)}>상세 보기</Button>,
                   <Button key="edit" type="link" onClick={() => navigate(`/create?shareSlug=${template.shareSlug}`)}>이 밈플릿 사용</Button>
                 ]}
-              >
-                <Card.Meta
-                  title={template.title}
-                  description={template.updatedAt ? `업데이트: ${new Date(template.updatedAt).toLocaleString()}` : ''}
-                />
-              </Card>
+              />
             ))}
           </div>
         )}

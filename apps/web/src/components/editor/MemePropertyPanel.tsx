@@ -63,6 +63,7 @@ interface MemePropertyPanelProps {
   copyTemplateShareLink: () => Promise<void>;
   savedTemplate: { id: string; title: string; visibility: 'private' | 'public'; shareSlug: string } | null;
   isTemplateSaving: boolean;
+  isTemplateSaveDisabled: boolean;
   layers: CanvasObject[];
   selectLayer: (obj: CanvasObject) => void;
   changeZIndex: (direction: 'forward' | 'backward' | 'front' | 'back') => void;
@@ -86,6 +87,7 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
     copyTemplateShareLink,
     savedTemplate,
     isTemplateSaving,
+    isTemplateSaveDisabled,
     layers,
     selectLayer,
     changeZIndex
@@ -461,42 +463,44 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
       case 'share':
         return (
           <div className="flex flex-col gap-8 w-full">
-            <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <Text strong className="text-slate-700">밈플릿 공유</Text>
-              <Input
-                value={templateTitle}
-                onChange={(e) => setTemplateTitle(e.target.value)}
-                maxLength={100}
-                placeholder="밈플릿 제목"
-              />
-              <Segmented
-                value={templateVisibility}
-                onChange={(value) => setTemplateVisibility(value as 'private' | 'public')}
-                options={[
-                  { label: '비공개', value: 'private' },
-                  { label: '공개', value: 'public' }
-                ]}
-                block
-              />
-              <Button
-                type="primary"
-                icon={<Icon path={mdiContentSave} size={0.9} />}
-                loading={isTemplateSaving}
-                onClick={() => void saveTemplate(templateTitle, templateVisibility)}
-                className="h-11 rounded-xl font-bold"
-              >
-                {savedTemplate ? '밈플릿 업데이트' : '밈플릿 저장'}
-              </Button>
-              {savedTemplate?.visibility === 'public' && (
+            {!isTemplateSaveDisabled && (
+              <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <Text strong className="text-slate-700">밈플릿 공유</Text>
+                <Input
+                  value={templateTitle}
+                  onChange={(e) => setTemplateTitle(e.target.value)}
+                  maxLength={100}
+                  placeholder="밈플릿 제목"
+                />
+                <Segmented
+                  value={templateVisibility}
+                  onChange={(value) => setTemplateVisibility(value as 'private' | 'public')}
+                  options={[
+                    { label: '비공개', value: 'private' },
+                    { label: '공개', value: 'public' }
+                  ]}
+                  block
+                />
                 <Button
-                  icon={<Icon path={mdiLinkVariant} size={0.9} />}
-                  onClick={() => void copyTemplateShareLink()}
-                  className="h-10 rounded-xl font-semibold"
+                  type="primary"
+                  icon={<Icon path={mdiContentSave} size={0.9} />}
+                  loading={isTemplateSaving}
+                  onClick={() => void saveTemplate(templateTitle, templateVisibility)}
+                  className="h-11 rounded-xl font-bold"
                 >
-                  공유 링크 복사
+                  {savedTemplate ? '밈플릿 업데이트' : '밈플릿 저장'}
                 </Button>
-              )}
-            </div>
+                {savedTemplate?.visibility === 'public' && (
+                  <Button
+                    icon={<Icon path={mdiLinkVariant} size={0.9} />}
+                    onClick={() => void copyTemplateShareLink()}
+                    className="h-10 rounded-xl font-semibold"
+                  >
+                    공유 링크 복사
+                  </Button>
+                )}
+              </div>
+            )}
             
             <div className="flex flex-col gap-4">
                <div className="bg-slate-50 p-2 rounded-2xl border border-slate-100">

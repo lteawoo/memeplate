@@ -1,4 +1,4 @@
--- 목적: 템플릿 공유/목록/관리 MVP용 templates 스키마
+-- 목적: 밈플릿 공유/목록/관리 MVP용 templates 스키마
 -- 정책:
 -- 1) share slug는 한글 제목 기반이 아니라 영숫자 토큰 기반
 -- 2) 삭제는 soft delete(deleted_at) 사용

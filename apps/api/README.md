@@ -38,7 +38,7 @@ pnpm --filter memeplate-api dev
 ## 구조
 
 - `src/modules/auth`: 인증 도메인
-- `src/modules/templates`: 템플릿 도메인
+- `src/modules/templates`: 밈플릿 도메인
 - `src/lib/supabaseAdmin.ts`: Supabase admin client 진입점
 - `src/types`: zod 기반 요청 스키마
 
