@@ -39,6 +39,7 @@ const formatMimeToLabel = (contentType: string | null, fallbackUrl?: string) => 
 const TemplateShareDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const { shareSlug } = useParams<{ shareSlug: string }>();
+  const viewedSlugRef = React.useRef<string | null>(null);
   const [template, setTemplate] = React.useState<TemplateRecord | null>(null);
   const [imageMeta, setImageMeta] = React.useState<ImageMeta>({
     format: '-',
@@ -111,6 +112,31 @@ const TemplateShareDetailPage: React.FC = () => {
     void loadImageMeta();
   }, [template]);
 
+  React.useEffect(() => {
+    if (!shareSlug || !template || viewedSlugRef.current === shareSlug) {
+      return;
+    }
+
+    viewedSlugRef.current = shareSlug;
+    const incrementView = async () => {
+      try {
+        const res = await fetch(`/api/v1/templates/s/${shareSlug}/view`, {
+          method: 'POST'
+        });
+        if (!res.ok) return;
+        const payload = (await res.json().catch(() => ({}))) as { viewCount?: number };
+        if (typeof payload.viewCount !== 'number') return;
+        setTemplate((prev) => (
+          prev ? { ...prev, viewCount: payload.viewCount } : prev
+        ));
+      } catch {
+        // 조회수 증가는 실패해도 화면 흐름을 막지 않는다.
+      }
+    };
+
+    void incrementView();
+  }, [shareSlug, template]);
+
   return (
     <Layout className="min-h-screen bg-white">
       <MainHeader />
@@ -165,6 +191,18 @@ const TemplateShareDetailPage: React.FC = () => {
                   <div className="flex items-start justify-between gap-3">
                     <span className="text-slate-500">파일 사이즈</span>
                     <span className="text-right font-medium text-slate-800">{imageMeta.fileSize}</span>
+                  </div>
+                  <div className="flex items-start justify-between gap-3">
+                    <span className="text-slate-500">조회수</span>
+                    <span className="text-right font-medium text-slate-800">
+                      {(template.viewCount ?? 0).toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="flex items-start justify-between gap-3">
+                    <span className="text-slate-500">좋아요</span>
+                    <span className="text-right font-medium text-slate-800">
+                      {(template.likeCount ?? 0).toLocaleString()}
+                    </span>
                   </div>
                 </div>
               </div>

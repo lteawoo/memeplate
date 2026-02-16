@@ -7,6 +7,8 @@ export type TemplateRecord = {
   title: string;
   content: Record<string, unknown>;
   thumbnailUrl?: string;
+  viewCount?: number;
+  likeCount?: number;
   visibility: TemplateVisibility;
   shareSlug: string;
   createdAt?: string;

@@ -8,6 +8,7 @@ interface TemplateThumbnailCardProps {
   actions?: React.ReactNode[];
   showMeta?: boolean;
   children?: React.ReactNode;
+  onClick?: () => void;
 }
 
 const TemplateThumbnailCard: React.FC<TemplateThumbnailCardProps> = ({
@@ -15,12 +16,26 @@ const TemplateThumbnailCard: React.FC<TemplateThumbnailCardProps> = ({
   hoverable = false,
   actions,
   showMeta = false,
-  children
+  children,
+  onClick
 }) => {
+  const isClickable = Boolean(onClick);
+
   return (
     <Card
       hoverable={hoverable}
       actions={actions}
+      onClick={onClick}
+      onKeyDown={(e) => {
+        if (!onClick) return;
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onClick();
+        }
+      }}
+      role={isClickable ? 'button' : undefined}
+      tabIndex={isClickable ? 0 : undefined}
+      className={isClickable ? 'cursor-pointer' : undefined}
       cover={
         <div className="h-52 w-full border-b border-slate-100 bg-slate-50 p-3">
           {template.thumbnailUrl ? (
