@@ -94,6 +94,12 @@
   - [x] `docs/ai-context/sql/2026-02-14_supabase_auth_schema.sql` 작성
   - [x] `users` / `auth_identities` / `sessions` 스키마 및 인덱스 정의
   - [x] 아바타 미저장 정책 반영
+- [x] **템플릿 공유 MVP 1차 (완료 - 이슈 #62)**
+  - [x] `templates` 스키마 SQL 초안 작성 (`docs/ai-context/sql/2026-02-16_templates_share_schema.sql`)
+  - [x] Templates Supabase repository 구현 및 API 실동작 전환
+  - [x] 공개 템플릿 목록/공유 slug 조회 API 추가
+  - [x] 에디터 공유 탭에서 템플릿 저장/업데이트/공유 링크 복사 연동
+  - [x] R2 업로드 env 스키마 연결 + 썸네일 Data URL 업로드 유틸 추가
 
 ## 다음 작업
 - [ ] Google OAuth 로그인 엔드포인트 고도화 (`/api/v1/auth/*`)
@@ -107,9 +113,18 @@
   - [x] 세션 토큰 기반 인증을 JWT(access/refresh) 구조로 전환 (이슈 #53)
   - [x] 인증 미들웨어(`requireAuth`) 공통화 및 템플릿 라우트 적용
 - [ ] Supabase SQL 스키마 실제 반영 및 마이그레이션 실행
-- [ ] 템플릿 CRUD 엔드포인트 실제 구현 (`/api/v1/templates/*`)
-- [ ] Supabase Repository 구현체 연결 (현재 placeholder)
+- [ ] 템플릿 전용 화면 구현 (`/templates`, `/my/templates`, `/templates/s/:shareSlug`)
 - [ ] 텍스트 레이어 영역 클리핑(Clipping) 처리
 - [ ] 레이어 스타일 상세 설정 (그림자, 외곽선 자동색/자동그림자 고도화)
 - [ ] 성능 최적화 (Dirty Rect 알고리즘 도입 검토)
 - [ ] 단축키(Hotkeys) 지원 확대 (`Ctrl/Cmd + 0` 외 편집 단축키 확장)
+- [x] **공개 템플릿 시작 플로우 안정화 (완료 - 2026-02-16)**
+  - [x] `/create?shareSlug=...` 진입 시 background 이미지 객체가 누락된 템플릿에 대해 `thumbnailUrl` 기반 fallback 배경 객체 자동 주입
+  - [x] 템플릿 로드 완료 시 기본 도구를 `편집`으로 전환해 좌측 패널 `No data` 혼란 상태 최소화
+- [x] **마이페이지/사용자 메뉴 정리 (완료 - 2026-02-16)**
+  - [x] `/my` 마이페이지 신규 추가
+  - [x] 우측 상단 사용자 이름 드롭다운 메뉴 추가 (`마이페이지`, `내 템플릿`, `로그아웃`)
+  - [x] 상단 네비게이션에서 `내 템플릿` 제거 후 사용자 메뉴로 이동
+- [x] **마이 섹션 좌측 사이드 메뉴 도입 (완료 - 2026-02-16)**
+  - [x] `MySectionLayout` 공용 레이아웃 추가
+  - [x] `/my`, `/my/templates`에 좌측 메뉴(`내 프로필`, `내 템플릿`) 적용

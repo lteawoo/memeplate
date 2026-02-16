@@ -12,12 +12,12 @@ export class CanvasImage extends CanvasObject {
 
   constructor(options: ImageOptions = {}) {
     super(options);
+    this.src = options.src || '';
     if (options.element) {
       this.element = options.element;
       this.width = options.width || this.element.naturalWidth;
       this.height = options.height || this.element.naturalHeight;
     } else if (options.src) {
-      this.src = options.src;
       this.loadElement();
     }
   }

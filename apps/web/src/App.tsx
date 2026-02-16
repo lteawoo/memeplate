@@ -4,6 +4,10 @@ import { ConfigProvider } from 'antd';
 import HomePage from './pages/HomePage';
 import EditorPage from './pages/EditorPage';
 import LoginPage from './pages/LoginPage';
+import TemplatesPage from './pages/TemplatesPage';
+import TemplateShareDetailPage from './pages/TemplateShareDetailPage';
+import MyTemplatesPage from './pages/MyTemplatesPage';
+import MyPage from './pages/MyPage';
 
 const App: React.FC = () => {
   return (
@@ -20,6 +24,10 @@ const App: React.FC = () => {
           <Route path="/" element={<HomePage />} />
           <Route path="/create" element={<EditorPage />} />
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/templates" element={<TemplatesPage />} />
+          <Route path="/templates/s/:shareSlug" element={<TemplateShareDetailPage />} />
+          <Route path="/my" element={<MyPage />} />
+          <Route path="/my/templates" element={<MyTemplatesPage />} />
         </Routes>
       </BrowserRouter>
     </ConfigProvider>

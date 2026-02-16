@@ -9,8 +9,14 @@ import MemeToolbar from './editor/MemeToolbar';
 import MemePropertyPanel from './editor/MemePropertyPanel';
 import MemeCanvas from './editor/MemeCanvas';
 import { useMemeEditor } from '../hooks/useMemeEditor';
+import type { TemplateRecord } from '../types/template';
 
-const MemeEditor: React.FC = () => {
+interface MemeEditorProps {
+  initialTemplate?: TemplateRecord | null;
+  initialTemplateMode?: 'mine' | 'public';
+}
+
+const MemeEditor: React.FC<MemeEditorProps> = ({ initialTemplate, initialTemplateMode }) => {
   const [messageApi, contextHolder] = message.useMessage();
   
   const {
@@ -38,11 +44,15 @@ const MemeEditor: React.FC = () => {
     addShape,
     downloadImage,
     copyToClipboard,
+    saveTemplate,
+    copyTemplateShareLink,
+    savedTemplate,
+    isTemplateSaving,
     changeZIndex,
     canvasInstance,
     editingTextId,
     completeTextEdit
-  } = useMemeEditor(messageApi);
+  } = useMemeEditor(messageApi, { initialTemplate, initialTemplateMode });
 
   const panelProps = {
     layers: layers.filter(l => l.name !== 'background'), 
@@ -58,6 +68,10 @@ const MemeEditor: React.FC = () => {
     addShape,
     downloadImage,
     copyToClipboard,
+    saveTemplate,
+    copyTemplateShareLink,
+    savedTemplate,
+    isTemplateSaving,
     changeZIndex
   };
   return (

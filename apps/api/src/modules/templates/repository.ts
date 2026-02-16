@@ -7,12 +7,16 @@ export interface TemplateRecord {
   content: Record<string, unknown>;
   thumbnailUrl?: string;
   visibility: 'private' | 'public';
+  shareSlug: string;
   createdAt: string;
   updatedAt: string;
 }
 
 export interface TemplateRepository {
   listMine(userId: string): Promise<TemplateRecord[]>;
+  getMineById(userId: string, templateId: string): Promise<TemplateRecord | null>;
+  listPublic(limit: number): Promise<TemplateRecord[]>;
+  getPublicByShareSlug(shareSlug: string): Promise<TemplateRecord | null>;
   create(userId: string, input: CreateTemplateInput): Promise<TemplateRecord>;
   update(userId: string, templateId: string, input: UpdateTemplateInput): Promise<TemplateRecord>;
   remove(userId: string, templateId: string): Promise<void>;

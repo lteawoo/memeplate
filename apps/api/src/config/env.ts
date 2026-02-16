@@ -39,7 +39,15 @@ const EnvSchema = z.object({
   AUTH_SESSION_TTL_SECONDS: z.coerce.number().int().positive().default(60 * 60 * 24 * 7),
   SUPABASE_URL: optionalUrl,
   SUPABASE_ANON_KEY: optionalString,
-  SUPABASE_SERVICE_ROLE_KEY: optionalString
+  SUPABASE_SERVICE_ROLE_KEY: optionalString,
+  R2_BUCKET_NAME: optionalString,
+  R2_ACCOUNT_ID: optionalString,
+  R2_ACCESS_KEY_ID: optionalString,
+  R2_SECRET_ACCESS_KEY: optionalString,
+  R2_ENDPOINT: optionalUrl,
+  R2_PUBLIC_BASE_URL: optionalUrl,
+  R2_UPLOAD_MAX_MB: z.coerce.number().int().positive().optional(),
+  R2_UPLOAD_ALLOWED_MIME: optionalString
 });
 
 export const env = EnvSchema.parse(process.env);

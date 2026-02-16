@@ -1,5 +1,34 @@
 # 결정 로그 (Decision Log)
 
+## [2026-02-16] 템플릿 공유 MVP 1차: Supabase templates + 공개/개인 API + 에디터 공유 탭 연동
+- **결정**: 템플릿 공유 기능을 우선 백엔드 중심으로 완성하고, 에디터 공유 탭에서 바로 저장/공개전환/링크복사를 사용할 수 있도록 연결함.
+- **이유**:
+  1. **기능 우선순위 정합성**: 목록/관리 페이지보다 저장/공유 API를 먼저 확보해야 실제 데이터 흐름 검증 가능.
+  2. **권한 경계 명확화**: `requireAuth`를 기반으로 소유자 쓰기(`me`/`create`/`patch`/`delete`)와 공개 읽기(`public`/`shareSlug`)를 분리.
+  3. **확장성**: 이후 `/templates`, `/my/templates` UI는 이미 확보된 API를 재사용해 구현 가능.
+- **구현 요약**:
+  - SQL: `docs/ai-context/sql/2026-02-16_templates_share_schema.sql` 추가.
+  - API: `apps/api/src/modules/templates/routes.ts`에서 `501` placeholder 제거 후 실제 CRUD/공개조회 구현.
+  - Repository: `apps/api/src/modules/templates/supabaseRepository.ts` 추가.
+  - 프론트: `apps/web/src/hooks/useMemeEditor.ts`, `apps/web/src/components/editor/MemePropertyPanel.tsx`에 공유 탭 연동 추가.
+
+## [2026-02-16] R2 썸네일 업로드 전략: Data URL 수신 후 백엔드 업로드, DB에는 공개 URL만 저장
+- **결정**: 프론트에서 `thumbnailDataUrl`을 전송하면 API 서버가 R2에 업로드하고, 템플릿에는 `thumbnail_url`(스토리지 공개 URL)만 저장하도록 구성함.
+- **이유**:
+  1. **DB 경량화**: Base64 원문을 DB에 저장하지 않아 템플릿 레코드 크기와 쿼리 비용을 줄임.
+  2. **전송/캐시 효율**: 썸네일은 CDN 캐시 가능한 URL로 관리하는 것이 목록 성능에 유리.
+  3. **정책 정합성**: 스토리지 URL 저장 원칙을 코드 레벨에서 강제.
+- **구현 요약**:
+  - `apps/api/src/lib/r2.ts` 추가 (mime/용량 검증 + R2 업로드).
+  - `apps/api/src/config/env.ts`에 `R2_*` env 스키마 연결.
+  - 템플릿 create/update에서 `thumbnailDataUrl` 처리 후 `thumbnailUrl`로 치환 저장.
+
+## [2026-02-16] 의존성 추가: `@aws-sdk/client-s3` 도입
+- **결정**: R2 업로드를 위해 API 패키지에 `@aws-sdk/client-s3`를 추가함.
+- **이유**:
+  1. **호환성**: Cloudflare R2가 S3 호환 API를 제공하므로 표준 SDK 사용이 가장 안전함.
+  2. **유지보수성**: 직접 서명 구현 대비 코드 복잡도와 장애 위험을 줄임.
+
 ## [2026-02-16] 텍스트 편집 WYSIWYG 개선: 공통 레이아웃 엔진 재사용
 - **결정**: 텍스트 줄바꿈/폰트축소/세로정렬 계산을 `Textbox.draw`와 편집 오버레이가 각각 따로 계산하지 않고, 공통 유틸(`textLayout`)을 함께 사용하도록 통합함.
 - **이유**:
@@ -656,3 +685,22 @@
   - 모바일 하단 UI에서도 모드 전환이 원활하도록 `MemeToolbar`와 `MemePropertyPanel`의 Props 전달 방식 수정.
 - **객체 조작성 향상**:
   - `uniformScaling: false`를 적용하여 모든 객체(텍스트, 도형 등)의 가로/세로 비율을 자유롭게 조절할 수 있도록 변경.
+
+## 2026-02-16: 공개 템플릿 시작(`shareSlug`) 복원 fallback 추가
+- **문제**: 일부 공개 템플릿에서 `content.objects`의 background image `src`가 비어 있어 `/create?shareSlug=...` 진입 시 캔버스가 비어 보이는 케이스가 발생.
+- **결정**:
+  - 템플릿 로드 시 `thumbnailUrl`이 있으면 image 객체의 빈 `src`를 보정한다.
+  - image 객체 자체가 없으면 `thumbnailUrl` 기반 background image 객체를 자동 주입한다.
+  - 템플릿 로드 완료 후 기본 활성 도구를 `편집`으로 설정해 초기 UX를 일관화한다.
+- **이유**: 저장 시점의 데이터 편차가 있어도 "이 템플릿 사용" 플로우가 중단 없이 동작하도록 복원 탄력성을 확보하기 위함.
+
+## 2026-02-16: 사용자 네비게이션을 우측 상단 계정 메뉴로 일원화
+- **결정**:
+  - 상단 글로벌 네비게이션에서는 `홈/생성/템플릿 목록`만 유지한다.
+  - 인증 사용자의 우측 상단 이름 영역을 드롭다운 메뉴로 전환해 `마이페이지`, `내 템플릿`, `로그아웃`을 제공한다.
+  - 별도 `마이페이지(/my)`를 추가해 사용자 정보와 `내 템플릿 관리` 진입점을 제공한다.
+- **이유**: 로그인 관련 액션과 개인 자산(내 템플릿) 동선을 한 곳으로 모아 탐색 부담을 줄이고, 헤더의 정보 구조를 단순화하기 위함.
+
+## 2026-02-16: 마이 영역 공통 사이드바 레이아웃 도입
+- **결정**: `MySectionLayout`을 도입해 `/my`, `/my/templates` 좌측에 동일한 사이드 메뉴(`내 프로필`, `내 템플릿`)를 배치한다.
+- **이유**: 개인 영역 내 이동 경로를 고정해 화면 전환 시 맥락을 유지하고, 이후 설정/결제 등 마이 섹션 확장 시 구조를 재사용하기 위함.
