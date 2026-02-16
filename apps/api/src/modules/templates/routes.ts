@@ -1,5 +1,6 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { requireAuth } from '../auth/guard.js';
+import { env } from '../../config/env.js';
 import {
   CreateTemplateSchema,
   TemplateIdParamSchema,
@@ -37,7 +38,14 @@ export const templateRoutes: FastifyPluginAsync = async (app) => {
     return reply.send({ template });
   });
 
-  app.post('/templates/s/:shareSlug/view', async (req, reply) => {
+  app.post('/templates/s/:shareSlug/view', {
+    config: {
+      rateLimit: {
+        max: env.VIEW_RATE_LIMIT_MAX_PER_MINUTE ?? 30,
+        timeWindow: '1 minute'
+      }
+    }
+  }, async (req, reply) => {
     const paramsParsed = TemplateShareSlugParamSchema.safeParse(req.params);
     if (!paramsParsed.success) {
       return reply.code(400).send({

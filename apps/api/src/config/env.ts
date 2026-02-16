@@ -47,7 +47,10 @@ const EnvSchema = z.object({
   R2_ENDPOINT: optionalUrl,
   R2_PUBLIC_BASE_URL: optionalUrl,
   R2_UPLOAD_MAX_MB: z.coerce.number().int().positive().optional(),
-  R2_UPLOAD_ALLOWED_MIME: optionalString
+  R2_UPLOAD_ALLOWED_MIME: optionalString,
+  RATE_LIMIT_MAX_PER_MINUTE: z.coerce.number().int().positive().optional(),
+  AUTH_RATE_LIMIT_MAX_PER_MINUTE: z.coerce.number().int().positive().optional(),
+  VIEW_RATE_LIMIT_MAX_PER_MINUTE: z.coerce.number().int().positive().optional()
 });
 
 export const env = EnvSchema.parse(process.env);

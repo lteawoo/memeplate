@@ -342,7 +342,14 @@ const loadUserById = async (userId: string) => {
 };
 
 export const authRoutes: FastifyPluginAsync = async (app) => {
-  app.get('/auth/google/start', async (_req, reply) => {
+  app.get('/auth/google/start', {
+    config: {
+      rateLimit: {
+        max: env.AUTH_RATE_LIMIT_MAX_PER_MINUTE ?? 60,
+        timeWindow: '1 minute'
+      }
+    }
+  }, async (_req, reply) => {
     try {
       ensureOAuthConfig();
       // OAuth callback CSRF protection.
@@ -365,7 +372,14 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
     }
   });
 
-  app.get('/auth/google/callback', async (req, reply) => {
+  app.get('/auth/google/callback', {
+    config: {
+      rateLimit: {
+        max: env.AUTH_RATE_LIMIT_MAX_PER_MINUTE ?? 60,
+        timeWindow: '1 minute'
+      }
+    }
+  }, async (req, reply) => {
     try {
       ensureOAuthConfig();
       const query = req.query as {
@@ -445,7 +459,14 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
     }
   });
 
-  app.get('/auth/me', async (req, reply) => {
+  app.get('/auth/me', {
+    config: {
+      rateLimit: {
+        max: env.AUTH_RATE_LIMIT_MAX_PER_MINUTE ?? 120,
+        timeWindow: '1 minute'
+      }
+    }
+  }, async (req, reply) => {
     try {
       const { accessSecret } = getJwtConfig();
       const cookies = parseCookieHeader(req.headers.cookie);
@@ -474,7 +495,14 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
     }
   });
 
-  app.patch('/auth/me', async (req, reply) => {
+  app.patch('/auth/me', {
+    config: {
+      rateLimit: {
+        max: env.AUTH_RATE_LIMIT_MAX_PER_MINUTE ?? 30,
+        timeWindow: '1 minute'
+      }
+    }
+  }, async (req, reply) => {
     try {
       const { accessSecret } = getJwtConfig();
       const cookies = parseCookieHeader(req.headers.cookie);
@@ -523,7 +551,14 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
     }
   });
 
-  app.post('/auth/refresh', async (req, reply) => {
+  app.post('/auth/refresh', {
+    config: {
+      rateLimit: {
+        max: env.AUTH_RATE_LIMIT_MAX_PER_MINUTE ?? 60,
+        timeWindow: '1 minute'
+      }
+    }
+  }, async (req, reply) => {
     try {
       const { refreshSecret } = getJwtConfig();
       const cookies = parseCookieHeader(req.headers.cookie);
@@ -569,7 +604,14 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
     }
   });
 
-  app.post('/auth/logout', async (req, reply) => {
+  app.post('/auth/logout', {
+    config: {
+      rateLimit: {
+        max: env.AUTH_RATE_LIMIT_MAX_PER_MINUTE ?? 60,
+        timeWindow: '1 minute'
+      }
+    }
+  }, async (req, reply) => {
     try {
       const cookies = parseCookieHeader(req.headers.cookie);
       const refreshToken = cookies[REFRESH_COOKIE_NAME];

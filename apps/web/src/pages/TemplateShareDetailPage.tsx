@@ -13,8 +13,6 @@ type ImageMeta = {
   fileSize: string;
 };
 
-const toProxyImageUrl = (url: string) => `/api/v1/assets/proxy?url=${encodeURIComponent(url)}`;
-
 const formatBytes = (bytes: number) => {
   if (!Number.isFinite(bytes) || bytes <= 0) return '-';
   const units = ['B', 'KB', 'MB', 'GB'];
@@ -80,17 +78,15 @@ const TemplateShareDetailPage: React.FC = () => {
         return;
       }
 
-      const proxiedUrl = toProxyImageUrl(template.thumbnailUrl);
-
       try {
         const [imageInfo, response] = await Promise.all([
           new Promise<{ width: number; height: number }>((resolve, reject) => {
             const image = new Image();
             image.onload = () => resolve({ width: image.naturalWidth, height: image.naturalHeight });
             image.onerror = reject;
-            image.src = proxiedUrl;
+            image.src = template.thumbnailUrl;
           }),
-          fetch(proxiedUrl)
+          fetch(template.thumbnailUrl)
         ]);
 
         const blob = await response.blob();
