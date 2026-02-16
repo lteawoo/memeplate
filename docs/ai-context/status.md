@@ -108,6 +108,10 @@
 - [x] **밈플릿 상세 작성자명 표시 보강 (완료 - 2026-02-16)**
   - [x] 템플릿 API 응답에 `ownerDisplayName` 포함
   - [x] 상세정보 UI에서 `ownerDisplayName -> ownerId` 우선순위로 표기
+- [x] **마이페이지 내 정보 수정 기능 추가 (완료 - 2026-02-16)**
+  - [x] `PATCH /api/v1/auth/me` 구현 (displayName 수정)
+  - [x] `/my`에서 `내 밈플릿 관리` 버튼 제거
+  - [x] `/my`에 이름 수정 폼 + 저장 액션 연동
 
 ## 다음 작업
 - [ ] Google OAuth 로그인 엔드포인트 고도화 (`/api/v1/auth/*`)

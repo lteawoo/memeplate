@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from 'node:crypto';
 import type { FastifyPluginAsync } from 'fastify';
 import jwt, { type JwtPayload } from 'jsonwebtoken';
+import { z } from 'zod';
 import { env } from '../../config/env.js';
 import { getSupabaseAdminClient } from '../../lib/supabaseAdmin.js';
 
@@ -51,6 +52,10 @@ type JwtConfig = {
   accessTtlSec: number;
   refreshTtlSec: number;
 };
+
+const UpdateMeSchema = z.object({
+  displayName: z.string().trim().min(1).max(60)
+});
 
 const toCookieDate = (date: Date) => date.toUTCString();
 
@@ -466,6 +471,55 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
     } catch (error) {
       app.log.error(error);
       return reply.code(500).send({ message: 'Failed to read auth session.' });
+    }
+  });
+
+  app.patch('/auth/me', async (req, reply) => {
+    try {
+      const { accessSecret } = getJwtConfig();
+      const cookies = parseCookieHeader(req.headers.cookie);
+      const accessToken = cookies[ACCESS_COOKIE_NAME];
+
+      if (!accessToken) {
+        return reply.code(401).send({ message: 'Authentication required.' });
+      }
+
+      const claims = verifyAccessToken(accessToken, accessSecret);
+      if (!claims) {
+        return reply.code(401).send({ message: 'Authentication required.' });
+      }
+
+      const parsed = UpdateMeSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return reply.code(400).send({
+          message: 'Invalid profile payload',
+          issues: parsed.error.issues
+        });
+      }
+
+      const supabase = getSupabaseAdminClient();
+      const { data, error } = await supabase
+        .from('users')
+        .update({ display_name: parsed.data.displayName })
+        .eq('id', claims.sub)
+        .select('id, email, display_name')
+        .single<UserRecord>();
+
+      if (error) {
+        throw error;
+      }
+
+      return reply.code(200).send({
+        authenticated: true,
+        user: {
+          id: data.id,
+          email: data.email ?? null,
+          displayName: data.display_name ?? null
+        }
+      });
+    } catch (error) {
+      app.log.error(error);
+      return reply.code(500).send({ message: 'Failed to update profile.' });
     }
   });
 
