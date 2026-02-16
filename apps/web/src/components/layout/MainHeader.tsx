@@ -3,23 +3,20 @@ import { Layout, Typography, Button, Drawer, Dropdown } from 'antd';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import Icon from '@mdi/react';
 import { mdiMenu, mdiChevronDown } from '@mdi/js';
-import { apiFetch, fetchAuthMeWithRefresh } from '../../lib/apiFetch';
+import { useAuthStore } from '../../stores/authStore';
 
 const { Header } = Layout;
 const { Title } = Typography;
-
-type AuthUser = {
-  id: string;
-  email: string | null;
-  displayName: string | null;
-};
 
 const MainHeader: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [isAuthLoading, setIsAuthLoading] = useState(true);
-  const [authUser, setAuthUser] = useState<AuthUser | null>(null);
+  const authUser = useAuthStore((state) => state.user);
+  const isAuthLoading = useAuthStore((state) => state.isLoading);
+  const initialized = useAuthStore((state) => state.initialized);
+  const syncSession = useAuthStore((state) => state.syncSession);
+  const logout = useAuthStore((state) => state.logout);
 
   const navLinks = [
     { to: '/', label: '홈' },
@@ -27,39 +24,19 @@ const MainHeader: React.FC = () => {
     { to: '/templates', label: '밈플릿 목록' },
   ];
 
-  const syncAuthSession = async () => {
-    try {
-      setIsAuthLoading(true);
-      const payload = await fetchAuthMeWithRefresh();
-      if (payload.authenticated && payload.user) {
-        setAuthUser(payload.user);
-      } else {
-        setAuthUser(null);
-      }
-    } catch {
-      setAuthUser(null);
-    } finally {
-      setIsAuthLoading(false);
-    }
-  };
-
   useEffect(() => {
-    void syncAuthSession();
-  }, []);
+    if (!initialized) {
+      void syncSession();
+    }
+  }, [initialized, syncSession]);
 
   const handleLogin = () => {
     navigate('/login');
   };
 
   const handleLogout = async () => {
-    try {
-      await apiFetch('/api/v1/auth/logout', {
-        method: 'POST',
-      }, { retryOnUnauthorized: false, redirectOnAuthFailure: false });
-    } finally {
-      await syncAuthSession();
-      setIsDrawerOpen(false);
-    }
+    await logout();
+    setIsDrawerOpen(false);
   };
 
   const authDisplayName = authUser?.displayName || authUser?.email || '로그인 사용자';

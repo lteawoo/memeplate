@@ -1,4 +1,5 @@
 import React from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Alert, Button, Drawer, Empty, Popconfirm, Segmented, Spin, Typography, message } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import MySectionLayout from '../components/layout/MySectionLayout';
@@ -35,12 +36,24 @@ const formatMimeToLabel = (contentType: string | null, fallbackUrl?: string) => 
   return ext ? ext.toUpperCase() : '-';
 };
 
+class AuthRequiredError extends Error {}
+
+const fetchMyTemplates = async (): Promise<TemplateRecord[]> => {
+  const res = await apiFetch('/api/v1/templates/me', undefined, { redirectOnAuthFailure: false });
+  if (res.status === 401) {
+    throw new AuthRequiredError('로그인이 필요합니다.');
+  }
+  if (!res.ok) {
+    throw new Error('내 밈플릿 목록을 불러오지 못했습니다.');
+  }
+  const payload = (await res.json()) as TemplatesResponse;
+  return payload.templates ?? [];
+};
+
 const MyTemplatesPage: React.FC = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [messageApi, contextHolder] = message.useMessage();
-  const [templates, setTemplates] = React.useState<TemplateRecord[]>([]);
-  const [isLoading, setIsLoading] = React.useState(true);
-  const [error, setError] = React.useState<string | null>(null);
   const [detailTarget, setDetailTarget] = React.useState<TemplateRecord | null>(null);
   const [detailMetaLoading, setDetailMetaLoading] = React.useState(false);
   const [detailMeta, setDetailMeta] = React.useState<ImageMeta>({
@@ -49,51 +62,53 @@ const MyTemplatesPage: React.FC = () => {
     fileSize: '-'
   });
 
-  const loadTemplates = React.useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const res = await apiFetch('/api/v1/templates/me');
-      if (res.status === 401) {
-        navigate('/');
-        return;
-      }
-      if (!res.ok) {
-        throw new Error('내 밈플릿 목록을 불러오지 못했습니다.');
-      }
-      const payload = (await res.json()) as TemplatesResponse;
-      setTemplates(payload.templates ?? []);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : '내 밈플릿 목록을 불러오지 못했습니다.');
-      setTemplates([]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [navigate]);
+  const {
+    data: templates = [],
+    isLoading,
+    error
+  } = useQuery({
+    queryKey: ['templates', 'mine'],
+    queryFn: fetchMyTemplates
+  });
 
   React.useEffect(() => {
-    void loadTemplates();
-  }, [loadTemplates]);
-
-  const updateVisibility = async (templateId: string, visibility: TemplateVisibility) => {
-    const res = await apiFetch(`/api/v1/templates/${templateId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ visibility })
-    });
-    if (!res.ok) {
-      const payload = (await res.json().catch(() => ({}))) as { message?: string };
-      throw new Error(payload.message || '공개 상태 변경에 실패했습니다.');
+    if (error instanceof AuthRequiredError) {
+      navigate('/');
     }
-  };
+  }, [error, navigate]);
 
-  const deleteTemplate = async (templateId: string) => {
-    const res = await apiFetch(`/api/v1/templates/${templateId}`, { method: 'DELETE' });
-    if (!res.ok) {
-      const payload = (await res.json().catch(() => ({}))) as { message?: string };
-      throw new Error(payload.message || '밈플릿 삭제에 실패했습니다.');
+  const updateVisibilityMutation = useMutation({
+    mutationFn: async ({ templateId, visibility }: { templateId: string; visibility: TemplateVisibility }) => {
+      const res = await apiFetch(`/api/v1/templates/${templateId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ visibility })
+      });
+      if (!res.ok) {
+        const payload = (await res.json().catch(() => ({}))) as { message?: string };
+        throw new Error(payload.message || '공개 상태 변경에 실패했습니다.');
+      }
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['templates', 'mine'] });
     }
-  };
+  });
+
+  const deleteTemplateMutation = useMutation({
+    mutationFn: async (templateId: string) => {
+      const res = await apiFetch(`/api/v1/templates/${templateId}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const payload = (await res.json().catch(() => ({}))) as { message?: string };
+        throw new Error(payload.message || '밈플릿 삭제에 실패했습니다.');
+      }
+    },
+    onSuccess: async (_data, templateId) => {
+      if (detailTarget?.id === templateId) {
+        setDetailTarget(null);
+      }
+      await queryClient.invalidateQueries({ queryKey: ['templates', 'mine'] });
+    }
+  });
 
   React.useEffect(() => {
     const loadDetailMeta = async () => {
@@ -144,7 +159,7 @@ const MyTemplatesPage: React.FC = () => {
       {isLoading ? (
         <div className="py-20 text-center"><Spin size="large" /></div>
       ) : error ? (
-        <Alert type="error" message={error} />
+        <Alert type="error" message={error instanceof Error ? error.message : '내 밈플릿 목록을 불러오지 못했습니다.'} />
       ) : templates.length === 0 ? (
         <Empty description="저장된 밈플릿이 없습니다." />
       ) : (
@@ -168,13 +183,14 @@ const MyTemplatesPage: React.FC = () => {
                     { label: '비공개', value: 'private' },
                     { label: '공개', value: 'public' }
                   ]}
+                  disabled={updateVisibilityMutation.isPending}
                   onChange={(value) => {
-                    void updateVisibility(template.id, value as TemplateVisibility)
+                    void updateVisibilityMutation.mutateAsync({
+                      templateId: template.id,
+                      visibility: value as TemplateVisibility
+                    })
                       .then(() => {
                         messageApi.success('공개 상태를 변경했습니다.');
-                        setTemplates((prev) => prev.map((item) => (
-                          item.id === template.id ? { ...item, visibility: value as TemplateVisibility } : item
-                        )));
                       })
                       .catch((err: unknown) => {
                         messageApi.error(err instanceof Error ? err.message : '공개 상태 변경에 실패했습니다.');
@@ -203,17 +219,16 @@ const MyTemplatesPage: React.FC = () => {
                     okText="삭제"
                     cancelText="취소"
                     onConfirm={() => {
-                      void deleteTemplate(template.id)
+                      void deleteTemplateMutation.mutateAsync(template.id)
                         .then(() => {
                           messageApi.success('밈플릿을 삭제했습니다.');
-                          setTemplates((prev) => prev.filter((item) => item.id !== template.id));
                         })
                         .catch((err: unknown) => {
                           messageApi.error(err instanceof Error ? err.message : '밈플릿 삭제에 실패했습니다.');
                         });
                     }}
                   >
-                    <Button danger>삭제</Button>
+                    <Button danger loading={deleteTemplateMutation.isPending}>삭제</Button>
                   </Popconfirm>
                 </div>
               </div>
@@ -224,7 +239,7 @@ const MyTemplatesPage: React.FC = () => {
       <Drawer
         title={detailTarget ? `${detailTarget.title} 상세정보` : '상세정보'}
         placement="right"
-        width={420}
+        size={420}
         onClose={() => setDetailTarget(null)}
         open={Boolean(detailTarget)}
       >
@@ -236,6 +251,7 @@ const MyTemplatesPage: React.FC = () => {
                   <img
                     src={detailTarget.thumbnailUrl}
                     alt={detailTarget.title}
+                    crossOrigin="anonymous"
                     className="max-h-[360px] w-full object-contain"
                   />
                 </div>
