@@ -252,7 +252,9 @@ const MyTemplatesPage: React.FC = () => {
               <div className="space-y-3 text-sm">
                 <div className="flex items-start justify-between gap-3">
                   <span className="text-slate-500">만든 사람</span>
-                  <span className="text-right font-medium text-slate-800">{detailTarget.ownerId || '-'}</span>
+                  <span className="text-right font-medium text-slate-800">
+                    {detailTarget.ownerDisplayName || detailTarget.ownerId || '-'}
+                  </span>
                 </div>
                 <div className="flex items-start justify-between gap-3">
                   <span className="text-slate-500">생성일</span>

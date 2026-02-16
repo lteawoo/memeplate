@@ -15,9 +15,15 @@ type TemplateRow = {
   updated_at: string;
 };
 
-const toRecord = (row: TemplateRow): TemplateRecord => ({
+type UserRow = {
+  id: string;
+  display_name: string | null;
+};
+
+const toRecord = (row: TemplateRow, ownerDisplayName?: string | null): TemplateRecord => ({
   id: row.id,
   ownerId: row.owner_id,
+  ownerDisplayName: ownerDisplayName ?? undefined,
   title: row.title,
   content: row.content ?? {},
   thumbnailUrl: row.thumbnail_url ?? undefined,
@@ -31,6 +37,22 @@ const generateShareSlug = () => `tmpl_${randomBytes(6).toString('base64url')}`;
 
 export const createSupabaseTemplateRepository = (): TemplateRepository => {
   const supabase = getSupabaseAdminClient();
+  const resolveOwnerDisplayNameMap = async (ownerIds: string[]) => {
+    if (ownerIds.length === 0) {
+      return new Map<string, string | null>();
+    }
+
+    const { data, error } = await supabase
+      .from('users')
+      .select('id, display_name')
+      .in('id', ownerIds);
+
+    if (error || !data) {
+      return new Map<string, string | null>();
+    }
+
+    return new Map((data as UserRow[]).map((row) => [row.id, row.display_name]));
+  };
 
   return {
     async listMine(userId) {
@@ -42,7 +64,11 @@ export const createSupabaseTemplateRepository = (): TemplateRepository => {
         .order('updated_at', { ascending: false });
 
       if (error) throw error;
-      return (data ?? []).map((row) => toRecord(row as TemplateRow));
+      const rows = (data ?? []) as TemplateRow[];
+      const ownerDisplayNameMap = await resolveOwnerDisplayNameMap(
+        Array.from(new Set(rows.map((row) => row.owner_id)))
+      );
+      return rows.map((row) => toRecord(row, ownerDisplayNameMap.get(row.owner_id)));
     },
 
     async getMineById(userId, templateId) {
@@ -55,7 +81,10 @@ export const createSupabaseTemplateRepository = (): TemplateRepository => {
         .maybeSingle();
 
       if (error) throw error;
-      return data ? toRecord(data as TemplateRow) : null;
+      if (!data) return null;
+      const row = data as TemplateRow;
+      const ownerDisplayNameMap = await resolveOwnerDisplayNameMap([row.owner_id]);
+      return toRecord(row, ownerDisplayNameMap.get(row.owner_id));
     },
 
     async listPublic(limit) {
@@ -68,7 +97,11 @@ export const createSupabaseTemplateRepository = (): TemplateRepository => {
         .limit(limit);
 
       if (error) throw error;
-      return (data ?? []).map((row) => toRecord(row as TemplateRow));
+      const rows = (data ?? []) as TemplateRow[];
+      const ownerDisplayNameMap = await resolveOwnerDisplayNameMap(
+        Array.from(new Set(rows.map((row) => row.owner_id)))
+      );
+      return rows.map((row) => toRecord(row, ownerDisplayNameMap.get(row.owner_id)));
     },
 
     async getPublicByShareSlug(shareSlug) {
@@ -81,7 +114,10 @@ export const createSupabaseTemplateRepository = (): TemplateRepository => {
         .maybeSingle();
 
       if (error) throw error;
-      return data ? toRecord(data as TemplateRow) : null;
+      if (!data) return null;
+      const row = data as TemplateRow;
+      const ownerDisplayNameMap = await resolveOwnerDisplayNameMap([row.owner_id]);
+      return toRecord(row, ownerDisplayNameMap.get(row.owner_id));
     },
 
     async create(userId, input) {
@@ -101,7 +137,9 @@ export const createSupabaseTemplateRepository = (): TemplateRepository => {
         .single();
 
       if (error) throw error;
-      return toRecord(data as TemplateRow);
+      const row = data as TemplateRow;
+      const ownerDisplayNameMap = await resolveOwnerDisplayNameMap([row.owner_id]);
+      return toRecord(row, ownerDisplayNameMap.get(row.owner_id));
     },
 
     async update(userId, templateId, input) {
@@ -132,7 +170,9 @@ export const createSupabaseTemplateRepository = (): TemplateRepository => {
       if (!data) {
         throw new Error('Template not found.');
       }
-      return toRecord(data as TemplateRow);
+      const row = data as TemplateRow;
+      const ownerDisplayNameMap = await resolveOwnerDisplayNameMap([row.owner_id]);
+      return toRecord(row, ownerDisplayNameMap.get(row.owner_id));
     },
 
     async remove(userId, templateId) {

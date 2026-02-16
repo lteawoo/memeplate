@@ -1,5 +1,14 @@
 # 결정 로그 (Decision Log)
 
+## [2026-02-16] 밈플릿 상세정보 작성자 표기 개선: `ownerId` 대신 표시명 우선 노출
+- **결정**: 템플릿 조회 응답에 `ownerDisplayName`을 포함하고, 프론트 상세정보에서는 `ownerDisplayName`을 우선 표기하도록 변경함.
+- **이유**:
+  1. **가독성 개선**: UUID(`ownerId`)는 사용자 입장에서 의미가 없어 작성자 정보로 부적합함.
+  2. **UI 정합성**: “만든 사람” 항목은 식별자보다 이름 노출이 기대 동작임.
+- **구현 요약**:
+  - `apps/api/src/modules/templates/supabaseRepository.ts`에서 `users` 조회를 통해 작성자 표시명 매핑 추가.
+  - `apps/web/src/pages/TemplateShareDetailPage.tsx`, `apps/web/src/pages/MyTemplatesPage.tsx`에서 표기 우선순위를 `ownerDisplayName -> ownerId -> '-'`로 조정.
+
 ## [2026-02-16] 밈플릿 썸네일 업로드 최적화: 5MB 본문 제한 유지 + 클라이언트 리사이즈/압축 적용
 - **결정**: API `bodyLimit`은 `5MB`로 유지하고, 밈플릿 저장 시 썸네일 Data URL을 원본 크기 그대로 전송하지 않도록 클라이언트에서 리사이즈/압축 후 전송함.
 - **이유**:
