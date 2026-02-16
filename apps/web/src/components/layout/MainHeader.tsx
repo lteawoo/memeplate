@@ -27,7 +27,7 @@ const MainHeader: React.FC = () => {
 
   const navLinks = [
     { to: '/', label: '홈' },
-    { to: '/create', label: 'Memeplate 생성' },
+    { to: '/create', label: '밈플릿 생성' },
     { to: '/templates', label: '밈플릿 목록' },
   ];
 
