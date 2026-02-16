@@ -154,6 +154,7 @@ const TemplateShareDetailPage: React.FC = () => {
                     <img
                       src={template.thumbnailUrl}
                       alt={template.title}
+                      crossOrigin="anonymous"
                       className="max-h-[640px] w-full object-contain"
                     />
                   </div>

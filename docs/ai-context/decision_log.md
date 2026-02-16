@@ -1,5 +1,17 @@
 # 결정 로그 (Decision Log)
 
+## [2026-02-16] 프론트 상태관리 1차 전환: `auth`는 zustand, 목록 데이터는 React Query
+- **결정**: 인증 세션 상태는 `zustand` 전역 store로 통합하고, 밈플릿 목록 데이터는 `@tanstack/react-query` 캐시로 관리함.
+- **이유**:
+  1. **중복 호출 감소**: 헤더/마이페이지가 각각 `auth/me`를 호출하던 구조를 store로 통합해 중복 요청을 줄임.
+  2. **일관된 동기화**: 로그아웃/이름수정 시 전역 사용자 상태를 즉시 반영할 수 있음.
+  3. **목록 UX 개선**: 목록 페이지 재진입/갱신 시 query 캐시 재사용 및 invalidate로 데이터 일관성을 유지.
+- **구현 요약**:
+  - `apps/web/src/stores/authStore.ts` 추가.
+  - `apps/web/src/lib/queryClient.ts` 추가, `main.tsx`에 `QueryClientProvider` 등록.
+  - `MainHeader`, `MyPage`를 auth store 기반으로 전환.
+  - `TemplatesPage`, `MyTemplatesPage`를 `useQuery/useMutation` 기반으로 전환.
+
 ## [2026-02-16] 보안 하드닝 1차: 헤더/레이트리밋 강화 + 자산 프록시 제거
 - **결정**: API 전역 보안 헤더와 레이트리밋을 적용하고, 이미지 자산 프록시는 유지하지 않고 제거함.
 - **이유**:

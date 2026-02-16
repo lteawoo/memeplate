@@ -2,77 +2,56 @@ import React from 'react';
 import { Alert, Button, Card, Form, Input, Spin, Typography, message } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import MySectionLayout from '../components/layout/MySectionLayout';
-import { apiFetch, fetchAuthMeWithRefresh } from '../lib/apiFetch';
+import { useAuthStore } from '../stores/authStore';
 const { Text } = Typography;
-
-type AuthUser = {
-  id: string;
-  email: string | null;
-  displayName: string | null;
-};
-
-type AuthMeResponse = {
-  authenticated: boolean;
-  user?: AuthUser;
-};
 
 const MyPage: React.FC = () => {
   const navigate = useNavigate();
   const [messageApi, contextHolder] = message.useMessage();
   const [form] = Form.useForm<{ displayName: string }>();
-  const [isLoading, setIsLoading] = React.useState(true);
   const [isSaving, setIsSaving] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
-  const [user, setUser] = React.useState<AuthUser | null>(null);
+  const user = useAuthStore((state) => state.user);
+  const isLoading = useAuthStore((state) => state.isLoading);
+  const initialized = useAuthStore((state) => state.initialized);
+  const syncSession = useAuthStore((state) => state.syncSession);
+  const updateDisplayName = useAuthStore((state) => state.updateDisplayName);
 
   React.useEffect(() => {
     const loadMe = async () => {
-      setIsLoading(true);
       setError(null);
       try {
-        const payload = (await fetchAuthMeWithRefresh()) as AuthMeResponse;
-        if (!payload.authenticated || !payload.user) {
+        if (!initialized) {
+          await syncSession();
+        }
+        const nextUser = useAuthStore.getState().user;
+        if (!nextUser) {
           navigate('/');
           return;
         }
-        setUser(payload.user);
-        form.setFieldsValue({ displayName: payload.user.displayName ?? '' });
+        form.setFieldsValue({ displayName: nextUser.displayName ?? '' });
       } catch (err) {
         const msg = err instanceof Error ? err.message : '사용자 정보를 불러오지 못했습니다.';
         setError(msg);
-      } finally {
-        setIsLoading(false);
       }
     };
 
     void loadMe();
-  }, [form, navigate]);
+  }, [form, initialized, navigate, syncSession]);
 
   const onSaveProfile = async (values: { displayName: string }) => {
     setIsSaving(true);
     try {
-      const res = await apiFetch('/api/v1/auth/me', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ displayName: values.displayName.trim() })
-      });
-
-      if (!res.ok) {
-        const payload = (await res.json().catch(() => ({}))) as { message?: string };
-        throw new Error(payload.message || '내 정보 저장에 실패했습니다.');
-      }
-
-      const payload = (await res.json()) as AuthMeResponse;
-      if (!payload.authenticated || !payload.user) {
+      const nextUser = await updateDisplayName(values.displayName.trim());
+      form.setFieldsValue({ displayName: nextUser.displayName ?? '' });
+      messageApi.success('내 정보를 저장했습니다.');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : '내 정보 저장에 실패했습니다.';
+      if (msg.includes('만료')) {
         navigate('/');
         return;
       }
-
-      setUser(payload.user);
-      form.setFieldsValue({ displayName: payload.user.displayName ?? '' });
-      messageApi.success('내 정보를 저장했습니다.');
-    } catch (err) {
-      messageApi.error(err instanceof Error ? err.message : '내 정보 저장에 실패했습니다.');
+      messageApi.error(msg);
     } finally {
       setIsSaving(false);
     }

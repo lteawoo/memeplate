@@ -128,6 +128,10 @@
   - [x] `@fastify/rate-limit` 적용 + 인증/조회수 라우트별 제한
   - [x] 이미지 프록시 제거 및 원본 URL 직접 로딩 전환 (`/assets/proxy` 삭제)
   - [x] 밈플릿 목록 로딩 실패 상태를 빈 목록과 분리(재시도 버튼 추가)
+- [x] **프론트 상태관리 1차 전환 (완료 - 2026-02-16)**
+  - [x] `zustand` 기반 `auth/session` 전역 store 도입 (`user`, `initialized`, `syncSession`, `logout`)
+  - [x] `MainHeader`, `MyPage`의 인증 상태 조회 로직을 store 기반으로 통합
+  - [x] `@tanstack/react-query` 도입 및 `TemplatesPage`, `MyTemplatesPage` 목록 캐시 전환
 
 ## 다음 작업
 - [ ] Google OAuth 로그인 엔드포인트 고도화 (`/api/v1/auth/*`)

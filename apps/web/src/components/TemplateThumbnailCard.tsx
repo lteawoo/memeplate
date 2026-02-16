@@ -43,6 +43,7 @@ const TemplateThumbnailCard: React.FC<TemplateThumbnailCardProps> = ({
               <img
                 src={template.thumbnailUrl}
                 alt={template.title}
+                crossOrigin="anonymous"
                 className="max-h-full w-full object-contain"
                 draggable={false}
                 onDragStart={(e) => e.preventDefault()}
