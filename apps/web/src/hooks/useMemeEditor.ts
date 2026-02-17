@@ -11,6 +11,8 @@ type MessageInstance = ReturnType<typeof message.useMessage>[0];
 const CANVAS_MARGIN = 0;
 const TEMPLATE_THUMBNAIL_LONG_EDGE = 1280;
 const TEMPLATE_THUMBNAIL_QUALITY = 0.82;
+const PUBLISH_IMAGE_LONG_EDGE = 1920;
+const PUBLISH_IMAGE_QUALITY = 0.9;
 
 interface HistoryItem {
   json: string;
@@ -42,6 +44,13 @@ type SavedTemplateMeta = {
   title: string;
   visibility: TemplateVisibility;
   shareSlug: string;
+};
+
+type CreatedImageResponse = {
+  image: {
+    id: string;
+    shareSlug: string;
+  };
 };
 
 type UploadInput = File | Blob | {
@@ -111,6 +120,31 @@ const getThumbnailSize = (width: number, height: number) => {
   };
 };
 
+const getPublishImageSize = (width: number, height: number) => {
+  const longEdge = Math.max(width, height);
+  if (!Number.isFinite(longEdge) || longEdge <= 0 || longEdge <= PUBLISH_IMAGE_LONG_EDGE) {
+    return { width, height };
+  }
+  const scale = PUBLISH_IMAGE_LONG_EDGE / longEdge;
+  return {
+    width: Math.max(1, Math.round(width * scale)),
+    height: Math.max(1, Math.round(height * scale))
+  };
+};
+
+const parseDataUrlMime = (dataUrl: string) => {
+  const match = dataUrl.match(/^data:([^;,]+)[;,]/i);
+  return match?.[1] ?? 'image/webp';
+};
+
+const estimateDataUrlBytes = (dataUrl: string) => {
+  const base64Index = dataUrl.indexOf('base64,');
+  if (base64Index < 0) return 0;
+  const base64 = dataUrl.slice(base64Index + 'base64,'.length);
+  const padding = (base64.match(/=*$/)?.[0].length ?? 0);
+  return Math.max(0, Math.floor((base64.length * 3) / 4) - padding);
+};
+
 const createBackgroundImageObject = (src: string, width: number, height: number): Record<string, unknown> => ({
   id: crypto.randomUUID(),
   type: 'image',
@@ -154,6 +188,7 @@ export const useMemeEditor = (messageApi: MessageInstance, options?: UseMemeEdit
   const workspaceSizeRef = useRef({ width: 0, height: 0 });
   const [savedTemplate, setSavedTemplate] = useState<SavedTemplateMeta | null>(null);
   const [isTemplateSaving, setIsTemplateSaving] = useState(false);
+  const [isImagePublishing, setIsImagePublishing] = useState(false);
   const isTemplateSaveDisabled = initialTemplateMode === 'public';
 
   // History State
@@ -625,6 +660,70 @@ export const useMemeEditor = (messageApi: MessageInstance, options?: UseMemeEdit
     }
   };
 
+  const publishImage = async (title: string) => {
+    if (!canvasInstanceRef.current) return null;
+    const imageTitle = title.trim() || '새 이미지';
+    const linkedTemplateId = savedTemplate?.id ?? initialTemplate?.id;
+
+    try {
+      setIsImagePublishing(true);
+
+      const publishSize = getPublishImageSize(workspaceSize.width, workspaceSize.height);
+      const imageDataUrl = canvasInstanceRef.current.toDataURL({
+        format: 'webp',
+        multiplier: 1,
+        width: publishSize.width,
+        height: publishSize.height,
+        quality: PUBLISH_IMAGE_QUALITY
+      });
+      const imageMime = parseDataUrlMime(imageDataUrl);
+      const imageBytes = estimateDataUrlBytes(imageDataUrl);
+
+      const res = await apiFetch('/api/v1/images', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          templateId: linkedTemplateId,
+          title: imageTitle,
+          imageDataUrl,
+          imageWidth: publishSize.width,
+          imageHeight: publishSize.height,
+          imageBytes,
+          imageMime,
+          visibility: 'public'
+        })
+      });
+
+      if (res.status === 401) {
+        messageApi.error('로그인이 필요합니다.');
+        return null;
+      }
+
+      if (!res.ok) {
+        const payload = (await res.json().catch(() => ({}))) as { message?: string };
+        throw new Error(payload.message || '리믹스 게시에 실패했습니다.');
+      }
+
+      const payload = (await res.json()) as CreatedImageResponse;
+      const shareUrl = `${window.location.origin}/images/s/${payload.image.shareSlug}`;
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        messageApi.success('리믹스를 게시했고 링크를 복사했습니다.');
+      } catch {
+        messageApi.success('리믹스를 게시했습니다.');
+      }
+      return payload.image;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : '리믹스 게시에 실패했습니다.';
+      messageApi.error(msg);
+      return null;
+    } finally {
+      setIsImagePublishing(false);
+    }
+  };
+
   const saveTemplate = async (title: string, visibility: TemplateVisibility) => {
     if (!canvasInstanceRef.current) return null;
     if (isTemplateSaveDisabled) {
@@ -797,11 +896,13 @@ export const useMemeEditor = (messageApi: MessageInstance, options?: UseMemeEdit
     addShape,
     downloadImage,
     copyToClipboard,
+    publishImage,
     changeZIndex,
     saveTemplate,
     copyTemplateShareLink,
     savedTemplate,
     isTemplateSaving,
+    isImagePublishing,
     isTemplateSaveDisabled,
     canvasInstance: canvasInstanceRef.current
   };
