@@ -22,7 +22,7 @@ export const templateRoutes: FastifyPluginAsync = async (app) => {
     return reply.send({ templates });
   });
 
-  app.get('/templates/s/:shareSlug', async (req, reply) => {
+  app.get('/templates/s/:shareSlug/edit', async (req, reply) => {
     const paramsParsed = TemplateShareSlugParamSchema.safeParse(req.params);
     if (!paramsParsed.success) {
       return reply.code(400).send({
@@ -36,6 +36,28 @@ export const templateRoutes: FastifyPluginAsync = async (app) => {
       return reply.code(404).send({ message: 'Template not found.' });
     }
     return reply.send({ template });
+  });
+
+  app.get('/templates/s/:shareSlug', async (req, reply) => {
+    const paramsParsed = TemplateShareSlugParamSchema.safeParse(req.params);
+    if (!paramsParsed.success) {
+      return reply.code(400).send({
+        message: 'Invalid share slug',
+        issues: paramsParsed.error.issues
+      });
+    }
+
+    const template = await repository.getPublicByShareSlug(paramsParsed.data.shareSlug);
+    if (!template) {
+      return reply.code(404).send({ message: 'Template not found.' });
+    }
+
+    // 상세 페이지는 편집용 원본 content가 필요 없으므로 경량 응답으로 반환한다.
+    const detailTemplate = {
+      ...template,
+      content: {}
+    };
+    return reply.send({ template: detailTemplate });
   });
 
   app.post('/templates/s/:shareSlug/view', {
