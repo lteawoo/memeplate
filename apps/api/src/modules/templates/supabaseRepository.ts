@@ -108,6 +108,22 @@ export const createSupabaseTemplateRepository = (): TemplateRepository => {
       return rows.map((row) => toRecord(row, ownerDisplayNameMap.get(row.owner_id)));
     },
 
+    async getPublicDetailByShareSlug(shareSlug) {
+      const { data, error } = await supabase
+        .from('templates')
+        .select('id, owner_id, title, thumbnail_url, view_count, like_count, visibility, share_slug, created_at, updated_at')
+        .eq('share_slug', shareSlug)
+        .eq('visibility', 'public')
+        .is('deleted_at', null)
+        .maybeSingle();
+
+      if (error) throw error;
+      if (!data) return null;
+      const row = data as TemplateRow;
+      const ownerDisplayNameMap = await resolveOwnerDisplayNameMap([row.owner_id]);
+      return toRecord(row, ownerDisplayNameMap.get(row.owner_id));
+    },
+
     async getPublicByShareSlug(shareSlug) {
       const { data, error } = await supabase
         .from('templates')
