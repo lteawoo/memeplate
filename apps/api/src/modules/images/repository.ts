@@ -1,0 +1,31 @@
+import type { CreateMemeImageInput, UpdateMemeImageInput } from '../../types/image.js';
+
+export interface MemeImageRecord {
+  id: string;
+  ownerId: string;
+  ownerDisplayName?: string;
+  templateId?: string;
+  title: string;
+  imageUrl: string;
+  imageWidth?: number;
+  imageHeight?: number;
+  imageBytes?: number;
+  imageMime?: string;
+  visibility: 'private' | 'public';
+  shareSlug: string;
+  viewCount: number;
+  likeCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MemeImageRepository {
+  listMine(userId: string): Promise<MemeImageRecord[]>;
+  getMineById(userId: string, imageId: string): Promise<MemeImageRecord | null>;
+  listPublic(limit: number, templateId?: string): Promise<MemeImageRecord[]>;
+  getPublicByShareSlug(shareSlug: string): Promise<MemeImageRecord | null>;
+  incrementViewCountByShareSlug(shareSlug: string): Promise<number | null>;
+  create(userId: string, input: CreateMemeImageInput): Promise<MemeImageRecord>;
+  update(userId: string, imageId: string, input: UpdateMemeImageInput): Promise<MemeImageRecord>;
+  remove(userId: string, imageId: string): Promise<void>;
+}

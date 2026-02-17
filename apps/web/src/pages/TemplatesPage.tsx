@@ -36,8 +36,8 @@ const TemplatesPage: React.FC = () => {
       <Content className="mx-auto w-full max-w-6xl px-6 py-8">
         <div className="mb-6 flex items-end justify-between gap-3">
           <div>
-            <Title level={2} className="!mb-1">밈플릿</Title>
-            <Text type="secondary">최신순으로 밈플릿을 확인하고 바로 편집할 수 있습니다.</Text>
+            <Title level={2} className="!mb-1">밈플릿 목록</Title>
+            <Text type="secondary">텍스트 레이어를 채워 쓸 수 있는 밈플릿을 최신순으로 확인합니다.</Text>
           </div>
           <Button type="primary" onClick={() => navigate('/create')}>새로 만들기</Button>
         </div>

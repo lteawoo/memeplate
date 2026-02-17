@@ -138,4 +138,8 @@
   - [x] 공개 밈플릿 시작 경로(`shareSlug`)에서 배경 미복원 케이스 fallback 처리(썸네일 기반 background 객체 주입)
   - [x] 공개 밈플릿 시작 시 기본 활성 도구를 `편집`으로 설정
   - [x] 썸네일 payload 최적화(긴 변 `1280px` 리사이즈 + `webp` 품질 압축)
-  - [ ] 밈플릿 목록/관리 전용 화면 구현 (`/templates`, `/my/templates`)
+  - [x] 템플릿 목록/관리 전용 화면 구현 (`/templates`, `/my/templates`)
+  - [x] `meme_images` 도메인 API 구현 (`/images`, `/images/s/:shareSlug`, `/images/me`, CRUD)
+  - [x] `meme_images` 프론트 화면 구현 (`/images`, `/images/s/:shareSlug`, `/my/images`)
+  - [x] 밈플릿 상세에서 원본/연관 이미지 2열 레이아웃 적용
+  - [x] 연관 이미지 조회용 `templateId` 필터 API 적용

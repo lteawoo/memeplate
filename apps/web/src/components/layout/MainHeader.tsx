@@ -23,6 +23,10 @@ const MainHeader: React.FC = () => {
     { to: '/create', label: '밈플릿 생성' },
     { to: '/templates', label: '밈플릿 목록' },
   ];
+  const isLinkActive = (to: string) => {
+    if (to === '/') return location.pathname === '/';
+    return location.pathname === to || location.pathname.startsWith(`${to}/`);
+  };
 
   useEffect(() => {
     if (!initialized) {
@@ -76,7 +80,7 @@ const MainHeader: React.FC = () => {
             <Link 
               key={link.to}
               to={link.to} 
-              className={`text-sm font-bold no-underline transition-colors ${location.pathname === link.to ? 'text-blue-600' : 'text-slate-500 hover:text-slate-800'}`}
+              className={`text-sm font-bold no-underline transition-colors ${isLinkActive(link.to) ? 'text-blue-600' : 'text-slate-500 hover:text-slate-800'}`}
             >
               {link.label}
             </Link>
@@ -122,7 +126,7 @@ const MainHeader: React.FC = () => {
               key={link.to}
               to={link.to} 
               onClick={() => setIsDrawerOpen(false)}
-              className={`text-xl font-black no-underline transition-colors ${location.pathname === link.to ? 'text-blue-600' : 'text-slate-800 hover:text-blue-500'}`}
+              className={`text-xl font-black no-underline transition-colors ${isLinkActive(link.to) ? 'text-blue-600' : 'text-slate-800 hover:text-blue-500'}`}
             >
               {link.label}
             </Link>

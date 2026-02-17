@@ -6,6 +6,7 @@ import EditorPage from './pages/EditorPage';
 import LoginPage from './pages/LoginPage';
 import TemplatesPage from './pages/TemplatesPage';
 import TemplateShareDetailPage from './pages/TemplateShareDetailPage';
+import ImageShareDetailPage from './pages/ImageShareDetailPage';
 import MyTemplatesPage from './pages/MyTemplatesPage';
 import MyPage from './pages/MyPage';
 
@@ -26,6 +27,7 @@ const App: React.FC = () => {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/templates" element={<TemplatesPage />} />
           <Route path="/templates/s/:shareSlug" element={<TemplateShareDetailPage />} />
+          <Route path="/images/s/:shareSlug" element={<ImageShareDetailPage />} />
           <Route path="/my" element={<MyPage />} />
           <Route path="/my/templates" element={<MyTemplatesPage />} />
         </Routes>

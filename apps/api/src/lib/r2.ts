@@ -40,7 +40,7 @@ const buildPublicUrl = (key: string) => {
   return `${base}/${key}`;
 };
 
-export const uploadTemplateThumbnailDataUrl = async (ownerId: string, dataUrl: string) => {
+const uploadImageDataUrl = async (ownerId: string, dataUrl: string, folder: 'templates' | 'meme-images') => {
   assertR2Config();
   const allowedMime = getAllowedMimeSet();
   const maxMb = env.R2_UPLOAD_MAX_MB ?? 10;
@@ -57,7 +57,7 @@ export const uploadTemplateThumbnailDataUrl = async (ownerId: string, dataUrl: s
   }
 
   const ext = resolveExt(mimeType);
-  const key = `templates/${ownerId}/${Date.now()}-${randomUUID()}.${ext}`;
+  const key = `${folder}/${ownerId}/${Date.now()}-${randomUUID()}.${ext}`;
 
   const client = new S3Client({
     region: 'auto',
@@ -85,3 +85,10 @@ export const uploadTemplateThumbnailDataUrl = async (ownerId: string, dataUrl: s
   }
   return publicUrl;
 };
+
+export const uploadTemplateThumbnailDataUrl = async (ownerId: string, dataUrl: string) => {
+  return uploadImageDataUrl(ownerId, dataUrl, 'templates');
+};
+
+export const uploadMemeImageDataUrl = async (ownerId: string, dataUrl: string) =>
+  uploadImageDataUrl(ownerId, dataUrl, 'meme-images');

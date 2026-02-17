@@ -1,6 +1,7 @@
 import React from 'react';
 import { Card } from 'antd';
 import type { TemplateRecord } from '../types/template';
+import ThumbnailCard from './ThumbnailCard';
 
 interface TemplateThumbnailCardProps {
   template: TemplateRecord;
@@ -19,43 +20,13 @@ const TemplateThumbnailCard: React.FC<TemplateThumbnailCardProps> = ({
   children,
   onClick
 }) => {
-  const isClickable = Boolean(onClick);
-
   return (
-    <Card
+    <ThumbnailCard
+      imageUrl={template.thumbnailUrl}
+      title={template.title}
       hoverable={hoverable}
       actions={actions}
       onClick={onClick}
-      onKeyDown={(e) => {
-        if (!onClick) return;
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          onClick();
-        }
-      }}
-      role={isClickable ? 'button' : undefined}
-      tabIndex={isClickable ? 0 : undefined}
-      className={isClickable ? 'cursor-pointer' : undefined}
-      cover={
-        <div className="h-52 w-full border-b border-slate-100 bg-slate-50 p-3">
-          {template.thumbnailUrl ? (
-            <div className="flex h-full items-center justify-center overflow-hidden rounded-lg">
-              <img
-                src={template.thumbnailUrl}
-                alt={template.title}
-                crossOrigin="anonymous"
-                className="max-h-full w-full object-contain"
-                draggable={false}
-                onDragStart={(e) => e.preventDefault()}
-              />
-            </div>
-          ) : (
-            <div className="flex h-full items-center justify-center rounded-lg border border-dashed border-slate-200 text-slate-400">
-              No Preview
-            </div>
-          )}
-        </div>
-      }
     >
       {showMeta ? (
         <Card.Meta
@@ -64,7 +35,7 @@ const TemplateThumbnailCard: React.FC<TemplateThumbnailCardProps> = ({
         />
       ) : null}
       {children}
-    </Card>
+    </ThumbnailCard>
   );
 };
 

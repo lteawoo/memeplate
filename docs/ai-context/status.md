@@ -132,6 +132,22 @@
   - [x] `zustand` 기반 `auth/session` 전역 store 도입 (`user`, `initialized`, `syncSession`, `logout`)
   - [x] `MainHeader`, `MyPage`의 인증 상태 조회 로직을 store 기반으로 통합
   - [x] `@tanstack/react-query` 도입 및 `TemplatesPage`, `MyTemplatesPage` 목록 캐시 전환
+- [x] **도메인 분리 설계 1차 (완료 - 2026-02-16)**
+  - [x] `templates(소스)` / `meme_images(결과물)` 분리용 SQL 초안 작성
+  - [x] `meme_images`에 `template_id`(선택 연결), `share_slug`, `view/like` 지표 포함
+- [x] **이미지 도메인 API 1차 구현 (완료 - 2026-02-16)**
+  - [x] `GET /images/public`, `GET /images/s/:shareSlug`, `POST /images/s/:shareSlug/view`
+  - [x] `GET /images/me`, `GET /images/:imageId`, `POST /images`, `PATCH /images/:imageId`, `DELETE /images/:imageId`
+  - [x] `imageDataUrl` 업로드 시 R2 `meme-images/` 경로 저장 지원
+- [x] **이미지 도메인 프론트 1차 연결 (완료 - 2026-02-17)**
+  - [x] 라우트 추가: `/images`, `/images/s/:shareSlug`, `/my/images`
+  - [x] 헤더/마이메뉴에 `템플릿 목록`, `이미지 목록`, `내 이미지` 동선 반영
+  - [x] 썸네일 카드 공통화 (`ThumbnailCard`) 및 템플릿/이미지 공용 렌더 적용
+  - [x] 비로그인 상태의 `/my/images` 진입 시 메인(`/`) 리다이렉트 검증
+- [x] **밈플릿 상세 레이아웃 재구성 (완료 - 2026-02-17)**
+  - [x] 좌측 섹션: 원본 밈플릿 + `이 밈플릿 사용하기` 버튼
+  - [x] 우측 섹션: 해당 밈플릿 기반 공유 이미지 목록
+  - [x] 이미지 목록 API에 `templateId` 필터 추가
 
 ## 다음 작업
 - [ ] Google OAuth 로그인 엔드포인트 고도화 (`/api/v1/auth/*`)
@@ -145,7 +161,7 @@
   - [x] 세션 토큰 기반 인증을 JWT(access/refresh) 구조로 전환 (이슈 #53)
   - [x] 인증 미들웨어(`requireAuth`) 공통화 및 밈플릿 라우트 적용
 - [ ] Supabase SQL 스키마 실제 반영 및 마이그레이션 실행
-- [ ] 밈플릿 전용 화면 구현 (`/templates`, `/my/templates`, `/templates/s/:shareSlug`)
+- [ ] 템플릿/이미지 IA 2차 정리 (브랜드 `밈플릿` + 도메인 `템플릿/이미지` 문구 통일)
 - [ ] 텍스트 레이어 영역 클리핑(Clipping) 처리
 - [ ] 레이어 스타일 상세 설정 (그림자, 외곽선 자동색/자동그림자 고도화)
 - [ ] 성능 최적화 (Dirty Rect 알고리즘 도입 검토)
@@ -160,3 +176,4 @@
 - [x] **마이 섹션 좌측 사이드 메뉴 도입 (완료 - 2026-02-16)**
   - [x] `MySectionLayout` 공용 레이아웃 추가
   - [x] `/my`, `/my/templates`에 좌측 메뉴(`내 프로필`, `내 밈플릿`) 적용
+  - [x] `/my/images` 메뉴 확장

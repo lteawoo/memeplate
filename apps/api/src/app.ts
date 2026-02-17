@@ -8,6 +8,7 @@ import { registerSecurity } from './plugins/security.js';
 import { authRoutes } from './modules/auth/routes.js';
 import { healthRoutes } from './modules/health/routes.js';
 import { templateRoutes } from './modules/templates/routes.js';
+import { memeImageRoutes } from './modules/images/routes.js';
 
 export const buildApp = () => {
   const app = Fastify({
@@ -27,6 +28,7 @@ export const buildApp = () => {
   app.register(healthRoutes, { prefix: '/api/v1' });
   app.register(authRoutes, { prefix: '/api/v1' });
   app.register(templateRoutes, { prefix: '/api/v1' });
+  app.register(memeImageRoutes, { prefix: '/api/v1' });
 
   const distRoot = resolve(process.cwd(), env.WEB_DIST_DIR ?? '../web/dist');
   const shouldServeStatic = env.NODE_ENV === 'production' && existsSync(distRoot);
