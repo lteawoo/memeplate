@@ -1,8 +1,10 @@
 import React from 'react';
-import { Alert, Button, Card, Layout, Spin, Typography } from 'antd';
+import { Alert, Button, Card, Empty, Layout, Segmented, Spin, Typography } from 'antd';
 import { useNavigate, useParams } from 'react-router-dom';
 import MainHeader from '../components/layout/MainHeader';
 import type { TemplateResponse, TemplateRecord } from '../types/template';
+import type { MemeImageRecord, MemeImagesResponse } from '../types/image';
+import ThumbnailCard from '../components/ThumbnailCard';
 
 const { Content } = Layout;
 const { Title, Text } = Typography;
@@ -44,8 +46,29 @@ const TemplateShareDetailPage: React.FC = () => {
     resolution: '-',
     fileSize: '-'
   });
+  const [relatedImages, setRelatedImages] = React.useState<MemeImageRecord[]>([]);
+  const [isRelatedLoading, setIsRelatedLoading] = React.useState(false);
+  const [relatedError, setRelatedError] = React.useState<string | null>(null);
+  const [relatedSort, setRelatedSort] = React.useState<'latest' | 'popular'>('latest');
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
+  const sortedRelatedImages = React.useMemo(() => {
+    const next = [...relatedImages];
+    if (relatedSort === 'popular') {
+      next.sort((a, b) => {
+        const likeDiff = (b.likeCount ?? 0) - (a.likeCount ?? 0);
+        if (likeDiff !== 0) return likeDiff;
+        const viewDiff = (b.viewCount ?? 0) - (a.viewCount ?? 0);
+        if (viewDiff !== 0) return viewDiff;
+        return new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime();
+      });
+      return next;
+    }
+    next.sort(
+      (a, b) => new Date(b.updatedAt ?? b.createdAt ?? 0).getTime() - new Date(a.updatedAt ?? a.createdAt ?? 0).getTime()
+    );
+    return next;
+  }, [relatedImages, relatedSort]);
 
   React.useEffect(() => {
     const load = async () => {
@@ -109,6 +132,32 @@ const TemplateShareDetailPage: React.FC = () => {
   }, [template]);
 
   React.useEffect(() => {
+    const loadRelatedImages = async () => {
+      if (!template?.id) {
+        setRelatedImages([]);
+        return;
+      }
+
+      setIsRelatedLoading(true);
+      setRelatedError(null);
+      try {
+        const res = await fetch(`/api/v1/images/public?limit=30&templateId=${template.id}`);
+        if (!res.ok) {
+          throw new Error('연관 이미지를 불러오지 못했습니다.');
+        }
+        const payload = (await res.json()) as MemeImagesResponse;
+        setRelatedImages(payload.images ?? []);
+      } catch (err) {
+        setRelatedError(err instanceof Error ? err.message : '연관 이미지를 불러오지 못했습니다.');
+      } finally {
+        setIsRelatedLoading(false);
+      }
+    };
+
+    void loadRelatedImages();
+  }, [template?.id]);
+
+  React.useEffect(() => {
     if (!shareSlug || !template || viewedSlugRef.current === shareSlug) {
       return;
     }
@@ -142,29 +191,28 @@ const TemplateShareDetailPage: React.FC = () => {
         ) : error ? (
           <Alert type="error" message={error} />
         ) : template ? (
-          <Card className="rounded-2xl">
-            <div className="mb-6">
-              <Title level={2} className="!mb-2">{template.title}</Title>
-              <Text type="secondary">공유 밈플릿을 불러와서 바로 편집할 수 있습니다.</Text>
-            </div>
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
-              <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
-                {template.thumbnailUrl ? (
-                  <div className="flex items-center justify-center p-4">
-                    <img
-                      src={template.thumbnailUrl}
-                      alt={template.title}
-                      crossOrigin="anonymous"
-                      className="max-h-[640px] w-full object-contain"
-                    />
-                  </div>
-                ) : (
-                  <div className="h-80 flex items-center justify-center text-slate-400">미리보기 없음</div>
-                )}
-              </div>
-              <div className="rounded-xl border border-slate-200 bg-white p-4">
-                <h3 className="mb-4 text-base font-semibold text-slate-900">상세 정보</h3>
-                <div className="space-y-3 text-sm">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[340px_minmax(0,1fr)]">
+            <div className="lg:sticky lg:top-20 lg:self-start">
+              <Card className="rounded-2xl">
+                <div className="mb-4">
+                  <Title level={3} className="!mb-1">{template.title}</Title>
+                  <Text type="secondary">원본 밈플릿</Text>
+                </div>
+                <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+                  {template.thumbnailUrl ? (
+                    <div className="flex items-center justify-center p-4">
+                      <img
+                        src={template.thumbnailUrl}
+                        alt={template.title}
+                        crossOrigin="anonymous"
+                        className="max-h-[360px] w-full object-contain"
+                      />
+                    </div>
+                  ) : (
+                    <div className="h-56 flex items-center justify-center text-slate-400">미리보기 없음</div>
+                  )}
+                </div>
+                <div className="mt-4 space-y-2 text-sm">
                   <div className="flex items-start justify-between gap-3">
                     <span className="text-slate-500">만든 사람</span>
                     <span className="text-right font-medium text-slate-800">
@@ -174,7 +222,7 @@ const TemplateShareDetailPage: React.FC = () => {
                   <div className="flex items-start justify-between gap-3">
                     <span className="text-slate-500">생성일</span>
                     <span className="text-right font-medium text-slate-800">
-                      {template.createdAt ? new Date(template.createdAt).toLocaleString() : '-'}
+                      {template.createdAt ? new Date(template.createdAt).toLocaleDateString() : '-'}
                     </span>
                   </div>
                   <div className="flex items-start justify-between gap-3">
@@ -191,26 +239,62 @@ const TemplateShareDetailPage: React.FC = () => {
                   </div>
                   <div className="flex items-start justify-between gap-3">
                     <span className="text-slate-500">조회수</span>
-                    <span className="text-right font-medium text-slate-800">
-                      {(template.viewCount ?? 0).toLocaleString()}
-                    </span>
-                  </div>
-                  <div className="flex items-start justify-between gap-3">
-                    <span className="text-slate-500">좋아요</span>
-                    <span className="text-right font-medium text-slate-800">
-                      {(template.likeCount ?? 0).toLocaleString()}
-                    </span>
+                    <span className="text-right font-medium text-slate-800">{(template.viewCount ?? 0).toLocaleString()}</span>
                   </div>
                 </div>
+                <div className="mt-5 flex flex-col gap-2">
+                  <Button type="primary" onClick={() => navigate(`/create?shareSlug=${template.shareSlug}`)}>
+                    이 밈플릿 사용하기
+                  </Button>
+                  <Button onClick={() => navigate('/templates')}>밈플릿 목록으로</Button>
+                </div>
+              </Card>
+            </div>
+            <Card className="rounded-2xl">
+              <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+                <div>
+                  <Title level={4} className="!mb-1">이 밈플릿으로 만든 이미지</Title>
+                  <Text type="secondary">총 {relatedImages.length.toLocaleString()}개</Text>
+                </div>
+                <Segmented
+                  size="small"
+                  value={relatedSort}
+                  onChange={(value) => setRelatedSort(value as 'latest' | 'popular')}
+                  options={[
+                    { label: '최신순', value: 'latest' },
+                    { label: '인기순', value: 'popular' }
+                  ]}
+                />
               </div>
-            </div>
-            <div className="mt-6 flex flex-wrap gap-2">
-              <Button type="primary" onClick={() => navigate(`/create?shareSlug=${template.shareSlug}`)}>
-                이 밈플릿으로 시작
-              </Button>
-              <Button onClick={() => navigate('/templates')}>목록으로</Button>
-            </div>
-          </Card>
+              {isRelatedLoading ? (
+                <div className="py-20 text-center"><Spin /></div>
+              ) : relatedError ? (
+                <Alert type="error" message={relatedError} />
+              ) : relatedImages.length === 0 ? (
+                <Empty description="아직 이 밈플릿으로 공유된 이미지가 없습니다." />
+              ) : (
+                <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' }}>
+                  {sortedRelatedImages.map((image) => (
+                    <ThumbnailCard
+                      key={image.id}
+                      imageUrl={image.imageUrl}
+                      title={image.title}
+                      hoverable
+                      onClick={() => navigate(`/images/s/${image.shareSlug}`)}
+                    >
+                      <div className="space-y-1">
+                        <div className="line-clamp-1 text-sm font-semibold text-slate-900">{image.title}</div>
+                        <div className="flex items-center justify-between gap-2 text-xs text-slate-500">
+                          <span className="truncate">{image.ownerDisplayName || '-'}</span>
+                          <span className="shrink-0">조회 {(image.viewCount ?? 0).toLocaleString()}</span>
+                        </div>
+                      </div>
+                    </ThumbnailCard>
+                  ))}
+                </div>
+              )}
+            </Card>
+          </div>
         ) : null}
       </Content>
     </Layout>

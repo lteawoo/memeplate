@@ -1,5 +1,38 @@
 # 결정 로그 (Decision Log)
 
+## [2026-02-17] 프론트 정보구조 1차 확정: `템플릿`/`이미지` 메뉴 분리 + 썸네일 카드 공용화
+- **결정**: 상단 네비게이션과 마이 메뉴를 `템플릿 목록`, `이미지 목록`, `내 템플릿`, `내 이미지`로 분리하고, 템플릿/이미지 목록 카드 렌더는 공통 `ThumbnailCard`로 통합함.
+- **이유**:
+  1. **도메인 가시성**: 브랜드(밈플릿)와 데이터 도메인(템플릿/이미지) 구분을 화면 IA에 즉시 반영해야 혼동이 줄어듦.
+  2. **유지보수성**: 이미지/템플릿 카드가 분기 구현되면 CORS 대응, 404 폴백, 비율 렌더 정책이 쉽게 드리프트됨.
+  3. **확장 용이성**: 향후 좋아요/배지/상태 태그 추가 시 카드 컴포넌트 하나만 수정하면 양쪽 목록에 동시 적용 가능.
+- **구현 요약**:
+  - 라우트 추가: `/images`, `/images/s/:shareSlug`, `/my/images`.
+  - 헤더 메뉴 확장 및 경로 prefix 기반 활성 상태 표시.
+  - `apps/web/src/components/ThumbnailCard.tsx` 추가 후 `TemplateThumbnailCard`, `ImagesPage`, `MyImagesPage`에 공통 적용.
+
+## [2026-02-16] 용어/도메인 분리 방향 확정: 브랜드는 밈플릿, 데이터는 템플릿/이미지 이원화
+- **결정**: 사용자 노출 상위 개념은 `밈플릿` 브랜드로 유지하고, 데이터 도메인은 `templates(편집 소스)`와 `meme_images(결과물 이미지)`로 분리함.
+- **이유**:
+  1. **개념 명확화**: 기존 단일 `templates`만으로는 편집 소스와 최종 결과물이 혼재되어 확장 시 충돌 위험이 큼.
+  2. **제품 확장성**: 결과물 피드/공유/지표(조회/좋아요)를 템플릿 도메인과 독립적으로 운영 가능.
+  3. **사용자 이해도**: 브랜드(`밈플릿`)와 기능(`템플릿`, `이미지`)을 분리하면 정보 구조가 명확해짐.
+- **구현 요약**:
+  - SQL 초안: `docs/ai-context/sql/2026-02-16_meme_images_schema.sql` 추가.
+  - `meme_images` 주요 컬럼: `template_id`, `image_url`, `visibility`, `share_slug`, `view_count`, `like_count`.
+
+## [2026-02-16] 이미지 도메인 API 1차 채택: 템플릿과 동일한 공유/관리 패턴 적용
+- **결정**: `meme_images` 도메인 API를 템플릿과 동일한 방식(공개 목록/상세/shareSlug/조회수 증가/내 목록/CRUD)으로 구성함.
+- **이유**:
+  1. **일관성**: 기존 템플릿 API 패턴을 재사용하면 프론트 라우팅/쿼리/권한 모델을 동일하게 적용 가능.
+  2. **확장성**: 이미지 피드/내 이미지 관리 화면을 빠르게 붙일 수 있는 최소 기능 세트를 우선 확보.
+  3. **운영 단순화**: `share_slug`/`visibility`/`view_count` 규칙을 동일화해 운영 정책을 단순 유지.
+- **구현 요약**:
+  - `apps/api/src/modules/images/*` 신규 추가 (`repository`, `supabaseRepository`, `routes`).
+  - `apps/api/src/types/image.ts` 스키마 추가.
+  - `apps/api/src/lib/r2.ts`에 `uploadMemeImageDataUrl` 추가 (`meme-images/{ownerId}/...`).
+  - `apps/api/src/app.ts`에 `memeImageRoutes` 등록.
+
 ## [2026-02-16] 프론트 상태관리 1차 전환: `auth`는 zustand, 목록 데이터는 React Query
 - **결정**: 인증 세션 상태는 `zustand` 전역 store로 통합하고, 밈플릿 목록 데이터는 `@tanstack/react-query` 캐시로 관리함.
 - **이유**:

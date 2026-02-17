@@ -25,7 +25,9 @@ const MySectionLayout: React.FC<MySectionLayoutProps> = ({
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const selectedKey = location.pathname.startsWith('/my/templates') ? '/my/templates' : '/my';
+  const selectedKey = location.pathname.startsWith('/my/templates')
+    ? '/my/templates'
+    : '/my';
 
   return (
     <Layout className="min-h-screen bg-white">
