@@ -521,35 +521,33 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
             )}
             
             <div className="flex flex-col gap-4">
-               <Input
-                  value={remixTitle}
-                  onChange={(e) => setRemixTitle(e.target.value)}
-                  maxLength={100}
-                  placeholder="리믹스 제목"
-               />
-               <Input.TextArea
-                  value={remixDescription}
-                  onChange={(e) => setRemixDescription(e.target.value)}
-                  maxLength={500}
-                  autoSize={{ minRows: 2, maxRows: 4 }}
-                  placeholder="리믹스 설명 (선택)"
-               />
-               <Button
-                  type="primary"
-                  icon={<Icon path={mdiShareVariant} size={1} />}
-                  onClick={() => void publishImage(remixTitle, remixDescription)}
-                  loading={isImagePublishing}
-                  disabled={!canPublishRemix}
-                  size="large"
-                  block
-                  className="h-16 text-lg font-bold shadow-lg shadow-emerald-500/20 rounded-2xl border-none bg-emerald-600 hover:bg-emerald-500"
-               >
-                  리믹스 게시
-               </Button>
-               {!canPublishRemix ? (
-                 <Text type="secondary" className="text-xs">
-                   리믹스 게시를 하려면 밈플릿을 먼저 불러오거나 저장하세요.
-                 </Text>
+               {canPublishRemix ? (
+                 <>
+                   <Input
+                      value={remixTitle}
+                      onChange={(e) => setRemixTitle(e.target.value)}
+                      maxLength={100}
+                      placeholder="리믹스 제목"
+                   />
+                   <Input.TextArea
+                      value={remixDescription}
+                      onChange={(e) => setRemixDescription(e.target.value)}
+                      maxLength={500}
+                      autoSize={{ minRows: 2, maxRows: 4 }}
+                      placeholder="리믹스 설명 (선택)"
+                   />
+                   <Button
+                      type="primary"
+                      icon={<Icon path={mdiShareVariant} size={1} />}
+                      onClick={() => void publishImage(remixTitle, remixDescription)}
+                      loading={isImagePublishing}
+                      size="large"
+                      block
+                      className="h-16 text-lg font-bold shadow-lg shadow-emerald-500/20 rounded-2xl border-none bg-emerald-600 hover:bg-emerald-500"
+                   >
+                      리믹스 게시
+                   </Button>
+                 </>
                ) : null}
 
                <div className="bg-slate-50 p-2 rounded-2xl border border-slate-100">
