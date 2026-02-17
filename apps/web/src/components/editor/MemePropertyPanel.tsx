@@ -33,7 +33,8 @@ import {
   mdiFormatAlignTop,
   mdiFormatVerticalAlignCenter,
   mdiFormatAlignBottom,
-  mdiOpacity
+  mdiOpacity,
+  mdiShareVariant
 } from '@mdi/js';
 import type { ToolType } from './MemeToolbar';
 import { Rect, Circle, Textbox, type CanvasObject } from '../../core/canvas';
@@ -59,10 +60,12 @@ interface MemePropertyPanelProps {
   addShape: (type: 'rect' | 'circle') => void;
   downloadImage: (format: FormatType) => void;
   copyToClipboard: () => void;
+  publishImage: (title: string) => Promise<{ id: string; shareSlug: string } | null>;
   saveTemplate: (title: string, visibility: 'private' | 'public') => Promise<{ id: string; title: string; visibility: 'private' | 'public'; shareSlug: string } | null>;
   copyTemplateShareLink: () => Promise<void>;
   savedTemplate: { id: string; title: string; visibility: 'private' | 'public'; shareSlug: string } | null;
   isTemplateSaving: boolean;
+  isImagePublishing: boolean;
   isTemplateSaveDisabled: boolean;
   layers: CanvasObject[];
   selectLayer: (obj: CanvasObject) => void;
@@ -83,10 +86,12 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
     addShape,
     downloadImage,
     copyToClipboard,
+    publishImage,
     saveTemplate,
     copyTemplateShareLink,
     savedTemplate,
     isTemplateSaving,
+    isImagePublishing,
     isTemplateSaveDisabled,
     layers,
     selectLayer,
@@ -503,6 +508,18 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
             )}
             
             <div className="flex flex-col gap-4">
+               <Button
+                  type="primary"
+                  icon={<Icon path={mdiShareVariant} size={1} />}
+                  onClick={() => void publishImage(templateTitle)}
+                  loading={isImagePublishing}
+                  size="large"
+                  block
+                  className="h-16 text-lg font-bold shadow-lg shadow-emerald-500/20 rounded-2xl border-none bg-emerald-600 hover:bg-emerald-500"
+               >
+                  리믹스 게시
+               </Button>
+
                <div className="bg-slate-50 p-2 rounded-2xl border border-slate-100">
                  <Segmented 
                     options={[

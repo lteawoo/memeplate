@@ -304,7 +304,7 @@ const TemplateShareDetailPage: React.FC = () => {
                 </div>
                 <div className="mt-5 flex flex-col gap-2">
                   <Button type="primary" onClick={() => navigate(`/create?shareSlug=${template.shareSlug}`)}>
-                    이 밈플릿 사용하기
+                    리믹스
                   </Button>
                   <Button onClick={() => navigate('/templates')}>밈플릿 목록으로</Button>
                 </div>
@@ -313,7 +313,7 @@ const TemplateShareDetailPage: React.FC = () => {
             <Card className="rounded-2xl">
               <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
                 <div>
-                  <Title level={4} className="!mb-1">이 밈플릿으로 만든 이미지</Title>
+                  <Title level={4} className="!mb-1">리믹스 목록</Title>
                   <Text type="secondary">총 {relatedImages.length.toLocaleString()}개</Text>
                 </div>
                 <Segmented
@@ -346,7 +346,7 @@ const TemplateShareDetailPage: React.FC = () => {
               ) : relatedError ? (
                 <Alert type="error" message={relatedError} />
               ) : relatedImages.length === 0 ? (
-                <Empty description="아직 이 밈플릿으로 공유된 이미지가 없습니다." />
+                <Empty description="아직 등록된 리믹스가 없습니다." />
               ) : (
                 <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' }}>
                   {sortedRelatedImages.map((image) => (
