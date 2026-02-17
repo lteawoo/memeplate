@@ -639,15 +639,27 @@ export const useMemeEditor = (messageApi: MessageInstance, options?: UseMemeEdit
     try {
       setIsTemplateSaving(true);
       const canvas = canvasInstanceRef.current;
-      const content = sanitizeTemplateContent(canvas.toJSON(true) as Record<string, unknown>);
+      const rawContent = sanitizeTemplateContent(canvas.toJSON(true) as Record<string, unknown>);
+      const sanitizedObjects = Array.isArray(rawContent.objects)
+        ? rawContent.objects as Array<Record<string, unknown>>
+        : [];
+      const textLayerObjects = sanitizedObjects.filter((obj) => obj.type === 'text');
       const textObjects = canvas
         .getObjects()
         .filter((obj) => obj instanceof Textbox || obj.type === 'text')
         .map((obj) => ({ obj, visible: obj.visible }));
 
+      let flattenedBackgroundDataUrl = '';
       let thumbnailDataUrl = '';
       try {
         textObjects.forEach(({ obj }) => obj.set('visible', false));
+        // Bake non-text layers (background + shapes) into one base image.
+        flattenedBackgroundDataUrl = canvas.toDataURL({
+          format: 'png',
+          multiplier: 1,
+          width: workspaceSize.width,
+          height: workspaceSize.height
+        });
         const thumbnailSize = getThumbnailSize(workspaceSize.width, workspaceSize.height);
         thumbnailDataUrl = canvas.toDataURL({
           format: 'webp',
@@ -659,6 +671,15 @@ export const useMemeEditor = (messageApi: MessageInstance, options?: UseMemeEdit
       } finally {
         textObjects.forEach(({ obj, visible }) => obj.set('visible', visible));
       }
+
+      const content = {
+        width: workspaceSize.width,
+        height: workspaceSize.height,
+        objects: [
+          createBackgroundImageObject(flattenedBackgroundDataUrl, workspaceSize.width, workspaceSize.height),
+          ...textLayerObjects
+        ]
+      };
 
       const body = JSON.stringify({
         title: title.trim(),
