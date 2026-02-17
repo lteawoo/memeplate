@@ -8,7 +8,7 @@ const SingleLineTitleSchema = z.string().trim().min(1).max(100).refine(
 const DescriptionSchema = z.string().trim().max(500);
 
 export const CreateMemeImageSchema = z.object({
-  templateId: z.uuid().optional(),
+  templateId: z.uuid(),
   title: SingleLineTitleSchema,
   description: DescriptionSchema.optional(),
   imageUrl: z.string().url().optional(),

@@ -50,6 +50,7 @@ const MemeEditor: React.FC<MemeEditorProps> = ({ initialTemplate, initialTemplat
     savedTemplate,
     isTemplateSaving,
     isImagePublishing,
+    canPublishRemix,
     isTemplateSaveDisabled,
     changeZIndex,
     canvasInstance,
@@ -77,6 +78,7 @@ const MemeEditor: React.FC<MemeEditorProps> = ({ initialTemplate, initialTemplat
     savedTemplate,
     isTemplateSaving,
     isImagePublishing,
+    canPublishRemix,
     isTemplateSaveDisabled,
     changeZIndex
   };

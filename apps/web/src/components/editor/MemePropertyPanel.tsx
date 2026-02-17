@@ -66,6 +66,7 @@ interface MemePropertyPanelProps {
   savedTemplate: { id: string; title: string; description?: string; visibility: 'private' | 'public'; shareSlug: string } | null;
   isTemplateSaving: boolean;
   isImagePublishing: boolean;
+  canPublishRemix: boolean;
   isTemplateSaveDisabled: boolean;
   layers: CanvasObject[];
   selectLayer: (obj: CanvasObject) => void;
@@ -92,6 +93,7 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
     savedTemplate,
     isTemplateSaving,
     isImagePublishing,
+    canPublishRemix,
     isTemplateSaveDisabled,
     layers,
     selectLayer,
@@ -537,12 +539,18 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
                   icon={<Icon path={mdiShareVariant} size={1} />}
                   onClick={() => void publishImage(remixTitle, remixDescription)}
                   loading={isImagePublishing}
+                  disabled={!canPublishRemix}
                   size="large"
                   block
                   className="h-16 text-lg font-bold shadow-lg shadow-emerald-500/20 rounded-2xl border-none bg-emerald-600 hover:bg-emerald-500"
                >
                   리믹스 게시
                </Button>
+               {!canPublishRemix ? (
+                 <Text type="secondary" className="text-xs">
+                   리믹스 게시를 하려면 밈플릿을 먼저 불러오거나 저장하세요.
+                 </Text>
+               ) : null}
 
                <div className="bg-slate-50 p-2 rounded-2xl border border-slate-100">
                  <Segmented 
