@@ -1,6 +1,7 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Button, Empty, Layout, Spin, Typography } from 'antd';
+import { Button, Empty, Layout, Skeleton, Typography } from 'antd';
+import { EyeOutlined, HeartOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import MainHeader from '../components/layout/MainHeader';
 import TemplateThumbnailCard from '../components/TemplateThumbnailCard';
@@ -8,6 +9,7 @@ import type { TemplateRecord, TemplatesResponse } from '../types/template';
 
 const { Content } = Layout;
 const { Title, Text } = Typography;
+const SKELETON_ITEMS = Array.from({ length: 6 }, (_, idx) => idx);
 
 const fetchPublicTemplates = async (): Promise<TemplateRecord[]> => {
   const res = await fetch('/api/v1/templates/public?limit=50');
@@ -43,7 +45,25 @@ const TemplatesPage: React.FC = () => {
         </div>
 
         {isLoading ? (
-          <div className="py-20 text-center"><Spin size="large" /></div>
+          <div
+            className="grid gap-4"
+            style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))' }}
+          >
+            {SKELETON_ITEMS.map((key) => (
+              <div key={key} className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+                <div className="h-52 border-b border-slate-100 bg-slate-100 p-3">
+                  <div className="h-full w-full animate-pulse rounded-lg bg-gradient-to-br from-slate-100 to-slate-200" />
+                </div>
+                <div className="space-y-3 p-4">
+                  <Skeleton.Input active size="small" block />
+                  <div className="flex items-center gap-3">
+                    <Skeleton.Input active size="small" className="!w-full !min-w-0 !flex-1" />
+                    <Skeleton.Input active size="small" className="!w-full !min-w-0 !flex-1" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         ) : error ? (
           <Empty
             description={error instanceof Error ? error.message : '밈플릿 목록을 불러오지 못했습니다.'}
@@ -68,8 +88,17 @@ const TemplatesPage: React.FC = () => {
                 <div className="space-y-2">
                   <div className="line-clamp-1 text-sm font-semibold text-slate-900">{template.title}</div>
                   <div className="flex items-center justify-between gap-2 text-xs text-slate-500">
-                    <span className="truncate">작성자 {template.ownerDisplayName || '-'}</span>
-                    <span className="shrink-0">조회 {(template.viewCount ?? 0).toLocaleString()} · 좋아요 {(template.likeCount ?? 0).toLocaleString()}</span>
+                    <span className="truncate">{template.ownerDisplayName || '-'}</span>
+                    <span className="shrink-0 inline-flex items-center gap-2">
+                      <span className="inline-flex items-center gap-1">
+                        <EyeOutlined />
+                        {(template.viewCount ?? 0).toLocaleString()}
+                      </span>
+                      <span className="inline-flex items-center gap-1">
+                        <HeartOutlined />
+                        {(template.likeCount ?? 0).toLocaleString()}
+                      </span>
+                    </span>
                   </div>
                 </div>
               </TemplateThumbnailCard>

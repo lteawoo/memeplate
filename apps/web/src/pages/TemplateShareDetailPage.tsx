@@ -1,5 +1,5 @@
 import React from 'react';
-import { Alert, Button, Card, Empty, Layout, Segmented, Spin, Typography } from 'antd';
+import { Alert, Button, Card, Empty, Layout, Segmented, Skeleton, Typography } from 'antd';
 import { useNavigate, useParams } from 'react-router-dom';
 import MainHeader from '../components/layout/MainHeader';
 import type { TemplateResponse, TemplateRecord } from '../types/template';
@@ -8,6 +8,7 @@ import ThumbnailCard from '../components/ThumbnailCard';
 
 const { Content } = Layout;
 const { Title, Text } = Typography;
+const RELATED_SKELETON_ITEMS = Array.from({ length: 6 }, (_, idx) => idx);
 
 type ImageMeta = {
   format: string;
@@ -50,6 +51,7 @@ const TemplateShareDetailPage: React.FC = () => {
   const [isRelatedLoading, setIsRelatedLoading] = React.useState(false);
   const [relatedError, setRelatedError] = React.useState<string | null>(null);
   const [relatedSort, setRelatedSort] = React.useState<'latest' | 'popular'>('latest');
+  const [isMainImageLoaded, setIsMainImageLoaded] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const sortedRelatedImages = React.useMemo(() => {
@@ -158,6 +160,10 @@ const TemplateShareDetailPage: React.FC = () => {
   }, [template?.id]);
 
   React.useEffect(() => {
+    setIsMainImageLoaded(false);
+  }, [template?.thumbnailUrl]);
+
+  React.useEffect(() => {
     if (!shareSlug || !template || viewedSlugRef.current === shareSlug) {
       return;
     }
@@ -187,7 +193,54 @@ const TemplateShareDetailPage: React.FC = () => {
       <MainHeader />
       <Content className="mx-auto w-full max-w-6xl px-6 py-10">
         {isLoading ? (
-          <div className="py-20 text-center"><Spin size="large" /></div>
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[340px_minmax(0,1fr)]">
+            <Card className="rounded-2xl">
+              <div className="mb-4 space-y-2">
+                <Skeleton.Input active size="small" block />
+                <Skeleton.Input active size="small" style={{ width: 120 }} />
+              </div>
+              <div className="h-56 rounded-xl border border-slate-200 bg-slate-100">
+                <div className="h-full w-full animate-pulse rounded-xl bg-gradient-to-br from-slate-100 to-slate-200" />
+              </div>
+              <div className="mt-4 space-y-2">
+                {Array.from({ length: 6 }, (_, idx) => (
+                  <div key={idx} className="flex items-center justify-between gap-3">
+                    <Skeleton.Input active size="small" style={{ width: 72 }} />
+                    <Skeleton.Input active size="small" style={{ width: 120 }} />
+                  </div>
+                ))}
+              </div>
+              <div className="mt-5 space-y-2">
+                <Skeleton.Button active block />
+                <Skeleton.Button active block />
+              </div>
+            </Card>
+            <Card className="rounded-2xl">
+              <div className="mb-4 flex items-end justify-between gap-3">
+                <div className="space-y-2">
+                  <Skeleton.Input active size="small" style={{ width: 180 }} />
+                  <Skeleton.Input active size="small" style={{ width: 90 }} />
+                </div>
+                <Skeleton.Input active size="small" style={{ width: 120 }} />
+              </div>
+              <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' }}>
+                {RELATED_SKELETON_ITEMS.map((key) => (
+                  <div key={key} className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+                    <div className="h-52 border-b border-slate-100 bg-slate-100 p-3">
+                      <div className="h-full w-full animate-pulse rounded-lg bg-gradient-to-br from-slate-100 to-slate-200" />
+                    </div>
+                    <div className="space-y-3 p-4">
+                      <Skeleton.Input active size="small" block />
+                      <div className="flex items-center justify-between gap-3">
+                        <Skeleton.Input active size="small" style={{ width: 96 }} />
+                        <Skeleton.Input active size="small" style={{ width: 76 }} />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          </div>
         ) : error ? (
           <Alert type="error" message={error} />
         ) : template ? (
@@ -200,12 +253,19 @@ const TemplateShareDetailPage: React.FC = () => {
                 </div>
                 <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
                   {template.thumbnailUrl ? (
-                    <div className="flex items-center justify-center p-4">
+                    <div className="relative flex items-center justify-center p-4">
+                      {!isMainImageLoaded ? (
+                        <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-slate-100 to-slate-200" />
+                      ) : null}
                       <img
                         src={template.thumbnailUrl}
                         alt={template.title}
                         crossOrigin="anonymous"
-                        className="max-h-[360px] w-full object-contain"
+                        loading="eager"
+                        decoding="async"
+                        fetchPriority="high"
+                        onLoad={() => setIsMainImageLoaded(true)}
+                        className={`max-h-[360px] w-full object-contain transition-opacity duration-200 ${isMainImageLoaded ? 'opacity-100' : 'opacity-0'}`}
                       />
                     </div>
                   ) : (
@@ -267,7 +327,22 @@ const TemplateShareDetailPage: React.FC = () => {
                 />
               </div>
               {isRelatedLoading ? (
-                <div className="py-20 text-center"><Spin /></div>
+                <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' }}>
+                  {RELATED_SKELETON_ITEMS.map((key) => (
+                    <div key={key} className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+                      <div className="h-52 border-b border-slate-100 bg-slate-100 p-3">
+                        <div className="h-full w-full animate-pulse rounded-lg bg-gradient-to-br from-slate-100 to-slate-200" />
+                      </div>
+                      <div className="space-y-3 p-4">
+                        <Skeleton.Input active size="small" block />
+                        <div className="flex items-center justify-between gap-3">
+                          <Skeleton.Input active size="small" style={{ width: 96 }} />
+                          <Skeleton.Input active size="small" style={{ width: 76 }} />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               ) : relatedError ? (
                 <Alert type="error" message={relatedError} />
               ) : relatedImages.length === 0 ? (

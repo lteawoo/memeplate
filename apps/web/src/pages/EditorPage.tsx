@@ -29,7 +29,7 @@ const EditorPage: React.FC = () => {
 
       const endpoint = templateId
         ? `/api/v1/templates/${templateId}`
-        : `/api/v1/templates/s/${shareSlug}`;
+        : `/api/v1/templates/s/${shareSlug}/edit`;
 
       try {
         const res = templateId

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Alert, Button, Card, Layout, Spin, Typography } from 'antd';
+import { Alert, Button, Card, Layout, Skeleton, Typography } from 'antd';
 import { useNavigate, useParams } from 'react-router-dom';
 import MainHeader from '../components/layout/MainHeader';
 import type { MemeImageRecord, MemeImageResponse } from '../types/image';
@@ -24,6 +24,7 @@ const ImageShareDetailPage: React.FC = () => {
   const { shareSlug } = useParams<{ shareSlug: string }>();
   const viewedSlugRef = React.useRef<string | null>(null);
   const [image, setImage] = React.useState<MemeImageRecord | null>(null);
+  const [isMainImageLoaded, setIsMainImageLoaded] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
 
@@ -52,6 +53,10 @@ const ImageShareDetailPage: React.FC = () => {
   }, [shareSlug]);
 
   React.useEffect(() => {
+    setIsMainImageLoaded(false);
+  }, [image?.imageUrl]);
+
+  React.useEffect(() => {
     if (!shareSlug || !image || viewedSlugRef.current === shareSlug) return;
 
     viewedSlugRef.current = shareSlug;
@@ -74,7 +79,34 @@ const ImageShareDetailPage: React.FC = () => {
       <MainHeader />
       <Content className="mx-auto w-full max-w-6xl px-6 py-10">
         {isLoading ? (
-          <div className="py-20 text-center"><Spin size="large" /></div>
+          <Card className="rounded-2xl">
+            <div className="mb-6 space-y-2">
+              <Skeleton.Input active size="small" block />
+              <Skeleton.Input active size="small" style={{ width: 180 }} />
+            </div>
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
+              <div className="h-[480px] rounded-xl border border-slate-200 bg-slate-100">
+                <div className="h-full w-full animate-pulse rounded-xl bg-gradient-to-br from-slate-100 to-slate-200" />
+              </div>
+              <div className="rounded-xl border border-slate-200 bg-white p-4">
+                <div className="mb-4">
+                  <Skeleton.Input active size="small" style={{ width: 96 }} />
+                </div>
+                <div className="space-y-3">
+                  {Array.from({ length: 7 }, (_, idx) => (
+                    <div key={idx} className="flex items-center justify-between gap-3">
+                      <Skeleton.Input active size="small" style={{ width: 72 }} />
+                      <Skeleton.Input active size="small" style={{ width: 120 }} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="mt-6 flex flex-wrap gap-2">
+              <Skeleton.Button active style={{ width: 140 }} />
+              <Skeleton.Button active style={{ width: 140 }} />
+            </div>
+          </Card>
         ) : error ? (
           <Alert type="error" message={error} />
         ) : image ? (
@@ -85,12 +117,19 @@ const ImageShareDetailPage: React.FC = () => {
             </div>
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
               <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
-                <div className="flex items-center justify-center p-4">
+                <div className="relative flex items-center justify-center p-4">
+                  {!isMainImageLoaded ? (
+                    <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-slate-100 to-slate-200" />
+                  ) : null}
                   <img
                     src={image.imageUrl}
                     alt={image.title}
                     crossOrigin="anonymous"
-                    className="max-h-[640px] w-full object-contain"
+                    loading="eager"
+                    decoding="async"
+                    fetchPriority="high"
+                    onLoad={() => setIsMainImageLoaded(true)}
+                    className={`max-h-[640px] w-full object-contain transition-opacity duration-200 ${isMainImageLoaded ? 'opacity-100' : 'opacity-0'}`}
                   />
                 </div>
               </div>

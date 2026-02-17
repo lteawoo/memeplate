@@ -22,9 +22,11 @@ const ThumbnailCard: React.FC<ThumbnailCardProps> = ({
 }) => {
   const isClickable = Boolean(onClick);
   const [hasImageError, setHasImageError] = React.useState(false);
+  const [hasImageLoaded, setHasImageLoaded] = React.useState(false);
 
   React.useEffect(() => {
     setHasImageError(false);
+    setHasImageLoaded(false);
   }, [imageUrl]);
 
   return (
@@ -45,13 +47,20 @@ const ThumbnailCard: React.FC<ThumbnailCardProps> = ({
       cover={(
         <div className="h-52 w-full border-b border-slate-100 bg-slate-50 p-3">
           {imageUrl && !hasImageError ? (
-            <div className="flex h-full items-center justify-center overflow-hidden rounded-lg">
+            <div className="relative flex h-full items-center justify-center overflow-hidden rounded-lg bg-slate-100">
+              {!hasImageLoaded ? (
+                <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-slate-100 to-slate-200" />
+              ) : null}
               <img
                 src={imageUrl}
                 alt={title}
                 crossOrigin="anonymous"
+                loading="lazy"
+                decoding="async"
+                fetchPriority="low"
+                onLoad={() => setHasImageLoaded(true)}
                 onError={() => setHasImageError(true)}
-                className="max-h-full w-full object-contain"
+                className={`max-h-full w-full object-contain transition-opacity duration-200 ${hasImageLoaded ? 'opacity-100' : 'opacity-0'}`}
                 draggable={false}
                 onDragStart={(e) => e.preventDefault()}
               />
