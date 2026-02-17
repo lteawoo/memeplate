@@ -8,6 +8,7 @@ type MemeImageRow = {
   owner_id: string;
   template_id: string | null;
   title: string;
+  description: string | null;
   image_url: string;
   image_width: number | null;
   image_height: number | null;
@@ -32,6 +33,7 @@ const toRecord = (row: MemeImageRow, ownerDisplayName?: string | null): MemeImag
   ownerDisplayName: ownerDisplayName ?? undefined,
   templateId: row.template_id ?? undefined,
   title: row.title,
+  description: row.description ?? undefined,
   imageUrl: row.image_url,
   imageWidth: row.image_width ?? undefined,
   imageHeight: row.image_height ?? undefined,
@@ -68,7 +70,7 @@ export const createSupabaseMemeImageRepository = (): MemeImageRepository => {
     async listMine(userId) {
       const { data, error } = await supabase
         .from('meme_images')
-        .select('id, owner_id, template_id, title, image_url, image_width, image_height, image_bytes, image_mime, visibility, share_slug, view_count, like_count, created_at, updated_at')
+        .select('id, owner_id, template_id, title, description, image_url, image_width, image_height, image_bytes, image_mime, visibility, share_slug, view_count, like_count, created_at, updated_at')
         .eq('owner_id', userId)
         .is('deleted_at', null)
         .order('updated_at', { ascending: false });
@@ -84,7 +86,7 @@ export const createSupabaseMemeImageRepository = (): MemeImageRepository => {
     async getMineById(userId, imageId) {
       const { data, error } = await supabase
         .from('meme_images')
-        .select('id, owner_id, template_id, title, image_url, image_width, image_height, image_bytes, image_mime, visibility, share_slug, view_count, like_count, created_at, updated_at')
+        .select('id, owner_id, template_id, title, description, image_url, image_width, image_height, image_bytes, image_mime, visibility, share_slug, view_count, like_count, created_at, updated_at')
         .eq('id', imageId)
         .eq('owner_id', userId)
         .is('deleted_at', null)
@@ -100,7 +102,7 @@ export const createSupabaseMemeImageRepository = (): MemeImageRepository => {
     async listPublic(limit, templateId) {
       let query = supabase
         .from('meme_images')
-        .select('id, owner_id, template_id, title, image_url, image_width, image_height, image_bytes, image_mime, visibility, share_slug, view_count, like_count, created_at, updated_at')
+        .select('id, owner_id, template_id, title, description, image_url, image_width, image_height, image_bytes, image_mime, visibility, share_slug, view_count, like_count, created_at, updated_at')
         .eq('visibility', 'public')
         .is('deleted_at', null)
         .order('updated_at', { ascending: false });
@@ -122,7 +124,7 @@ export const createSupabaseMemeImageRepository = (): MemeImageRepository => {
     async getPublicByShareSlug(shareSlug) {
       const { data, error } = await supabase
         .from('meme_images')
-        .select('id, owner_id, template_id, title, image_url, image_width, image_height, image_bytes, image_mime, visibility, share_slug, view_count, like_count, created_at, updated_at')
+        .select('id, owner_id, template_id, title, description, image_url, image_width, image_height, image_bytes, image_mime, visibility, share_slug, view_count, like_count, created_at, updated_at')
         .eq('share_slug', shareSlug)
         .eq('visibility', 'public')
         .is('deleted_at', null)
@@ -164,6 +166,7 @@ export const createSupabaseMemeImageRepository = (): MemeImageRepository => {
         owner_id: userId,
         template_id: input.templateId ?? null,
         title: input.title,
+        description: input.description ? input.description : null,
         image_url: input.imageUrl as string,
         image_width: input.imageWidth ?? null,
         image_height: input.imageHeight ?? null,
@@ -178,7 +181,7 @@ export const createSupabaseMemeImageRepository = (): MemeImageRepository => {
       const { data, error } = await supabase
         .from('meme_images')
         .insert(payload)
-        .select('id, owner_id, template_id, title, image_url, image_width, image_height, image_bytes, image_mime, visibility, share_slug, view_count, like_count, created_at, updated_at')
+        .select('id, owner_id, template_id, title, description, image_url, image_width, image_height, image_bytes, image_mime, visibility, share_slug, view_count, like_count, created_at, updated_at')
         .single();
 
       if (error) throw error;
@@ -191,6 +194,7 @@ export const createSupabaseMemeImageRepository = (): MemeImageRepository => {
       const patch: Partial<{
         template_id: string | null;
         title: string;
+        description: string | null;
         image_url: string;
         image_width: number | null;
         image_height: number | null;
@@ -202,6 +206,7 @@ export const createSupabaseMemeImageRepository = (): MemeImageRepository => {
 
       if (input.templateId !== undefined) patch.template_id = input.templateId;
       if (input.title !== undefined) patch.title = input.title;
+      if (input.description !== undefined) patch.description = input.description ? input.description : null;
       if (input.imageUrl !== undefined) patch.image_url = input.imageUrl;
       if (input.imageWidth !== undefined) patch.image_width = input.imageWidth;
       if (input.imageHeight !== undefined) patch.image_height = input.imageHeight;
@@ -216,7 +221,7 @@ export const createSupabaseMemeImageRepository = (): MemeImageRepository => {
         .eq('id', imageId)
         .eq('owner_id', userId)
         .is('deleted_at', null)
-        .select('id, owner_id, template_id, title, image_url, image_width, image_height, image_bytes, image_mime, visibility, share_slug, view_count, like_count, created_at, updated_at')
+        .select('id, owner_id, template_id, title, description, image_url, image_width, image_height, image_bytes, image_mime, visibility, share_slug, view_count, like_count, created_at, updated_at')
         .maybeSingle();
 
       if (error) throw error;

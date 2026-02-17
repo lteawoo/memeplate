@@ -6,6 +6,7 @@ export type MemeImageRecord = {
   ownerDisplayName?: string;
   templateId?: string;
   title: string;
+  description?: string;
   imageUrl: string;
   imageWidth?: number;
   imageHeight?: number;

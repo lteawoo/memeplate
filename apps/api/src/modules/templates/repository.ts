@@ -5,6 +5,7 @@ export interface TemplateRecord {
   ownerId: string;
   ownerDisplayName?: string;
   title: string;
+  description?: string;
   content: Record<string, unknown>;
   thumbnailUrl?: string;
   viewCount: number;

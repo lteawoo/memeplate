@@ -1,9 +1,15 @@
 import { z } from 'zod';
 
 export const TemplateVisibilitySchema = z.enum(['private', 'public']);
+const SingleLineTitleSchema = z.string().trim().min(1).max(100).refine(
+  (value) => !/[\r\n]/.test(value),
+  { message: 'title must be a single line' }
+);
+const DescriptionSchema = z.string().trim().max(500);
 
 export const CreateTemplateSchema = z.object({
-  title: z.string().min(1).max(100),
+  title: SingleLineTitleSchema,
+  description: DescriptionSchema.optional(),
   content: z.record(z.string(), z.unknown()),
   thumbnailUrl: z.string().url().optional(),
   thumbnailDataUrl: z.string().startsWith('data:image/').optional(),

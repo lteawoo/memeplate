@@ -247,10 +247,15 @@ const TemplateShareDetailPage: React.FC = () => {
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-[340px_minmax(0,1fr)]">
             <div className="lg:sticky lg:top-20 lg:self-start">
               <Card className="rounded-2xl">
-                <div className="mb-4">
-                  <Title level={3} className="!mb-1">{template.title}</Title>
-                  <Text type="secondary">원본 밈플릿</Text>
-                </div>
+              <div className="mb-4">
+                <Title level={3} className="!mb-1">{template.title}</Title>
+                <Text type="secondary">원본 밈플릿</Text>
+                {template.description ? (
+                  <div className="mt-2 whitespace-pre-wrap text-sm text-slate-600">
+                    {template.description}
+                  </div>
+                ) : null}
+              </div>
                 <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
                   {template.thumbnailUrl ? (
                     <div className="relative flex items-center justify-center p-4">

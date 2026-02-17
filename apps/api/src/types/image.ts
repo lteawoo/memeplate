@@ -1,10 +1,16 @@
 import { z } from 'zod';
 
 export const MemeImageVisibilitySchema = z.enum(['private', 'public']);
+const SingleLineTitleSchema = z.string().trim().min(1).max(100).refine(
+  (value) => !/[\r\n]/.test(value),
+  { message: 'title must be a single line' }
+);
+const DescriptionSchema = z.string().trim().max(500);
 
 export const CreateMemeImageSchema = z.object({
   templateId: z.uuid().optional(),
-  title: z.string().trim().min(1).max(100),
+  title: SingleLineTitleSchema,
+  description: DescriptionSchema.optional(),
   imageUrl: z.string().url().optional(),
   imageDataUrl: z.string().startsWith('data:image/').optional(),
   imageWidth: z.number().int().positive().optional(),
@@ -19,7 +25,8 @@ export const CreateMemeImageSchema = z.object({
 
 export const UpdateMemeImageSchema = z.object({
   templateId: z.uuid().nullable().optional(),
-  title: z.string().trim().min(1).max(100).optional(),
+  title: SingleLineTitleSchema.optional(),
+  description: DescriptionSchema.optional(),
   imageUrl: z.string().url().optional(),
   imageDataUrl: z.string().startsWith('data:image/').optional(),
   imageWidth: z.number().int().positive().nullable().optional(),
