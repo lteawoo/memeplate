@@ -143,3 +143,5 @@
   - [x] `meme_images` 프론트 화면 구현 (`/images`, `/images/s/:shareSlug`, `/my/images`)
   - [x] 밈플릿 상세에서 원본/연관 이미지 2열 레이아웃 적용
   - [x] 연관 이미지 조회용 `templateId` 필터 API 적용
+  - [x] 템플릿/리믹스 `description` 입력/조회 지원 및 공유 탭 입력 UI 추가
+  - [x] 템플릿/리믹스 `title` 단일라인 검증(줄바꿈 금지) 적용

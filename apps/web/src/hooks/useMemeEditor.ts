@@ -27,6 +27,7 @@ type TemplateResponse = {
   template: {
     id: string;
     title: string;
+    description?: string;
     visibility: TemplateVisibility;
     shareSlug: string;
   };
@@ -42,6 +43,7 @@ interface UseMemeEditorOptions {
 type SavedTemplateMeta = {
   id: string;
   title: string;
+  description?: string;
   visibility: TemplateVisibility;
   shareSlug: string;
 };
@@ -473,6 +475,7 @@ export const useMemeEditor = (messageApi: MessageInstance, options?: UseMemeEdit
         setSavedTemplate({
           id: initialTemplate.id,
           title: initialTemplate.title,
+          description: initialTemplate.description,
           visibility: initialTemplate.visibility,
           shareSlug: initialTemplate.shareSlug
         });
@@ -660,9 +663,10 @@ export const useMemeEditor = (messageApi: MessageInstance, options?: UseMemeEdit
     }
   };
 
-  const publishImage = async (title: string) => {
+  const publishImage = async (title: string, description: string) => {
     if (!canvasInstanceRef.current) return null;
     const imageTitle = title.trim() || '새 이미지';
+    const imageDescription = description.trim();
     const linkedTemplateId = savedTemplate?.id ?? initialTemplate?.id;
 
     try {
@@ -687,6 +691,7 @@ export const useMemeEditor = (messageApi: MessageInstance, options?: UseMemeEdit
         body: JSON.stringify({
           templateId: linkedTemplateId,
           title: imageTitle,
+          description: imageDescription.length > 0 ? imageDescription : undefined,
           imageDataUrl,
           imageWidth: publishSize.width,
           imageHeight: publishSize.height,
@@ -724,7 +729,7 @@ export const useMemeEditor = (messageApi: MessageInstance, options?: UseMemeEdit
     }
   };
 
-  const saveTemplate = async (title: string, visibility: TemplateVisibility) => {
+  const saveTemplate = async (title: string, description: string, visibility: TemplateVisibility) => {
     if (!canvasInstanceRef.current) return null;
     if (isTemplateSaveDisabled) {
       messageApi.warning('공개 밈플릿으로 시작한 작업은 밈플릿 저장/공유를 지원하지 않습니다.');
@@ -782,6 +787,7 @@ export const useMemeEditor = (messageApi: MessageInstance, options?: UseMemeEdit
 
       const body = JSON.stringify({
         title: title.trim(),
+        description: description.trim() || undefined,
         content,
         visibility,
         thumbnailDataUrl
@@ -814,6 +820,7 @@ export const useMemeEditor = (messageApi: MessageInstance, options?: UseMemeEdit
       const template = {
         id: payload.template.id,
         title: payload.template.title,
+        description: payload.template.description,
         visibility: payload.template.visibility,
         shareSlug: payload.template.shareSlug
       };

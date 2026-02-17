@@ -60,10 +60,10 @@ interface MemePropertyPanelProps {
   addShape: (type: 'rect' | 'circle') => void;
   downloadImage: (format: FormatType) => void;
   copyToClipboard: () => void;
-  publishImage: (title: string) => Promise<{ id: string; shareSlug: string } | null>;
-  saveTemplate: (title: string, visibility: 'private' | 'public') => Promise<{ id: string; title: string; visibility: 'private' | 'public'; shareSlug: string } | null>;
+  publishImage: (title: string, description: string) => Promise<{ id: string; shareSlug: string } | null>;
+  saveTemplate: (title: string, description: string, visibility: 'private' | 'public') => Promise<{ id: string; title: string; description?: string; visibility: 'private' | 'public'; shareSlug: string } | null>;
   copyTemplateShareLink: () => Promise<void>;
-  savedTemplate: { id: string; title: string; visibility: 'private' | 'public'; shareSlug: string } | null;
+  savedTemplate: { id: string; title: string; description?: string; visibility: 'private' | 'public'; shareSlug: string } | null;
   isTemplateSaving: boolean;
   isImagePublishing: boolean;
   isTemplateSaveDisabled: boolean;
@@ -100,7 +100,10 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
 
   const [downloadFormat, setDownloadFormat] = React.useState<FormatType>('png');
   const [templateTitle, setTemplateTitle] = React.useState('새 밈플릿');
+  const [templateDescription, setTemplateDescription] = React.useState('');
   const [templateVisibility, setTemplateVisibility] = React.useState<'private' | 'public'>('private');
+  const [remixTitle, setRemixTitle] = React.useState('새 리믹스');
+  const [remixDescription, setRemixDescription] = React.useState('');
   const textLayerOrder = React.useMemo(() => {
     const textLayerIds = layers
       .filter((layer): layer is Textbox => layer instanceof Textbox)
@@ -111,6 +114,7 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
   React.useEffect(() => {
     if (!savedTemplate) return;
     setTemplateTitle(savedTemplate.title);
+    setTemplateDescription(savedTemplate.description || '');
     setTemplateVisibility(savedTemplate.visibility);
   }, [savedTemplate]);
 
@@ -477,6 +481,13 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
                   maxLength={100}
                   placeholder="밈플릿 제목"
                 />
+                <Input.TextArea
+                  value={templateDescription}
+                  onChange={(e) => setTemplateDescription(e.target.value)}
+                  maxLength={500}
+                  autoSize={{ minRows: 2, maxRows: 4 }}
+                  placeholder="밈플릿 설명 (선택)"
+                />
                 <Segmented
                   value={templateVisibility}
                   onChange={(value) => setTemplateVisibility(value as 'private' | 'public')}
@@ -490,7 +501,7 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
                   type="primary"
                   icon={<Icon path={mdiContentSave} size={0.9} />}
                   loading={isTemplateSaving}
-                  onClick={() => void saveTemplate(templateTitle, templateVisibility)}
+                  onClick={() => void saveTemplate(templateTitle, templateDescription, templateVisibility)}
                   className="h-11 rounded-xl font-bold"
                 >
                   {savedTemplate ? '밈플릿 업데이트' : '밈플릿 저장'}
@@ -508,10 +519,23 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
             )}
             
             <div className="flex flex-col gap-4">
+               <Input
+                  value={remixTitle}
+                  onChange={(e) => setRemixTitle(e.target.value)}
+                  maxLength={100}
+                  placeholder="리믹스 제목"
+               />
+               <Input.TextArea
+                  value={remixDescription}
+                  onChange={(e) => setRemixDescription(e.target.value)}
+                  maxLength={500}
+                  autoSize={{ minRows: 2, maxRows: 4 }}
+                  placeholder="리믹스 설명 (선택)"
+               />
                <Button
                   type="primary"
                   icon={<Icon path={mdiShareVariant} size={1} />}
-                  onClick={() => void publishImage(templateTitle)}
+                  onClick={() => void publishImage(remixTitle, remixDescription)}
                   loading={isImagePublishing}
                   size="large"
                   block

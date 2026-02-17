@@ -7,6 +7,7 @@ type TemplateRow = {
   id: string;
   owner_id: string;
   title: string;
+  description: string | null;
   content?: Record<string, unknown>;
   thumbnail_url: string | null;
   view_count: number | null;
@@ -27,6 +28,7 @@ const toRecord = (row: TemplateRow, ownerDisplayName?: string | null): TemplateR
   ownerId: row.owner_id,
   ownerDisplayName: ownerDisplayName ?? undefined,
   title: row.title,
+  description: row.description ?? undefined,
   content: row.content ?? {},
   thumbnailUrl: row.thumbnail_url ?? undefined,
   viewCount: row.view_count ?? 0,
@@ -62,7 +64,7 @@ export const createSupabaseTemplateRepository = (): TemplateRepository => {
     async listMine(userId) {
       const { data, error } = await supabase
         .from('templates')
-        .select('id, owner_id, title, thumbnail_url, view_count, like_count, visibility, share_slug, created_at, updated_at')
+        .select('id, owner_id, title, description, thumbnail_url, view_count, like_count, visibility, share_slug, created_at, updated_at')
         .eq('owner_id', userId)
         .is('deleted_at', null)
         .order('updated_at', { ascending: false });
@@ -78,7 +80,7 @@ export const createSupabaseTemplateRepository = (): TemplateRepository => {
     async getMineById(userId, templateId) {
       const { data, error } = await supabase
         .from('templates')
-        .select('id, owner_id, title, content, thumbnail_url, view_count, like_count, visibility, share_slug, created_at, updated_at')
+        .select('id, owner_id, title, description, content, thumbnail_url, view_count, like_count, visibility, share_slug, created_at, updated_at')
         .eq('id', templateId)
         .eq('owner_id', userId)
         .is('deleted_at', null)
@@ -94,7 +96,7 @@ export const createSupabaseTemplateRepository = (): TemplateRepository => {
     async listPublic(limit) {
       const { data, error } = await supabase
         .from('templates')
-        .select('id, owner_id, title, thumbnail_url, view_count, like_count, visibility, share_slug, created_at, updated_at')
+        .select('id, owner_id, title, description, thumbnail_url, view_count, like_count, visibility, share_slug, created_at, updated_at')
         .eq('visibility', 'public')
         .is('deleted_at', null)
         .order('updated_at', { ascending: false })
@@ -111,7 +113,7 @@ export const createSupabaseTemplateRepository = (): TemplateRepository => {
     async getPublicDetailByShareSlug(shareSlug) {
       const { data, error } = await supabase
         .from('templates')
-        .select('id, owner_id, title, thumbnail_url, view_count, like_count, visibility, share_slug, created_at, updated_at')
+        .select('id, owner_id, title, description, thumbnail_url, view_count, like_count, visibility, share_slug, created_at, updated_at')
         .eq('share_slug', shareSlug)
         .eq('visibility', 'public')
         .is('deleted_at', null)
@@ -127,7 +129,7 @@ export const createSupabaseTemplateRepository = (): TemplateRepository => {
     async getPublicByShareSlug(shareSlug) {
       const { data, error } = await supabase
         .from('templates')
-        .select('id, owner_id, title, content, thumbnail_url, view_count, like_count, visibility, share_slug, created_at, updated_at')
+        .select('id, owner_id, title, description, content, thumbnail_url, view_count, like_count, visibility, share_slug, created_at, updated_at')
         .eq('share_slug', shareSlug)
         .eq('visibility', 'public')
         .is('deleted_at', null)
@@ -168,6 +170,7 @@ export const createSupabaseTemplateRepository = (): TemplateRepository => {
       const payload = {
         owner_id: userId,
         title: input.title,
+        description: input.description ? input.description : null,
         content: input.content,
         thumbnail_url: input.thumbnailUrl ?? null,
         view_count: 0,
@@ -179,7 +182,7 @@ export const createSupabaseTemplateRepository = (): TemplateRepository => {
       const { data, error } = await supabase
         .from('templates')
         .insert(payload)
-        .select('id, owner_id, title, content, thumbnail_url, view_count, like_count, visibility, share_slug, created_at, updated_at')
+        .select('id, owner_id, title, description, content, thumbnail_url, view_count, like_count, visibility, share_slug, created_at, updated_at')
         .single();
 
       if (error) throw error;
@@ -191,6 +194,7 @@ export const createSupabaseTemplateRepository = (): TemplateRepository => {
     async update(userId, templateId, input) {
       const patch: Partial<{
         title: string;
+        description: string | null;
         content: Record<string, unknown>;
         thumbnail_url: string | null;
         visibility: 'private' | 'public';
@@ -198,6 +202,7 @@ export const createSupabaseTemplateRepository = (): TemplateRepository => {
       }> = {};
 
       if (input.title !== undefined) patch.title = input.title;
+      if (input.description !== undefined) patch.description = input.description ? input.description : null;
       if (input.content !== undefined) patch.content = input.content;
       if (input.thumbnailUrl !== undefined) patch.thumbnail_url = input.thumbnailUrl ?? null;
       if (input.visibility !== undefined) patch.visibility = input.visibility;
@@ -209,7 +214,7 @@ export const createSupabaseTemplateRepository = (): TemplateRepository => {
         .eq('id', templateId)
         .eq('owner_id', userId)
         .is('deleted_at', null)
-        .select('id, owner_id, title, content, thumbnail_url, view_count, like_count, visibility, share_slug, created_at, updated_at')
+        .select('id, owner_id, title, description, content, thumbnail_url, view_count, like_count, visibility, share_slug, created_at, updated_at')
         .maybeSingle();
 
       if (error) throw error;

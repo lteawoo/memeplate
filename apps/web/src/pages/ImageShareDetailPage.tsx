@@ -114,6 +114,11 @@ const ImageShareDetailPage: React.FC = () => {
             <div className="mb-6">
               <Title level={2} className="!mb-2">{image.title}</Title>
               <Text type="secondary">공유 이미지를 확인할 수 있습니다.</Text>
+              {image.description ? (
+                <div className="mt-2 whitespace-pre-wrap text-sm text-slate-600">
+                  {image.description}
+                </div>
+              ) : null}
             </div>
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
               <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
