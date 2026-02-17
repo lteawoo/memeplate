@@ -192,6 +192,8 @@ export const useMemeEditor = (messageApi: MessageInstance, options?: UseMemeEdit
   const [isTemplateSaving, setIsTemplateSaving] = useState(false);
   const [isImagePublishing, setIsImagePublishing] = useState(false);
   const isTemplateSaveDisabled = initialTemplateMode === 'public';
+  const linkedTemplateId = savedTemplate?.id ?? initialTemplate?.id;
+  const canPublishRemix = Boolean(linkedTemplateId);
 
   // History State
   const [history, setHistory] = useState<HistoryItem[]>([]);
@@ -665,9 +667,12 @@ export const useMemeEditor = (messageApi: MessageInstance, options?: UseMemeEdit
 
   const publishImage = async (title: string, description: string) => {
     if (!canvasInstanceRef.current) return null;
+    if (!linkedTemplateId) {
+      messageApi.warning('리믹스 게시 전 밈플릿을 먼저 선택하거나 저장하세요.');
+      return null;
+    }
     const imageTitle = title.trim() || '새 이미지';
     const imageDescription = description.trim();
-    const linkedTemplateId = savedTemplate?.id ?? initialTemplate?.id;
 
     try {
       setIsImagePublishing(true);
@@ -910,6 +915,7 @@ export const useMemeEditor = (messageApi: MessageInstance, options?: UseMemeEdit
     savedTemplate,
     isTemplateSaving,
     isImagePublishing,
+    canPublishRemix,
     isTemplateSaveDisabled,
     canvasInstance: canvasInstanceRef.current
   };

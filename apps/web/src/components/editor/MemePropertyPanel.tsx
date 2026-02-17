@@ -66,6 +66,7 @@ interface MemePropertyPanelProps {
   savedTemplate: { id: string; title: string; description?: string; visibility: 'private' | 'public'; shareSlug: string } | null;
   isTemplateSaving: boolean;
   isImagePublishing: boolean;
+  canPublishRemix: boolean;
   isTemplateSaveDisabled: boolean;
   layers: CanvasObject[];
   selectLayer: (obj: CanvasObject) => void;
@@ -92,6 +93,7 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
     savedTemplate,
     isTemplateSaving,
     isImagePublishing,
+    canPublishRemix,
     isTemplateSaveDisabled,
     layers,
     selectLayer,
@@ -519,30 +521,34 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
             )}
             
             <div className="flex flex-col gap-4">
-               <Input
-                  value={remixTitle}
-                  onChange={(e) => setRemixTitle(e.target.value)}
-                  maxLength={100}
-                  placeholder="리믹스 제목"
-               />
-               <Input.TextArea
-                  value={remixDescription}
-                  onChange={(e) => setRemixDescription(e.target.value)}
-                  maxLength={500}
-                  autoSize={{ minRows: 2, maxRows: 4 }}
-                  placeholder="리믹스 설명 (선택)"
-               />
-               <Button
-                  type="primary"
-                  icon={<Icon path={mdiShareVariant} size={1} />}
-                  onClick={() => void publishImage(remixTitle, remixDescription)}
-                  loading={isImagePublishing}
-                  size="large"
-                  block
-                  className="h-16 text-lg font-bold shadow-lg shadow-emerald-500/20 rounded-2xl border-none bg-emerald-600 hover:bg-emerald-500"
-               >
-                  리믹스 게시
-               </Button>
+               {canPublishRemix ? (
+                 <>
+                   <Input
+                      value={remixTitle}
+                      onChange={(e) => setRemixTitle(e.target.value)}
+                      maxLength={100}
+                      placeholder="리믹스 제목"
+                   />
+                   <Input.TextArea
+                      value={remixDescription}
+                      onChange={(e) => setRemixDescription(e.target.value)}
+                      maxLength={500}
+                      autoSize={{ minRows: 2, maxRows: 4 }}
+                      placeholder="리믹스 설명 (선택)"
+                   />
+                   <Button
+                      type="primary"
+                      icon={<Icon path={mdiShareVariant} size={1} />}
+                      onClick={() => void publishImage(remixTitle, remixDescription)}
+                      loading={isImagePublishing}
+                      size="large"
+                      block
+                      className="h-16 text-lg font-bold shadow-lg shadow-emerald-500/20 rounded-2xl border-none bg-emerald-600 hover:bg-emerald-500"
+                   >
+                      리믹스 게시
+                   </Button>
+                 </>
+               ) : null}
 
                <div className="bg-slate-50 p-2 rounded-2xl border border-slate-100">
                  <Segmented 
