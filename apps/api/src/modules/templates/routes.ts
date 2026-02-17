@@ -47,17 +47,11 @@ export const templateRoutes: FastifyPluginAsync = async (app) => {
       });
     }
 
-    const template = await repository.getPublicByShareSlug(paramsParsed.data.shareSlug);
+    const template = await repository.getPublicDetailByShareSlug(paramsParsed.data.shareSlug);
     if (!template) {
       return reply.code(404).send({ message: 'Template not found.' });
     }
-
-    // 상세 페이지는 편집용 원본 content가 필요 없으므로 경량 응답으로 반환한다.
-    const detailTemplate = {
-      ...template,
-      content: {}
-    };
-    return reply.send({ template: detailTemplate });
+    return reply.send({ template });
   });
 
   app.post('/templates/s/:shareSlug/view', {

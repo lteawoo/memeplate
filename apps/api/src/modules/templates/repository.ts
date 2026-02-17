@@ -19,6 +19,7 @@ export interface TemplateRepository {
   listMine(userId: string): Promise<TemplateRecord[]>;
   getMineById(userId: string, templateId: string): Promise<TemplateRecord | null>;
   listPublic(limit: number): Promise<TemplateRecord[]>;
+  getPublicDetailByShareSlug(shareSlug: string): Promise<TemplateRecord | null>;
   getPublicByShareSlug(shareSlug: string): Promise<TemplateRecord | null>;
   incrementViewCountByShareSlug(shareSlug: string): Promise<number | null>;
   create(userId: string, input: CreateTemplateInput): Promise<TemplateRecord>;
