@@ -1,5 +1,19 @@
 # 결정 로그 (Decision Log)
 
+## [2026-02-19] 리사이즈 기준 분리 3차: 상위 래퍼 기준 측정으로 자기참조 루프 차단
+- **결정**: `MemeCanvas`의 viewport 실측 기준을 내부 `Content`가 아니라 상위 `Canvas Area` 래퍼로 분리하고, 동일 크기 재설정 시 `setViewportSize`를 무시함.
+- **이유**:
+  1. 내부 `Content`를 직접 측정하면 캔버스 크기 적용 결과가 다시 측정값에 반영되는 자기참조 루프가 발생할 수 있음.
+  2. 모바일 세로 스택 레이아웃에서 이 루프가 단계적 축소로 나타나며 안정성을 저해함.
+- **구현 요약**:
+  - `apps/web/src/components/MemeEditor.tsx`
+    - `canvasAreaRef` 추가 후 캔버스 영역 래퍼에 `ref` 연결.
+    - `MemeCanvas`에 `viewportRef` 전달.
+  - `apps/web/src/components/editor/MemeCanvas.tsx`
+    - viewport 계산 기준을 `viewportRef` 우선으로 변경.
+    - padding 계산은 내부 `Content` 스타일을 사용.
+    - `setViewportSize`에서 동일값 업데이트를 무시해 불필요 렌더 루프 제거.
+
 ## [2026-02-19] 모바일 리사이즈 정책 2차: width-fit 우선으로 단순화
 - **결정**: 모바일 뷰포트에서는 캔버스 표시 스케일을 `width-fit` 기준으로만 계산하고, 높이 상한(`usableViewportHeight`)에 의한 재축소 경로를 제거함.
 - **이유**:

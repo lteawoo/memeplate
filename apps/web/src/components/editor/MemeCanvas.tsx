@@ -12,6 +12,7 @@ const { Title, Text } = Typography;
 interface MemeCanvasProps {
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
   containerRef: React.RefObject<HTMLDivElement | null>;
+  viewportRef?: React.RefObject<HTMLDivElement | null>;
   hasBackground: boolean;
   editingTextId?: string | null;
   completeTextEdit?: (id: string, newText: string) => void;
@@ -22,6 +23,7 @@ interface MemeCanvasProps {
 const MemeCanvas: React.FC<MemeCanvasProps> = ({ 
   canvasRef, 
   containerRef, 
+  viewportRef,
   hasBackground,
   editingTextId,
   completeTextEdit,
@@ -96,16 +98,28 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
   }, [canvasInstance, displayScale, intrinsicWidth, intrinsicHeight]);
 
   React.useEffect(() => {
-    const layoutContainer = containerRef.current;
-    if (!layoutContainer) return;
+    const layoutContainer = viewportRef?.current ?? containerRef.current;
+    const contentContainer = containerRef.current;
+    if (!layoutContainer || !contentContainer) return;
 
     const updateViewportSize = () => {
-      const style = window.getComputedStyle(layoutContainer);
+      const style = window.getComputedStyle(contentContainer);
       const paddingX = (Number.parseFloat(style.paddingLeft) || 0) + (Number.parseFloat(style.paddingRight) || 0);
       const paddingY = (Number.parseFloat(style.paddingTop) || 0) + (Number.parseFloat(style.paddingBottom) || 0);
-      setViewportSize({
-        width: Math.max(0, Math.round(layoutContainer.clientWidth - paddingX)),
+      const windowViewportWidth = Math.round(window.visualViewport?.width ?? window.innerWidth);
+      const isMobileWindow = windowViewportWidth < 768;
+      const next = {
+        width: Math.max(
+          0,
+          Math.round((isMobileWindow ? windowViewportWidth : layoutContainer.clientWidth) - paddingX)
+        ),
         height: Math.max(0, Math.round(layoutContainer.clientHeight - paddingY))
+      };
+      setViewportSize((prev) => {
+        if (prev.width === next.width && prev.height === next.height) {
+          return prev;
+        }
+        return next;
       });
     };
 
@@ -118,7 +132,7 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
       observer.disconnect();
       window.removeEventListener('resize', updateViewportSize);
     };
-  }, [containerRef]);
+  }, [containerRef, viewportRef]);
 
   React.useEffect(() => {
     const canvas = canvasRef.current;
@@ -261,20 +275,20 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
 
   return (
     <Content 
-      className="flex-1 min-w-0 relative flex flex-col items-center justify-center bg-white p-4 md:p-6 overflow-hidden" 
+      className="flex-1 min-h-0 min-w-0 relative flex flex-col items-center justify-center bg-white p-4 md:p-6 overflow-hidden" 
       ref={containerRef}
       style={{ touchAction: 'none' }}
     >
       {/* Canvas Container - Always in DOM but doesn't affect layout if no background */}
       <div 
         ref={canvasViewportRef}
-        className={`relative transition-all duration-300 flex items-center justify-center overflow-hidden ${hasBackground ? 'opacity-100 scale-100 w-full h-full' : 'opacity-0 scale-95 pointer-events-none absolute w-0 h-0'}`}
+        className={`relative flex items-center justify-center overflow-hidden ${hasBackground ? 'opacity-100 scale-100 w-full h-full' : 'opacity-0 scale-95 pointer-events-none absolute w-0 h-0'}`}
         style={{ fontSize: 0 }}
         onClick={(e) => e.stopPropagation()}
       >
          <canvas 
             ref={canvasRef} 
-            className="border border-slate-100 shadow-sm bg-white transition-[width,height] duration-200 ease-out"
+            className="border border-slate-100 shadow-sm bg-white"
             style={{ 
               touchAction: 'none',
               width: displayWidth ? `${displayWidth}px` : undefined,

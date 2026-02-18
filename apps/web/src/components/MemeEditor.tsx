@@ -18,6 +18,7 @@ interface MemeEditorProps {
 
 const MemeEditor: React.FC<MemeEditorProps> = ({ initialTemplate, initialTemplateMode }) => {
   const [messageApi, contextHolder] = message.useMessage();
+  const canvasAreaRef = React.useRef<HTMLDivElement>(null);
   
   const {
     canvasRef,
@@ -127,7 +128,8 @@ const MemeEditor: React.FC<MemeEditorProps> = ({ initialTemplate, initialTemplat
           <div className="flex-1 min-w-0 flex flex-col min-h-0">
             {/* Canvas Area */}
             <div 
-              className="flex-1 flex flex-col relative"
+              className="flex-1 min-h-0 flex flex-col relative overflow-hidden"
+              ref={canvasAreaRef}
               onClick={() => {
                 if (canvasInstance) { 
                     canvasInstance.discardActiveObject(); 
@@ -137,6 +139,7 @@ const MemeEditor: React.FC<MemeEditorProps> = ({ initialTemplate, initialTemplat
                 <MemeCanvas 
                   canvasRef={canvasRef} 
                   containerRef={containerRef} 
+                  viewportRef={canvasAreaRef}
                   hasBackground={hasBackground}
                   editingTextId={editingTextId}
                   completeTextEdit={completeTextEdit}
@@ -146,7 +149,7 @@ const MemeEditor: React.FC<MemeEditorProps> = ({ initialTemplate, initialTemplat
             </div>
 
             {/* Mobile Only: Toolbar & Property Panel (Stacked below canvas) */}
-            <div className="md:hidden flex flex-col bg-white border-t border-slate-200">
+            <div className="md:hidden shrink-0 flex flex-col bg-white border-t border-slate-200">
                 <div className="bg-white border-b border-slate-100 sticky top-0 z-10">
                     <MemeToolbar activeTool={activeTool} setActiveTool={setActiveTool} hasBackground={hasBackground} />
                 </div>
