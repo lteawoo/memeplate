@@ -14,7 +14,6 @@ type TemplateRow = {
   title: string;
   description: string | null;
   content?: Record<string, unknown>;
-  thumbnail_url: string | null;
   view_count: number | null;
   like_count: number | null;
   visibility: 'private' | 'public';
@@ -23,14 +22,38 @@ type TemplateRow = {
   updated_at: string;
 };
 
-const toRecord = (row: TemplateRow, ownerDisplayName?: string | null): TemplateRecord => ({
+const resolveBackgroundSrc = (content?: Record<string, unknown>) => {
+  const objects = Array.isArray(content?.objects) ? (content.objects as unknown[]) : [];
+  for (const candidate of objects) {
+    if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)) continue;
+    const obj = candidate as Record<string, unknown>;
+    if (obj.type !== 'image') continue;
+    const src = typeof obj.src === 'string' ? obj.src.trim() : '';
+    if (!src) continue;
+    if (obj.name === 'background') return src;
+  }
+  for (const candidate of objects) {
+    if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)) continue;
+    const obj = candidate as Record<string, unknown>;
+    if (obj.type !== 'image') continue;
+    const src = typeof obj.src === 'string' ? obj.src.trim() : '';
+    if (src) return src;
+  }
+  return undefined;
+};
+
+const toRecord = (
+  row: TemplateRow,
+  ownerDisplayName?: string | null,
+  options?: { includeContent?: boolean }
+): TemplateRecord => ({
   id: row.id,
   ownerId: row.owner_id,
   ownerDisplayName: ownerDisplayName ?? undefined,
   title: row.title,
   description: row.description ?? undefined,
-  content: row.content ?? {},
-  thumbnailUrl: row.thumbnail_url ?? undefined,
+  content: options?.includeContent === false ? {} : (row.content ?? {}),
+  thumbnailUrl: resolveBackgroundSrc(row.content),
   viewCount: row.view_count ?? 0,
   likeCount: row.like_count ?? 0,
   visibility: row.visibility,
@@ -53,20 +76,20 @@ export const createSupabaseTemplateRepository = (): TemplateRepository => {
     async listMine(userId) {
       const { data, error } = await supabase
         .from('templates')
-        .select('id, owner_id, title, description, thumbnail_url, view_count, like_count, visibility, share_slug, created_at, updated_at, users!templates_owner_id_fkey(display_name)')
+        .select('id, owner_id, title, description, content, view_count, like_count, visibility, share_slug, created_at, updated_at, users!templates_owner_id_fkey(display_name)')
         .eq('owner_id', userId)
         .is('deleted_at', null)
         .order('updated_at', { ascending: false });
 
       if (error) throw error;
       const rows = (data ?? []) as TemplateRow[];
-      return rows.map((row) => toRecord(row, extractDisplayName(row.users)));
+      return rows.map((row) => toRecord(row, extractDisplayName(row.users), { includeContent: false }));
     },
 
     async getMineById(userId, templateId) {
       const { data, error } = await supabase
         .from('templates')
-        .select('id, owner_id, title, description, content, thumbnail_url, view_count, like_count, visibility, share_slug, created_at, updated_at, users!templates_owner_id_fkey(display_name)')
+        .select('id, owner_id, title, description, content, view_count, like_count, visibility, share_slug, created_at, updated_at, users!templates_owner_id_fkey(display_name)')
         .eq('id', templateId)
         .eq('owner_id', userId)
         .is('deleted_at', null)
@@ -81,7 +104,7 @@ export const createSupabaseTemplateRepository = (): TemplateRepository => {
     async listPublic(limit) {
       const { data, error } = await supabase
         .from('templates')
-        .select('id, owner_id, title, description, thumbnail_url, view_count, like_count, visibility, share_slug, created_at, updated_at, users!templates_owner_id_fkey(display_name)')
+        .select('id, owner_id, title, description, content, view_count, like_count, visibility, share_slug, created_at, updated_at, users!templates_owner_id_fkey(display_name)')
         .eq('visibility', 'public')
         .is('deleted_at', null)
         .order('updated_at', { ascending: false })
@@ -89,13 +112,13 @@ export const createSupabaseTemplateRepository = (): TemplateRepository => {
 
       if (error) throw error;
       const rows = (data ?? []) as TemplateRow[];
-      return rows.map((row) => toRecord(row, extractDisplayName(row.users)));
+      return rows.map((row) => toRecord(row, extractDisplayName(row.users), { includeContent: false }));
     },
 
     async getPublicDetailByShareSlug(shareSlug) {
       const { data, error } = await supabase
         .from('templates')
-        .select('id, owner_id, title, description, thumbnail_url, view_count, like_count, visibility, share_slug, created_at, updated_at, users!templates_owner_id_fkey(display_name)')
+        .select('id, owner_id, title, description, content, view_count, like_count, visibility, share_slug, created_at, updated_at, users!templates_owner_id_fkey(display_name)')
         .eq('share_slug', shareSlug)
         .eq('visibility', 'public')
         .is('deleted_at', null)
@@ -104,13 +127,13 @@ export const createSupabaseTemplateRepository = (): TemplateRepository => {
       if (error) throw error;
       if (!data) return null;
       const row = data as TemplateRow;
-      return toRecord(row, extractDisplayName(row.users));
+      return toRecord(row, extractDisplayName(row.users), { includeContent: false });
     },
 
     async getPublicByShareSlug(shareSlug) {
       const { data, error } = await supabase
         .from('templates')
-        .select('id, owner_id, title, description, content, thumbnail_url, view_count, like_count, visibility, share_slug, created_at, updated_at, users!templates_owner_id_fkey(display_name)')
+        .select('id, owner_id, title, description, content, view_count, like_count, visibility, share_slug, created_at, updated_at, users!templates_owner_id_fkey(display_name)')
         .eq('share_slug', shareSlug)
         .eq('visibility', 'public')
         .is('deleted_at', null)
@@ -139,7 +162,6 @@ export const createSupabaseTemplateRepository = (): TemplateRepository => {
         title: input.title,
         description: input.description ? input.description : null,
         content: input.content,
-        thumbnail_url: input.thumbnailUrl ?? null,
         view_count: 0,
         like_count: 0,
         visibility: input.visibility ?? 'private',
@@ -149,7 +171,7 @@ export const createSupabaseTemplateRepository = (): TemplateRepository => {
       const { data, error } = await supabase
         .from('templates')
         .insert(payload)
-        .select('id, owner_id, title, description, content, thumbnail_url, view_count, like_count, visibility, share_slug, created_at, updated_at, users!templates_owner_id_fkey(display_name)')
+        .select('id, owner_id, title, description, content, view_count, like_count, visibility, share_slug, created_at, updated_at, users!templates_owner_id_fkey(display_name)')
         .single();
 
       if (error) throw error;
@@ -162,7 +184,6 @@ export const createSupabaseTemplateRepository = (): TemplateRepository => {
         title: string;
         description: string | null;
         content: Record<string, unknown>;
-        thumbnail_url: string | null;
         visibility: 'private' | 'public';
         updated_at: string;
       }> = {};
@@ -170,7 +191,6 @@ export const createSupabaseTemplateRepository = (): TemplateRepository => {
       if (input.title !== undefined) patch.title = input.title;
       if (input.description !== undefined) patch.description = input.description ? input.description : null;
       if (input.content !== undefined) patch.content = input.content;
-      if (input.thumbnailUrl !== undefined) patch.thumbnail_url = input.thumbnailUrl ?? null;
       if (input.visibility !== undefined) patch.visibility = input.visibility;
       patch.updated_at = new Date().toISOString();
 
@@ -180,7 +200,7 @@ export const createSupabaseTemplateRepository = (): TemplateRepository => {
         .eq('id', templateId)
         .eq('owner_id', userId)
         .is('deleted_at', null)
-        .select('id, owner_id, title, description, content, thumbnail_url, view_count, like_count, visibility, share_slug, created_at, updated_at, users!templates_owner_id_fkey(display_name)')
+        .select('id, owner_id, title, description, content, view_count, like_count, visibility, share_slug, created_at, updated_at, users!templates_owner_id_fkey(display_name)')
         .maybeSingle();
 
       if (error) throw error;

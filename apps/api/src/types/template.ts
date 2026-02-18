@@ -11,8 +11,7 @@ export const CreateTemplateSchema = z.object({
   title: SingleLineTitleSchema,
   description: DescriptionSchema.optional(),
   content: z.record(z.string(), z.unknown()),
-  thumbnailUrl: z.string().url().optional(),
-  thumbnailDataUrl: z.string().startsWith('data:image/').optional(),
+  backgroundDataUrl: z.string().startsWith('data:image/').optional(),
   visibility: TemplateVisibilitySchema.default('private')
 });
 

@@ -9,10 +9,10 @@ import { apiFetch } from '../lib/apiFetch';
 type MessageInstance = ReturnType<typeof message.useMessage>[0];
 
 const CANVAS_MARGIN = 0;
-const TEMPLATE_THUMBNAIL_LONG_EDGE = 1280;
-const TEMPLATE_THUMBNAIL_QUALITY = 0.82;
 const PUBLISH_IMAGE_LONG_EDGE = 1920;
-const PUBLISH_IMAGE_QUALITY = 0.9;
+const TEMPLATE_BACKGROUND_QUALITY = 0.98;
+const PUBLISH_IMAGE_QUALITY = 0.98;
+const PUBLISH_IMAGE_MULTIPLIER = 2;
 
 interface HistoryItem {
   json: string;
@@ -110,18 +110,6 @@ const sanitizeTemplateNode = (node: unknown): unknown => {
 const sanitizeTemplateContent = (content: Record<string, unknown>): Record<string, unknown> =>
   sanitizeTemplateNode(content) as Record<string, unknown>;
 
-const getThumbnailSize = (width: number, height: number) => {
-  const longEdge = Math.max(width, height);
-  if (!Number.isFinite(longEdge) || longEdge <= 0 || longEdge <= TEMPLATE_THUMBNAIL_LONG_EDGE) {
-    return { width, height };
-  }
-  const scale = TEMPLATE_THUMBNAIL_LONG_EDGE / longEdge;
-  return {
-    width: Math.max(1, Math.round(width * scale)),
-    height: Math.max(1, Math.round(height * scale))
-  };
-};
-
 const getPublishImageSize = (width: number, height: number) => {
   const longEdge = Math.max(width, height);
   if (!Number.isFinite(longEdge) || longEdge <= 0 || longEdge <= PUBLISH_IMAGE_LONG_EDGE) {
@@ -201,10 +189,11 @@ export const useMemeEditor = (messageApi: MessageInstance, options?: UseMemeEdit
   const isHistoryLocked = useRef(false);
   const historyRef = useRef<HistoryItem[]>([]);
   const indexRef = useRef(-1);
+  const historyDebounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const loadedTemplateKeyRef = useRef<string | null>(null);
   const [isCanvasReady, setIsCanvasReady] = useState(false);
 
-  const saveHistory = () => {
+  const saveHistoryNow = useCallback(() => {
     if (isHistoryLocked.current || !canvasInstanceRef.current) return;
     
     const canvas = canvasInstanceRef.current;
@@ -229,7 +218,17 @@ export const useMemeEditor = (messageApi: MessageInstance, options?: UseMemeEdit
 
     setHistory(newHistory);
     setHistoryIndex(newHistory.length - 1);
-  };
+  }, []);
+
+  const saveHistoryDebounced = useCallback((delayMs = 200) => {
+    if (historyDebounceTimerRef.current) {
+      clearTimeout(historyDebounceTimerRef.current);
+    }
+    historyDebounceTimerRef.current = setTimeout(() => {
+      historyDebounceTimerRef.current = null;
+      saveHistoryNow();
+    }, delayMs);
+  }, [saveHistoryNow]);
 
   const loadHistoryItem = (item: HistoryItem, newIndex: number) => {
     if (!canvasInstanceRef.current) return;
@@ -330,7 +329,7 @@ export const useMemeEditor = (messageApi: MessageInstance, options?: UseMemeEdit
     };
 
     const handleUpdate = () => {
-        saveHistory();
+        saveHistoryNow();
         setLayers([...canvas.getObjects()]);
     }
 
@@ -396,11 +395,15 @@ export const useMemeEditor = (messageApi: MessageInstance, options?: UseMemeEdit
     canvas.on('object:moving', enforceBoundaries);
 
     return () => {
+      if (historyDebounceTimerRef.current) {
+        clearTimeout(historyDebounceTimerRef.current);
+        historyDebounceTimerRef.current = null;
+      }
       canvas.dispose();
       canvasInstanceRef.current = null;
       setIsCanvasReady(false);
     };
-  }, []);
+  }, [saveHistoryNow]);
 
   useEffect(() => {
     const canvas = canvasInstanceRef.current;
@@ -413,35 +416,9 @@ export const useMemeEditor = (messageApi: MessageInstance, options?: UseMemeEdit
     const contentToLoad = structuredClone(initialTemplate.content) as Record<string, unknown>;
     const width = Number(contentToLoad.width);
     const height = Number(contentToLoad.height);
-    const safeWidth = Number.isFinite(width) && width > 0 ? width : 600;
-    const safeHeight = Number.isFinite(height) && height > 0 ? height : 600;
 
     const objects = Array.isArray(contentToLoad.objects) ? contentToLoad.objects as Array<Record<string, unknown>> : [];
     contentToLoad.objects = objects;
-
-    let hasImageObject = false;
-    if (initialTemplate.thumbnailUrl) {
-      objects.forEach((obj) => {
-        if (
-          obj.type === 'image' &&
-          (obj.name === 'background' || obj.name === 'image') &&
-          (typeof obj.src !== 'string' || obj.src.trim() === '')
-        ) {
-          obj.src = toCanvasSafeImageSrc(initialTemplate.thumbnailUrl);
-        }
-        if (
-          obj.type === 'image' &&
-          typeof obj.src === 'string' &&
-          obj.src.trim() !== ''
-        ) {
-          hasImageObject = true;
-        }
-      });
-
-      if (!hasImageObject) {
-        objects.unshift(createBackgroundImageObject(initialTemplate.thumbnailUrl, safeWidth, safeHeight));
-      }
-    }
 
     objects.forEach((obj) => {
       if (obj.type === 'image' && typeof obj.src === 'string' && obj.src.trim() !== '') {
@@ -589,7 +566,7 @@ export const useMemeEditor = (messageApi: MessageInstance, options?: UseMemeEdit
         canvasInstanceRef.current.renderAll();
         if (key === 'fill') setColor(value as string);
         setLayers([...canvasInstanceRef.current.getObjects()]);
-        saveHistory();
+        saveHistoryDebounced();
     }
   };
 
@@ -678,9 +655,11 @@ export const useMemeEditor = (messageApi: MessageInstance, options?: UseMemeEdit
       setIsImagePublishing(true);
 
       const publishSize = getPublishImageSize(workspaceSize.width, workspaceSize.height);
+      const publishExportWidth = Math.max(1, Math.round(publishSize.width * PUBLISH_IMAGE_MULTIPLIER));
+      const publishExportHeight = Math.max(1, Math.round(publishSize.height * PUBLISH_IMAGE_MULTIPLIER));
       const imageDataUrl = canvasInstanceRef.current.toDataURL({
         format: 'webp',
-        multiplier: 1,
+        multiplier: PUBLISH_IMAGE_MULTIPLIER,
         width: publishSize.width,
         height: publishSize.height,
         quality: PUBLISH_IMAGE_QUALITY
@@ -698,8 +677,8 @@ export const useMemeEditor = (messageApi: MessageInstance, options?: UseMemeEdit
           title: imageTitle,
           description: imageDescription.length > 0 ? imageDescription : undefined,
           imageDataUrl,
-          imageWidth: publishSize.width,
-          imageHeight: publishSize.height,
+          imageWidth: publishExportWidth,
+          imageHeight: publishExportHeight,
           imageBytes,
           imageMime,
           visibility: 'public'
@@ -759,23 +738,15 @@ export const useMemeEditor = (messageApi: MessageInstance, options?: UseMemeEdit
         .map((obj) => ({ obj, visible: obj.visible }));
 
       let flattenedBackgroundDataUrl = '';
-      let thumbnailDataUrl = '';
       try {
         textObjects.forEach(({ obj }) => obj.set('visible', false));
         // Bake non-text layers (background + shapes) into one base image.
         flattenedBackgroundDataUrl = canvas.toDataURL({
-          format: 'png',
-          multiplier: 1,
-          width: workspaceSize.width,
-          height: workspaceSize.height
-        });
-        const thumbnailSize = getThumbnailSize(workspaceSize.width, workspaceSize.height);
-        thumbnailDataUrl = canvas.toDataURL({
           format: 'webp',
           multiplier: 1,
-          width: thumbnailSize.width,
-          height: thumbnailSize.height,
-          quality: TEMPLATE_THUMBNAIL_QUALITY
+          width: workspaceSize.width,
+          height: workspaceSize.height,
+          quality: TEMPLATE_BACKGROUND_QUALITY
         });
       } finally {
         textObjects.forEach(({ obj, visible }) => obj.set('visible', visible));
@@ -785,7 +756,7 @@ export const useMemeEditor = (messageApi: MessageInstance, options?: UseMemeEdit
         width: workspaceSize.width,
         height: workspaceSize.height,
         objects: [
-          createBackgroundImageObject(flattenedBackgroundDataUrl, workspaceSize.width, workspaceSize.height),
+          createBackgroundImageObject('', workspaceSize.width, workspaceSize.height),
           ...textLayerObjects
         ]
       };
@@ -794,8 +765,8 @@ export const useMemeEditor = (messageApi: MessageInstance, options?: UseMemeEdit
         title: title.trim(),
         description: description.trim() || undefined,
         content,
-        visibility,
-        thumbnailDataUrl
+        backgroundDataUrl: flattenedBackgroundDataUrl,
+        visibility
       });
 
       const endpoint = savedTemplate
@@ -874,7 +845,7 @@ export const useMemeEditor = (messageApi: MessageInstance, options?: UseMemeEdit
         obj.set('text', newText);
         obj.set('visible', true);
         canvasInstanceRef.current.requestRender();
-        saveHistory();
+        saveHistoryNow();
     }
     setEditingTextId(null);
   };

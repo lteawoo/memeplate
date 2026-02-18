@@ -8,8 +8,40 @@ import {
   UpdateTemplateSchema
 } from '../../types/template.js';
 import { createSupabaseTemplateRepository } from './supabaseRepository.js';
-import { uploadTemplateThumbnailDataUrl } from '../../lib/r2.js';
+import { uploadTemplateBackgroundDataUrl } from '../../lib/r2.js';
 import { sanitizeTemplateContent } from './sanitizeTemplateContent.js';
+
+const applyBackgroundUrlToTemplateContent = (content: Record<string, unknown>, backgroundUrl: string) => {
+  const nextContent = structuredClone(content) as Record<string, unknown>;
+  const objects = Array.isArray(nextContent.objects)
+    ? (nextContent.objects as Array<Record<string, unknown>>)
+    : [];
+
+  let replaced = false;
+  for (const obj of objects) {
+    if (obj.type !== 'image') continue;
+    const src = typeof obj.src === 'string' ? obj.src : '';
+    const isBackground = obj.name === 'background';
+    const hasDataUrl = src.startsWith('data:image/');
+    if (!replaced && (isBackground || hasDataUrl)) {
+      obj.src = backgroundUrl;
+      if (!obj.name) obj.name = 'background';
+      replaced = true;
+    }
+  }
+
+  if (!replaced && objects.length > 0) {
+    const firstImageIndex = objects.findIndex((obj) => obj.type === 'image');
+    if (firstImageIndex >= 0) {
+      objects[firstImageIndex].src = backgroundUrl;
+      if (!objects[firstImageIndex].name) objects[firstImageIndex].name = 'background';
+      replaced = true;
+    }
+  }
+
+  nextContent.objects = objects;
+  return nextContent;
+};
 
 export const templateRoutes: FastifyPluginAsync = async (app) => {
   const repository = createSupabaseTemplateRepository();
@@ -110,15 +142,18 @@ export const templateRoutes: FastifyPluginAsync = async (app) => {
       });
     }
 
-    const { thumbnailDataUrl, ...input } = parsed.data;
-    const thumbnailUrl = thumbnailDataUrl
-      ? await uploadTemplateThumbnailDataUrl(req.authUser!.id, thumbnailDataUrl)
-      : input.thumbnailUrl;
+    const { backgroundDataUrl, ...input } = parsed.data;
+    const backgroundUrl = backgroundDataUrl
+      ? await uploadTemplateBackgroundDataUrl(req.authUser!.id, backgroundDataUrl)
+      : null;
+    const normalizedContent = sanitizeTemplateContent(input.content);
+    const content = backgroundUrl
+      ? applyBackgroundUrlToTemplateContent(normalizedContent, backgroundUrl)
+      : normalizedContent;
 
     const created = await repository.create(req.authUser!.id, {
       ...input,
-      content: sanitizeTemplateContent(input.content),
-      thumbnailUrl
+      content
     });
 
     return reply.code(201).send({ template: created });
@@ -142,19 +177,21 @@ export const templateRoutes: FastifyPluginAsync = async (app) => {
       });
     }
 
-    const { thumbnailDataUrl, ...input } = parsed.data;
-    const thumbnailUrl = thumbnailDataUrl
-      ? await uploadTemplateThumbnailDataUrl(req.authUser!.id, thumbnailDataUrl)
-      : input.thumbnailUrl;
+    const { backgroundDataUrl, ...input } = parsed.data;
+    const backgroundUrl = backgroundDataUrl
+      ? await uploadTemplateBackgroundDataUrl(req.authUser!.id, backgroundDataUrl)
+      : null;
 
     const normalizedContent = input.content
       ? sanitizeTemplateContent(input.content)
       : undefined;
+    const content = normalizedContent && backgroundUrl
+      ? applyBackgroundUrlToTemplateContent(normalizedContent, backgroundUrl)
+      : normalizedContent;
 
     const updated = await repository.update(req.authUser!.id, paramsParsed.data.templateId, {
       ...input,
-      content: normalizedContent,
-      thumbnailUrl
+      content
     });
 
     return reply.send({ template: updated });

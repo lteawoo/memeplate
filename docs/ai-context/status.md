@@ -167,6 +167,29 @@
 - [x] **공유 패널 UX 정합화 1차 (완료 - 2026-02-18)**
   - [x] 공유 탭의 `리믹스 게시` 섹션을 `밈플릿 공유`와 동일한 카드 스타일로 통일
   - [x] 에디터 사이드패널에 `min-h-0` 기반 스크롤 레이아웃 보강으로 항목 넘침 시 스크롤 가능하도록 수정
+- [x] **Undo/Redo 스냅샷 저장 부하 완화 1차 (완료 - 2026-02-18)**
+  - [x] `useMemeEditor` 히스토리 저장을 즉시/디바운스(`200ms`) 2단계로 분리
+  - [x] 빈번한 속성 변경(`updateProperty`)은 디바운스 저장으로 전환
+  - [x] 객체 추가/수정/삭제, 텍스트 편집 완료는 즉시 저장 유지
+  - [x] 에디터 언마운트 시 디바운스 타이머 정리로 메모리 누수 방지
+- [x] **템플릿 배경 저장 R2 URL 전환 1차 (완료 - 2026-02-18)**
+  - [x] 템플릿 저장 payload에 `backgroundDataUrl` 필드 추가
+  - [x] API에서 `backgroundDataUrl` 업로드 후 `content.objects[].src`를 R2 URL로 치환
+  - [x] 프론트 `content` 본문에서 배경 DataURL 제거(빈 src + 서버 치환)
+- [x] **공개 템플릿 로드 폴백 제거 (완료 - 2026-02-18)**
+  - [x] `/create?shareSlug=...` 로드 시 `thumbnailUrl` 기반 배경 자동주입/빈 src 보정 로직 제거
+  - [x] 템플릿 `content.objects[].src`를 Source of Truth로 고정
+- [x] **R2 템플릿 자산 정책 단순화 (완료 - 2026-02-18)**
+  - [x] 템플릿 배경 업로드 경로를 `templates/{ownerId}/...`로 고정
+  - [x] 템플릿 썸네일 별도 업로드 제거
+- [x] **템플릿 `thumbnail_url` 컬럼 제거 준비 (완료 - 2026-02-18)**
+  - [x] API 조회 응답의 `thumbnailUrl`을 `content.objects[].src`(배경 이미지) 기반 계산으로 전환
+  - [x] DB 마이그레이션 SQL 추가 (`2026-02-18_drop_templates_thumbnail_url.sql`)
+- [x] **게시 포맷 정책 보정 (완료 - 2026-02-18)**
+  - [x] 밈플릿 저장 배경 export를 `webp(quality 0.98)`로 변경
+  - [x] 리믹스 게시 `webp` 유지
+  - [x] 리믹스 게시 export 배율을 `multiplier 2`로 상향
+  - [x] 다운로드 기본 포맷은 `png`로 유지
 
 ## 다음 작업
 - [ ] Google OAuth 로그인 엔드포인트 고도화 (`/api/v1/auth/*`)

@@ -13,7 +13,7 @@ const getAllowedMimeSet = () =>
 const parseDataUrl = (dataUrl: string) => {
   const match = dataUrl.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
   if (!match) {
-    throw new Error('Invalid thumbnailDataUrl format.');
+    throw new Error('Invalid image data URL format.');
   }
   return {
     mimeType: match[1].toLowerCase(),
@@ -40,7 +40,14 @@ const buildPublicUrl = (key: string) => {
   return `${base}/${key}`;
 };
 
-const uploadImageDataUrl = async (ownerId: string, dataUrl: string, folder: 'templates' | 'meme-images') => {
+type UploadFolder = 'template-backgrounds' | 'meme-images';
+
+const resolveFolderPath = (folder: UploadFolder) => {
+  if (folder === 'template-backgrounds') return 'templates';
+  return 'meme-images';
+};
+
+const uploadImageDataUrl = async (ownerId: string, dataUrl: string, folder: UploadFolder) => {
   assertR2Config();
   const allowedMime = getAllowedMimeSet();
   const maxMb = env.R2_UPLOAD_MAX_MB ?? 10;
@@ -48,16 +55,17 @@ const uploadImageDataUrl = async (ownerId: string, dataUrl: string, folder: 'tem
 
   const { mimeType, base64Payload } = parseDataUrl(dataUrl);
   if (!allowedMime.has(mimeType)) {
-    throw new Error(`Unsupported thumbnail mime type: ${mimeType}`);
+    throw new Error(`Unsupported image mime type: ${mimeType}`);
   }
 
   const body = Buffer.from(base64Payload, 'base64');
   if (body.byteLength > maxBytes) {
-    throw new Error(`Thumbnail size exceeds max upload limit (${maxMb}MB).`);
+    throw new Error(`Image size exceeds max upload limit (${maxMb}MB).`);
   }
 
   const ext = resolveExt(mimeType);
-  const key = `${folder}/${ownerId}/${Date.now()}-${randomUUID()}.${ext}`;
+  const folderPath = resolveFolderPath(folder);
+  const key = `${folderPath}/${ownerId}/${Date.now()}-${randomUUID()}.${ext}`;
 
   const client = new S3Client({
     region: 'auto',
@@ -86,8 +94,8 @@ const uploadImageDataUrl = async (ownerId: string, dataUrl: string, folder: 'tem
   return publicUrl;
 };
 
-export const uploadTemplateThumbnailDataUrl = async (ownerId: string, dataUrl: string) => {
-  return uploadImageDataUrl(ownerId, dataUrl, 'templates');
+export const uploadTemplateBackgroundDataUrl = async (ownerId: string, dataUrl: string) => {
+  return uploadImageDataUrl(ownerId, dataUrl, 'template-backgrounds');
 };
 
 export const uploadMemeImageDataUrl = async (ownerId: string, dataUrl: string) =>
