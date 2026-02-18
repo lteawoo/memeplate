@@ -14,6 +14,7 @@ const PUBLISH_IMAGE_LONG_EDGE = 1920;
 const TEMPLATE_BACKGROUND_QUALITY = 0.98;
 const PUBLISH_IMAGE_QUALITY = 0.98;
 const PUBLISH_IMAGE_MULTIPLIER = 2;
+const BACKGROUND_LOADING_MIN_MS = 180;
 
 interface HistoryItem {
   json: string;
@@ -214,6 +215,10 @@ export const useMemeEditor = (messageApi: MessageInstance, options?: UseMemeEdit
   const [savedTemplate, setSavedTemplate] = useState<SavedTemplateMeta | null>(null);
   const [isTemplateSaving, setIsTemplateSaving] = useState(false);
   const [isImagePublishing, setIsImagePublishing] = useState(false);
+  const [isBackgroundApplying, setIsBackgroundApplying] = useState(false);
+  const backgroundApplySeqRef = useRef(0);
+  const backgroundApplyStartedAtRef = useRef(0);
+  const backgroundApplyEndTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isTemplateSaveDisabled = initialTemplateMode === 'public';
   const linkedTemplateId = savedTemplate?.id ?? initialTemplate?.id;
   const canPublishRemix = Boolean(linkedTemplateId);
@@ -438,6 +443,10 @@ export const useMemeEditor = (messageApi: MessageInstance, options?: UseMemeEdit
         clearTimeout(historyDebounceTimerRef.current);
         historyDebounceTimerRef.current = null;
       }
+      if (backgroundApplyEndTimerRef.current) {
+        clearTimeout(backgroundApplyEndTimerRef.current);
+        backgroundApplyEndTimerRef.current = null;
+      }
       canvas.dispose();
       canvasInstanceRef.current = null;
       setIsCanvasReady(false);
@@ -510,17 +519,26 @@ export const useMemeEditor = (messageApi: MessageInstance, options?: UseMemeEdit
   }, [initialTemplate, initialTemplateMode, isCanvasReady]);
 
   const setBackgroundImage = (url: string) => {
-    setHasBackground(true); 
-    setBgUrl(url); 
-    setActiveTool('background');
-
     if (!canvasInstanceRef.current) return;
     isHistoryLocked.current = true;
+    const applySeq = ++backgroundApplySeqRef.current;
+    backgroundApplyStartedAtRef.current = Date.now();
+    if (backgroundApplyEndTimerRef.current) {
+      clearTimeout(backgroundApplyEndTimerRef.current);
+      backgroundApplyEndTimerRef.current = null;
+    }
+    setIsBackgroundApplying(true);
 
     const safeImageUrl = toCanvasSafeImageSrc(url);
     const shouldRevokeObjectUrl = safeImageUrl.startsWith('blob:');
 
     CanvasImage.fromURL(safeImageUrl).then((img) => {
+      if (applySeq !== backgroundApplySeqRef.current) {
+        if (shouldRevokeObjectUrl) {
+          URL.revokeObjectURL(safeImageUrl);
+        }
+        return;
+      }
       const canvas = canvasInstanceRef.current!;
       const logicalW = img.element?.naturalWidth || img.width;
       const logicalH = img.element?.naturalHeight || img.height;
@@ -545,6 +563,9 @@ export const useMemeEditor = (messageApi: MessageInstance, options?: UseMemeEdit
       canvas.add(img);
       canvas.sendObjectToBack(img);
       canvas.renderAll();
+      setHasBackground(true);
+      setBgUrl(url);
+      setActiveTool('background');
       if (normalizedSize.scaled) {
         messageApi.info(`큰 원본이라 편집 안정성을 위해 ${normalizedSize.width}x${normalizedSize.height}로 조정했습니다.`);
       }
@@ -558,14 +579,32 @@ export const useMemeEditor = (messageApi: MessageInstance, options?: UseMemeEdit
         URL.revokeObjectURL(safeImageUrl);
       }
     }).catch((err) => {
+      if (applySeq !== backgroundApplySeqRef.current) {
+        if (shouldRevokeObjectUrl) {
+          URL.revokeObjectURL(safeImageUrl);
+        }
+        return;
+      }
       console.error('Failed to load image:', err);
       messageApi.error('이미지를 불러오는데 실패했습니다.');
-      setHasBackground(false);
-      setBgUrl('');
-      setActiveTool(null);
       isHistoryLocked.current = false;
       if (shouldRevokeObjectUrl) {
         URL.revokeObjectURL(safeImageUrl);
+      }
+    }).finally(() => {
+      if (applySeq === backgroundApplySeqRef.current) {
+        const elapsedMs = Date.now() - backgroundApplyStartedAtRef.current;
+        const remainingMs = Math.max(0, BACKGROUND_LOADING_MIN_MS - elapsedMs);
+        if (remainingMs === 0) {
+          setIsBackgroundApplying(false);
+        } else {
+          backgroundApplyEndTimerRef.current = setTimeout(() => {
+            if (applySeq === backgroundApplySeqRef.current) {
+              setIsBackgroundApplying(false);
+            }
+            backgroundApplyEndTimerRef.current = null;
+          }, remainingMs);
+        }
       }
     });
   };
@@ -952,6 +991,7 @@ export const useMemeEditor = (messageApi: MessageInstance, options?: UseMemeEdit
     savedTemplate,
     isTemplateSaving,
     isImagePublishing,
+    isBackgroundApplying,
     canPublishRemix,
     isTemplateSaveDisabled,
     canvasInstance: canvasInstanceRef.current
