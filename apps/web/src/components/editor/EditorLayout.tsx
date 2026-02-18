@@ -8,12 +8,12 @@ interface EditorLayoutProps {
 
 const EditorLayout: React.FC<EditorLayoutProps> = ({ sidebar, children }) => {
   return (
-    <Layout className="flex-1 flex flex-col md:flex-row bg-white overflow-y-auto md:overflow-hidden">
+    <Layout className="flex-1 min-h-0 flex flex-col md:flex-row bg-white md:overflow-hidden">
       {/* 
          Desktop: Sidebar is at the left.
          Mobile: Stacked vertically.
       */}
-      <div className="flex-1 min-w-0 relative flex flex-col md:flex-row">
+      <div className="flex-1 min-h-0 min-w-0 relative flex flex-col md:flex-row">
         {sidebar}
         {children}
       </div>
