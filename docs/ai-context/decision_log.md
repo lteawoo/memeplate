@@ -1,5 +1,71 @@
 # 결정 로그 (Decision Log)
 
+## [2026-02-18] 게시 포맷 정책 보정: 밈플릿/리믹스는 `webp`, 다운로드 기본값은 `png` 유지
+- **결정**: 밈플릿 저장(배경 평탄화)과 리믹스 게시 포맷은 `webp`로 통일하고, 다운로드 기본 선택값은 기존 `png`를 유지함.
+- **이유**:
+  1. 게시물 품질 정책은 일관되게 유지하면서, 사용자 다운로드 UX의 기존 기본값 변경은 피함.
+  2. 리믹스 품질 저하 완화를 위해 게시용 `webp` 품질을 상향하고 템플릿 저장도 동일 계열 포맷으로 정렬함.
+- **구현 요약**:
+  - `apps/web/src/hooks/useMemeEditor.ts`
+    - 템플릿 배경 export: `png -> webp`, `quality: 0.98` 적용.
+    - 리믹스 게시: 기존 `webp` 유지 + export 배율 `multiplier: 2` 적용.
+  - `apps/web/src/components/editor/MemePropertyPanel.tsx`
+    - 다운로드 기본 포맷을 `png`로 유지.
+
+## [2026-02-18] 템플릿 썸네일 컬럼 제거 준비: 배경 단일 업로드 + API thumbnail 계산
+- **결정**: 템플릿 저장 시 썸네일 별도 업로드를 제거하고, 배경 이미지는 `templates/{ownerId}/...`에 업로드함. `thumbnail_url` 컬럼은 드롭하고, API 응답 `thumbnailUrl`은 `content.objects[].src`에서 계산해 제공함.
+- **이유**:
+  1. 썸네일을 별도 오브젝트로 저장하는 중복 비용(생성/업로드/관리)을 제거할 수 있음.
+  2. DB에서 대표 이미지 전용 컬럼을 제거해 데이터 모델을 단순화함.
+- **구현 요약**:
+  - `apps/web/src/hooks/useMemeEditor.ts`: `thumbnailDataUrl` 생성/전송 제거.
+  - `apps/api/src/types/template.ts`: `thumbnailDataUrl` 입력 스키마 제거.
+  - `apps/api/src/modules/templates/routes.ts`: 템플릿 create/update에서 `thumbnail_url` 저장 로직 제거.
+  - `apps/api/src/lib/r2.ts`: 템플릿 썸네일 업로드 함수 및 `templates/thumbnails` 분기 제거.
+  - `apps/api/src/modules/templates/supabaseRepository.ts`: `thumbnailUrl`을 `content` 배경 `src`에서 계산하도록 전환.
+  - `docs/ai-context/sql/2026-02-18_drop_templates_thumbnail_url.sql`: 컬럼 드롭 SQL 추가.
+
+## [2026-02-18] 공개 템플릿 로드 정책 단순화: `thumbnailUrl` 기반 배경 폴백 제거
+- **결정**: `/create?shareSlug=...` 로드 시 `thumbnailUrl`로 배경 객체를 자동 주입하거나 빈 `src`를 보정하는 fallback 로직을 제거함.
+- **이유**:
+  1. 저장 파이프라인을 `backgroundDataUrl -> R2 URL 치환`으로 고정한 이후에는 로더 fallback이 정책 중복이 됨.
+  2. `content.objects[].src`를 단일 Source of Truth로 유지해야 데이터 품질 문제를 조기에 발견 가능함.
+- **구현 요약**:
+  - `apps/web/src/hooks/useMemeEditor.ts`
+    - 템플릿 로드 effect에서 `thumbnailUrl` 기반 배경 보정/자동주입 블록 제거.
+    - 이미지 객체 `src`는 저장된 값만 로드하도록 단순화.
+
+## [2026-02-18] 템플릿 배경 저장 방식 전환: `content` 내 DataURL 제거 + R2 URL 치환
+- **결정**: 밈플릿 저장 시 평탄화 배경 이미지는 `backgroundDataUrl`로 별도 전송하고, API에서 R2 업로드 후 `content.objects[].src`를 URL로 치환해 저장함.
+- **이유**:
+  1. 기존 구조는 `content` JSON 안에 대용량 base64가 직접 포함되어 요청 본문/DB payload가 비대해짐.
+  2. 템플릿 조회/수정 시 불필요한 base64 직렬화 비용이 반복됨.
+  3. 썸네일/리믹스와 동일하게 URL 기반 자산 저장 정책으로 통일 가능함.
+- **구현 요약**:
+  - `apps/web/src/hooks/useMemeEditor.ts`
+    - `content.objects[background].src`는 빈 문자열로 전송.
+    - `backgroundDataUrl` 필드를 별도로 API 요청 본문에 추가.
+  - `apps/api/src/types/template.ts`
+    - `backgroundDataUrl` 스키마 필드 추가.
+  - `apps/api/src/modules/templates/routes.ts`
+    - `backgroundDataUrl` 업로드 처리 추가.
+    - 업로드 URL을 템플릿 `content.objects[].src`에 치환하는 로직 추가.
+  - `apps/api/src/lib/r2.ts`
+    - 템플릿 배경 업로드 함수 `uploadTemplateBackgroundDataUrl` 추가.
+
+## [2026-02-18] 히스토리 저장 전략 1차 조정: 즉시 저장 + 디바운스 저장 이원화
+- **결정**: Undo/Redo 스냅샷 저장을 `saveHistoryNow`(즉시)와 `saveHistoryDebounced`(200ms)로 분리하고, 속성 슬라이더/입력처럼 고빈도 변경은 디바운스 저장으로 통합함.
+- **이유**:
+  1. `updateProperty`가 연속 호출될 때 매번 `canvas.toJSON` + `JSON.stringify`가 실행되어 메인 스레드 부하가 커짐.
+  2. 사용자 체감상 연속 조작은 중간 상태 전체를 모두 undo할 필요보다 "한 묶음" undo가 더 자연스러움.
+  3. 객체 생성/삭제/수정 완료, 텍스트 편집 완료는 단위 동작이라 즉시 스냅샷이 필요함.
+- **구현 요약**:
+  - `apps/web/src/hooks/useMemeEditor.ts`
+    - `saveHistoryNow`, `saveHistoryDebounced` 추가.
+    - `updateProperty` -> `saveHistoryDebounced` 적용.
+    - `object:added/modified/removed`, `completeTextEdit` -> `saveHistoryNow` 유지.
+    - 언마운트 시 디바운스 타이머 정리 로직 추가.
+
 ## [2026-02-18] 조회수 증가 원자성 보강: `select->update` 제거, DB 함수(RPC) 전환
 - **결정**: 템플릿/리믹스 조회수 증가를 DB 함수로 통합하고, API 리포지토리에서는 RPC 단일 호출만 수행함.
 - **이유**:

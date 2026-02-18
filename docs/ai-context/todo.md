@@ -94,6 +94,10 @@
   - [x] 공개 목록 API 작성자명 조회 1쿼리화 (`templates`, `meme_images`)
   - [x] 조회수 증가 API 원자 업데이트 적용 (DB 함수 + RPC 전환)
   - [x] 공유 탭 UI 정합화 (`리믹스 게시` 카드 디자인 통일 + 사이드패널 스크롤 보강)
+  - [x] Undo/Redo 히스토리 저장 디바운스 1차 (`updateProperty` 200ms coalescing)
+  - [x] 템플릿 배경 DataURL -> R2 URL 저장 전환 1차 (`backgroundDataUrl` 업로드/치환)
+  - [x] 밈플릿/리믹스 게시 포맷 `webp` 정렬 + 다운로드 기본 포맷 `png` 유지
+  - [x] 리믹스 게시 해상도 보정 (`multiplier: 2` 적용)
   - [ ] 웹 워커(Web Worker) 기반 내보내기 처리
   - [ ] Undo/Redo 로직 정밀화
 
@@ -149,3 +153,6 @@
   - [x] 템플릿/리믹스 `description` 입력/조회 지원 및 공유 탭 입력 UI 추가
   - [x] 템플릿/리믹스 `title` 단일라인 검증(줄바꿈 금지) 적용
   - [x] 리믹스 게시 시 `templateId` 필수화 및 미연결 상태 UI 차단
+  - [x] 공개 템플릿 시작 경로(`shareSlug`)의 `thumbnailUrl` 기반 배경 fallback 제거 (R2 URL 저장 정책 고정)
+  - [x] 템플릿 R2 경로/저장정책 단순화 (`templates` 단일 + 썸네일 별도 업로드 제거)
+  - [x] `templates.thumbnail_url` 컬럼 드롭 마이그레이션 추가 + API thumbnail 계산 로직 전환
