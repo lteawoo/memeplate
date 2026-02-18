@@ -6,6 +6,11 @@ import type { MemeImageRecord, MemeImageRepository } from './repository.js';
 type MemeImageRow = {
   id: string;
   owner_id: string;
+  users?: {
+    display_name: string | null;
+  } | Array<{
+    display_name: string | null;
+  }> | null;
   template_id: string | null;
   title: string;
   description: string | null;
@@ -20,11 +25,6 @@ type MemeImageRow = {
   like_count: number | null;
   created_at: string;
   updated_at: string;
-};
-
-type UserRow = {
-  id: string;
-  display_name: string | null;
 };
 
 const toRecord = (row: MemeImageRow, ownerDisplayName?: string | null): MemeImageRecord => ({
@@ -47,46 +47,35 @@ const toRecord = (row: MemeImageRow, ownerDisplayName?: string | null): MemeImag
   updatedAt: row.updated_at
 });
 
+const extractDisplayName = (users: MemeImageRow['users']) => {
+  if (!users) return undefined;
+  if (Array.isArray(users)) return users[0]?.display_name ?? undefined;
+  return users.display_name ?? undefined;
+};
+
 const generateShareSlug = () => `img_${randomBytes(6).toString('base64url')}`;
 
 export const createSupabaseMemeImageRepository = (): MemeImageRepository => {
   const supabase = getSupabaseAdminClient();
 
-  const resolveOwnerDisplayNameMap = async (ownerIds: string[]) => {
-    if (ownerIds.length === 0) return new Map<string, string | null>();
-
-    const { data, error } = await supabase
-      .from('users')
-      .select('id, display_name')
-      .in('id', ownerIds);
-
-    if (error || !data) {
-      return new Map<string, string | null>();
-    }
-    return new Map((data as UserRow[]).map((row) => [row.id, row.display_name]));
-  };
-
   return {
     async listMine(userId) {
       const { data, error } = await supabase
         .from('meme_images')
-        .select('id, owner_id, template_id, title, description, image_url, image_width, image_height, image_bytes, image_mime, visibility, share_slug, view_count, like_count, created_at, updated_at')
+        .select('id, owner_id, template_id, title, description, image_url, image_width, image_height, image_bytes, image_mime, visibility, share_slug, view_count, like_count, created_at, updated_at, users!meme_images_owner_id_fkey(display_name)')
         .eq('owner_id', userId)
         .is('deleted_at', null)
         .order('updated_at', { ascending: false });
 
       if (error) throw error;
       const rows = (data ?? []) as MemeImageRow[];
-      const ownerDisplayNameMap = await resolveOwnerDisplayNameMap(
-        Array.from(new Set(rows.map((row) => row.owner_id)))
-      );
-      return rows.map((row) => toRecord(row, ownerDisplayNameMap.get(row.owner_id)));
+      return rows.map((row) => toRecord(row, extractDisplayName(row.users)));
     },
 
     async getMineById(userId, imageId) {
       const { data, error } = await supabase
         .from('meme_images')
-        .select('id, owner_id, template_id, title, description, image_url, image_width, image_height, image_bytes, image_mime, visibility, share_slug, view_count, like_count, created_at, updated_at')
+        .select('id, owner_id, template_id, title, description, image_url, image_width, image_height, image_bytes, image_mime, visibility, share_slug, view_count, like_count, created_at, updated_at, users!meme_images_owner_id_fkey(display_name)')
         .eq('id', imageId)
         .eq('owner_id', userId)
         .is('deleted_at', null)
@@ -95,14 +84,13 @@ export const createSupabaseMemeImageRepository = (): MemeImageRepository => {
       if (error) throw error;
       if (!data) return null;
       const row = data as MemeImageRow;
-      const ownerDisplayNameMap = await resolveOwnerDisplayNameMap([row.owner_id]);
-      return toRecord(row, ownerDisplayNameMap.get(row.owner_id));
+      return toRecord(row, extractDisplayName(row.users));
     },
 
     async listPublic(limit, templateId) {
       let query = supabase
         .from('meme_images')
-        .select('id, owner_id, template_id, title, description, image_url, image_width, image_height, image_bytes, image_mime, visibility, share_slug, view_count, like_count, created_at, updated_at')
+        .select('id, owner_id, template_id, title, description, image_url, image_width, image_height, image_bytes, image_mime, visibility, share_slug, view_count, like_count, created_at, updated_at, users!meme_images_owner_id_fkey(display_name)')
         .eq('visibility', 'public')
         .is('deleted_at', null)
         .order('updated_at', { ascending: false });
@@ -115,16 +103,13 @@ export const createSupabaseMemeImageRepository = (): MemeImageRepository => {
 
       if (error) throw error;
       const rows = (data ?? []) as MemeImageRow[];
-      const ownerDisplayNameMap = await resolveOwnerDisplayNameMap(
-        Array.from(new Set(rows.map((row) => row.owner_id)))
-      );
-      return rows.map((row) => toRecord(row, ownerDisplayNameMap.get(row.owner_id)));
+      return rows.map((row) => toRecord(row, extractDisplayName(row.users)));
     },
 
     async getPublicByShareSlug(shareSlug) {
       const { data, error } = await supabase
         .from('meme_images')
-        .select('id, owner_id, template_id, title, description, image_url, image_width, image_height, image_bytes, image_mime, visibility, share_slug, view_count, like_count, created_at, updated_at')
+        .select('id, owner_id, template_id, title, description, image_url, image_width, image_height, image_bytes, image_mime, visibility, share_slug, view_count, like_count, created_at, updated_at, users!meme_images_owner_id_fkey(display_name)')
         .eq('share_slug', shareSlug)
         .eq('visibility', 'public')
         .is('deleted_at', null)
@@ -133,32 +118,18 @@ export const createSupabaseMemeImageRepository = (): MemeImageRepository => {
       if (error) throw error;
       if (!data) return null;
       const row = data as MemeImageRow;
-      const ownerDisplayNameMap = await resolveOwnerDisplayNameMap([row.owner_id]);
-      return toRecord(row, ownerDisplayNameMap.get(row.owner_id));
+      return toRecord(row, extractDisplayName(row.users));
     },
 
     async incrementViewCountByShareSlug(shareSlug) {
-      const { data: target, error: targetError } = await supabase
-        .from('meme_images')
-        .select('id, view_count')
-        .eq('share_slug', shareSlug)
-        .eq('visibility', 'public')
-        .is('deleted_at', null)
-        .maybeSingle<{ id: string; view_count: number | null }>();
+      const { data, error } = await supabase.rpc('increment_meme_image_view_count', {
+        p_share_slug: shareSlug
+      });
 
-      if (targetError) throw targetError;
-      if (!target) return null;
-
-      const nextViewCount = (target.view_count ?? 0) + 1;
-      const { data: updated, error: updateError } = await supabase
-        .from('meme_images')
-        .update({ view_count: nextViewCount })
-        .eq('id', target.id)
-        .select('view_count')
-        .single<{ view_count: number | null }>();
-
-      if (updateError) throw updateError;
-      return updated.view_count ?? nextViewCount;
+      if (error) throw error;
+      if (data === null || data === undefined) return null;
+      const next = Number(data);
+      return Number.isFinite(next) ? next : null;
     },
 
     async create(userId, input) {
@@ -181,13 +152,12 @@ export const createSupabaseMemeImageRepository = (): MemeImageRepository => {
       const { data, error } = await supabase
         .from('meme_images')
         .insert(payload)
-        .select('id, owner_id, template_id, title, description, image_url, image_width, image_height, image_bytes, image_mime, visibility, share_slug, view_count, like_count, created_at, updated_at')
+        .select('id, owner_id, template_id, title, description, image_url, image_width, image_height, image_bytes, image_mime, visibility, share_slug, view_count, like_count, created_at, updated_at, users!meme_images_owner_id_fkey(display_name)')
         .single();
 
       if (error) throw error;
       const row = data as MemeImageRow;
-      const ownerDisplayNameMap = await resolveOwnerDisplayNameMap([row.owner_id]);
-      return toRecord(row, ownerDisplayNameMap.get(row.owner_id));
+      return toRecord(row, extractDisplayName(row.users));
     },
 
     async update(userId, imageId, input) {
@@ -221,15 +191,14 @@ export const createSupabaseMemeImageRepository = (): MemeImageRepository => {
         .eq('id', imageId)
         .eq('owner_id', userId)
         .is('deleted_at', null)
-        .select('id, owner_id, template_id, title, description, image_url, image_width, image_height, image_bytes, image_mime, visibility, share_slug, view_count, like_count, created_at, updated_at')
+        .select('id, owner_id, template_id, title, description, image_url, image_width, image_height, image_bytes, image_mime, visibility, share_slug, view_count, like_count, created_at, updated_at, users!meme_images_owner_id_fkey(display_name)')
         .maybeSingle();
 
       if (error) throw error;
       if (!data) throw new Error('Meme image not found.');
 
       const row = data as MemeImageRow;
-      const ownerDisplayNameMap = await resolveOwnerDisplayNameMap([row.owner_id]);
-      return toRecord(row, ownerDisplayNameMap.get(row.owner_id));
+      return toRecord(row, extractDisplayName(row.users));
     },
 
     async remove(userId, imageId) {

@@ -1,5 +1,24 @@
 # 결정 로그 (Decision Log)
 
+## [2026-02-18] 조회수 증가 원자성 보강: `select->update` 제거, DB 함수(RPC) 전환
+- **결정**: 템플릿/리믹스 조회수 증가를 DB 함수로 통합하고, API 리포지토리에서는 RPC 단일 호출만 수행함.
+- **이유**:
+  1. 기존 `select -> update` 구조는 동시 요청 시 조회수 유실 가능성이 있음.
+  2. DB 단에서 `view_count = view_count + 1`을 수행하면 경쟁 상태에서도 증가 연산이 안전함.
+- **구현 요약**:
+  - SQL: `docs/ai-context/sql/2026-02-18_atomic_view_count_increment.sql`
+  - 함수: `increment_template_view_count`, `increment_meme_image_view_count`
+  - API: `apps/api/src/modules/templates/supabaseRepository.ts`, `apps/api/src/modules/images/supabaseRepository.ts`의 조회수 증가 로직을 `rpc(...)` 호출로 교체.
+
+## [2026-02-18] 공개 목록 API 쿼리 최적화 1차 (작성자명 조인)
+- **결정**:
+  - `templates`, `meme_images`의 목록/상세/생성/수정 응답에서 작성자명(`ownerDisplayName`) 조회를 `users(display_name)` 조인으로 통일함.
+- **이유**:
+  1. 기존 `목록 조회 -> users 재조회` 2단 조회는 왕복 지연을 증가시킴.
+- **구현 요약**:
+  - `apps/api/src/modules/templates/supabaseRepository.ts`: `users!templates_owner_id_fkey(display_name)` 조인 적용.
+  - `apps/api/src/modules/images/supabaseRepository.ts`: `users!meme_images_owner_id_fkey(display_name)` 조인 적용.
+
 ## [2026-02-17] 리믹스 게시 정책 확정: 밈플릿 연결 없는 게시 금지
 - **결정**: 리믹스 게시는 `templateId`가 연결된 경우에만 허용함. 밈플릿 미연결 상태(`/create` 단독 진입 등)에서는 게시를 차단함.
 - **이유**:

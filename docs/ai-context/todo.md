@@ -91,6 +91,8 @@
 - [ ] **시스템 고도화**
   - [x] API 보안 하드닝 1차 (`helmet`, `rate-limit`, 이미지 프록시 제거)
   - [x] 프론트 상태관리 1차 (`zustand` auth store, React Query 목록 캐시)
+  - [x] 공개 목록 API 작성자명 조회 1쿼리화 (`templates`, `meme_images`)
+  - [x] 조회수 증가 API 원자 업데이트 적용 (DB 함수 + RPC 전환)
   - [ ] 웹 워커(Web Worker) 기반 내보내기 처리
   - [ ] Undo/Redo 로직 정밀화
 

@@ -6,6 +6,11 @@ import type { TemplateRecord, TemplateRepository } from './repository.js';
 type TemplateRow = {
   id: string;
   owner_id: string;
+  users?: {
+    display_name: string | null;
+  } | Array<{
+    display_name: string | null;
+  }> | null;
   title: string;
   description: string | null;
   content?: Record<string, unknown>;
@@ -16,11 +21,6 @@ type TemplateRow = {
   share_slug: string;
   created_at: string;
   updated_at: string;
-};
-
-type UserRow = {
-  id: string;
-  display_name: string | null;
 };
 
 const toRecord = (row: TemplateRow, ownerDisplayName?: string | null): TemplateRecord => ({
@@ -39,48 +39,34 @@ const toRecord = (row: TemplateRow, ownerDisplayName?: string | null): TemplateR
   updatedAt: row.updated_at
 });
 
+const extractDisplayName = (users: TemplateRow['users']) => {
+  if (!users) return undefined;
+  if (Array.isArray(users)) return users[0]?.display_name ?? undefined;
+  return users.display_name ?? undefined;
+};
+
 const generateShareSlug = () => `tmpl_${randomBytes(6).toString('base64url')}`;
 
 export const createSupabaseTemplateRepository = (): TemplateRepository => {
   const supabase = getSupabaseAdminClient();
-  const resolveOwnerDisplayNameMap = async (ownerIds: string[]) => {
-    if (ownerIds.length === 0) {
-      return new Map<string, string | null>();
-    }
-
-    const { data, error } = await supabase
-      .from('users')
-      .select('id, display_name')
-      .in('id', ownerIds);
-
-    if (error || !data) {
-      return new Map<string, string | null>();
-    }
-
-    return new Map((data as UserRow[]).map((row) => [row.id, row.display_name]));
-  };
-
   return {
     async listMine(userId) {
       const { data, error } = await supabase
         .from('templates')
-        .select('id, owner_id, title, description, thumbnail_url, view_count, like_count, visibility, share_slug, created_at, updated_at')
+        .select('id, owner_id, title, description, thumbnail_url, view_count, like_count, visibility, share_slug, created_at, updated_at, users!templates_owner_id_fkey(display_name)')
         .eq('owner_id', userId)
         .is('deleted_at', null)
         .order('updated_at', { ascending: false });
 
       if (error) throw error;
       const rows = (data ?? []) as TemplateRow[];
-      const ownerDisplayNameMap = await resolveOwnerDisplayNameMap(
-        Array.from(new Set(rows.map((row) => row.owner_id)))
-      );
-      return rows.map((row) => toRecord(row, ownerDisplayNameMap.get(row.owner_id)));
+      return rows.map((row) => toRecord(row, extractDisplayName(row.users)));
     },
 
     async getMineById(userId, templateId) {
       const { data, error } = await supabase
         .from('templates')
-        .select('id, owner_id, title, description, content, thumbnail_url, view_count, like_count, visibility, share_slug, created_at, updated_at')
+        .select('id, owner_id, title, description, content, thumbnail_url, view_count, like_count, visibility, share_slug, created_at, updated_at, users!templates_owner_id_fkey(display_name)')
         .eq('id', templateId)
         .eq('owner_id', userId)
         .is('deleted_at', null)
@@ -89,14 +75,13 @@ export const createSupabaseTemplateRepository = (): TemplateRepository => {
       if (error) throw error;
       if (!data) return null;
       const row = data as TemplateRow;
-      const ownerDisplayNameMap = await resolveOwnerDisplayNameMap([row.owner_id]);
-      return toRecord(row, ownerDisplayNameMap.get(row.owner_id));
+      return toRecord(row, extractDisplayName(row.users));
     },
 
     async listPublic(limit) {
       const { data, error } = await supabase
         .from('templates')
-        .select('id, owner_id, title, description, thumbnail_url, view_count, like_count, visibility, share_slug, created_at, updated_at')
+        .select('id, owner_id, title, description, thumbnail_url, view_count, like_count, visibility, share_slug, created_at, updated_at, users!templates_owner_id_fkey(display_name)')
         .eq('visibility', 'public')
         .is('deleted_at', null)
         .order('updated_at', { ascending: false })
@@ -104,16 +89,13 @@ export const createSupabaseTemplateRepository = (): TemplateRepository => {
 
       if (error) throw error;
       const rows = (data ?? []) as TemplateRow[];
-      const ownerDisplayNameMap = await resolveOwnerDisplayNameMap(
-        Array.from(new Set(rows.map((row) => row.owner_id)))
-      );
-      return rows.map((row) => toRecord(row, ownerDisplayNameMap.get(row.owner_id)));
+      return rows.map((row) => toRecord(row, extractDisplayName(row.users)));
     },
 
     async getPublicDetailByShareSlug(shareSlug) {
       const { data, error } = await supabase
         .from('templates')
-        .select('id, owner_id, title, description, thumbnail_url, view_count, like_count, visibility, share_slug, created_at, updated_at')
+        .select('id, owner_id, title, description, thumbnail_url, view_count, like_count, visibility, share_slug, created_at, updated_at, users!templates_owner_id_fkey(display_name)')
         .eq('share_slug', shareSlug)
         .eq('visibility', 'public')
         .is('deleted_at', null)
@@ -122,14 +104,13 @@ export const createSupabaseTemplateRepository = (): TemplateRepository => {
       if (error) throw error;
       if (!data) return null;
       const row = data as TemplateRow;
-      const ownerDisplayNameMap = await resolveOwnerDisplayNameMap([row.owner_id]);
-      return toRecord(row, ownerDisplayNameMap.get(row.owner_id));
+      return toRecord(row, extractDisplayName(row.users));
     },
 
     async getPublicByShareSlug(shareSlug) {
       const { data, error } = await supabase
         .from('templates')
-        .select('id, owner_id, title, description, content, thumbnail_url, view_count, like_count, visibility, share_slug, created_at, updated_at')
+        .select('id, owner_id, title, description, content, thumbnail_url, view_count, like_count, visibility, share_slug, created_at, updated_at, users!templates_owner_id_fkey(display_name)')
         .eq('share_slug', shareSlug)
         .eq('visibility', 'public')
         .is('deleted_at', null)
@@ -138,32 +119,18 @@ export const createSupabaseTemplateRepository = (): TemplateRepository => {
       if (error) throw error;
       if (!data) return null;
       const row = data as TemplateRow;
-      const ownerDisplayNameMap = await resolveOwnerDisplayNameMap([row.owner_id]);
-      return toRecord(row, ownerDisplayNameMap.get(row.owner_id));
+      return toRecord(row, extractDisplayName(row.users));
     },
 
     async incrementViewCountByShareSlug(shareSlug) {
-      const { data: target, error: targetError } = await supabase
-        .from('templates')
-        .select('id, view_count')
-        .eq('share_slug', shareSlug)
-        .eq('visibility', 'public')
-        .is('deleted_at', null)
-        .maybeSingle<{ id: string; view_count: number | null }>();
+      const { data, error } = await supabase.rpc('increment_template_view_count', {
+        p_share_slug: shareSlug
+      });
 
-      if (targetError) throw targetError;
-      if (!target) return null;
-
-      const nextViewCount = (target.view_count ?? 0) + 1;
-      const { data: updated, error: updateError } = await supabase
-        .from('templates')
-        .update({ view_count: nextViewCount })
-        .eq('id', target.id)
-        .select('view_count')
-        .single<{ view_count: number | null }>();
-
-      if (updateError) throw updateError;
-      return updated.view_count ?? nextViewCount;
+      if (error) throw error;
+      if (data === null || data === undefined) return null;
+      const next = Number(data);
+      return Number.isFinite(next) ? next : null;
     },
 
     async create(userId, input) {
@@ -182,13 +149,12 @@ export const createSupabaseTemplateRepository = (): TemplateRepository => {
       const { data, error } = await supabase
         .from('templates')
         .insert(payload)
-        .select('id, owner_id, title, description, content, thumbnail_url, view_count, like_count, visibility, share_slug, created_at, updated_at')
+        .select('id, owner_id, title, description, content, thumbnail_url, view_count, like_count, visibility, share_slug, created_at, updated_at, users!templates_owner_id_fkey(display_name)')
         .single();
 
       if (error) throw error;
       const row = data as TemplateRow;
-      const ownerDisplayNameMap = await resolveOwnerDisplayNameMap([row.owner_id]);
-      return toRecord(row, ownerDisplayNameMap.get(row.owner_id));
+      return toRecord(row, extractDisplayName(row.users));
     },
 
     async update(userId, templateId, input) {
@@ -214,7 +180,7 @@ export const createSupabaseTemplateRepository = (): TemplateRepository => {
         .eq('id', templateId)
         .eq('owner_id', userId)
         .is('deleted_at', null)
-        .select('id, owner_id, title, description, content, thumbnail_url, view_count, like_count, visibility, share_slug, created_at, updated_at')
+        .select('id, owner_id, title, description, content, thumbnail_url, view_count, like_count, visibility, share_slug, created_at, updated_at, users!templates_owner_id_fkey(display_name)')
         .maybeSingle();
 
       if (error) throw error;
@@ -222,8 +188,7 @@ export const createSupabaseTemplateRepository = (): TemplateRepository => {
         throw new Error('Template not found.');
       }
       const row = data as TemplateRow;
-      const ownerDisplayNameMap = await resolveOwnerDisplayNameMap([row.owner_id]);
-      return toRecord(row, ownerDisplayNameMap.get(row.owner_id));
+      return toRecord(row, extractDisplayName(row.users));
     },
 
     async remove(userId, templateId) {

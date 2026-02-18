@@ -158,6 +158,12 @@
   - [x] `POST /api/v1/images`에서 `templateId` 필수 검증 적용
   - [x] 에디터 공유 탭의 `리믹스 게시` 버튼을 밈플릿 미연결 시 비활성화
   - [x] 리믹스 게시 불가 사유 안내 문구 노출
+- [x] **공개 목록 API 쿼리 경량화 1차 (완료 - 2026-02-18)**
+  - [x] `templates.listPublic` 작성자명 조회를 `users` 조인 1쿼리로 전환
+  - [x] `meme_images.listPublic` 작성자명 조회를 `users` 조인 1쿼리로 전환
+- [x] **조회수 증가 원자성 보강 1차 (완료 - 2026-02-18)**
+  - [x] DB 함수 `increment_template_view_count`, `increment_meme_image_view_count` SQL 추가
+  - [x] 템플릿/리믹스 조회수 증가 로직을 `select -> update`에서 RPC 단일 호출로 전환
 
 ## 다음 작업
 - [ ] Google OAuth 로그인 엔드포인트 고도화 (`/api/v1/auth/*`)
