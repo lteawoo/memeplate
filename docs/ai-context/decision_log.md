@@ -1,5 +1,98 @@
 # 결정 로그 (Decision Log)
 
+## [2026-02-19] 모바일 리사이즈 정책 2차: width-fit 우선으로 단순화
+- **결정**: 모바일 뷰포트에서는 캔버스 표시 스케일을 `width-fit` 기준으로만 계산하고, 높이 상한(`usableViewportHeight`)에 의한 재축소 경로를 제거함.
+- **이유**:
+  1. 모바일 세로 스택 레이아웃에서 높이 기반 계산은 패널/콘텐츠 높이 변동과 상호작용하며 축소 루프를 유발함.
+  2. 폭 기준 단일 정책이 모바일에서 더 예측 가능하고 안정적임.
+- **구현 요약**:
+  - `apps/web/src/components/editor/MemeCanvas.tsx`
+    - `viewport width < 768`에서는 `displayScale = usableWidth / intrinsicWidth`.
+    - 모바일 `displayWidth`/`displayHeight` 계산에서 `usableViewportHeight` 상한 제거.
+  - `apps/web/src/constants/canvasLimits.ts`
+    - 캔버스 edge/area 상한값 공통 상수화.
+  - `apps/web/src/components/editor/MemeCanvas.tsx`, `apps/web/src/hooks/useMemeEditor.ts`
+    - 중복 상수 제거 후 공통 상수 재사용.
+
+## [2026-02-19] 전역 레이아웃 폭 정책: 루트 최대 `1440px` + 중앙 정렬
+- **결정**: 웹 앱 루트 컨테이너(`#root`) 최대 폭을 `1440px`로 제한하고, 초과 해상도에서는 가운데 정렬로 표시함.
+- **이유**:
+  1. 초광폭 화면에서 좌우 콘텐츠 밀도가 과도하게 퍼지는 문제를 방지함.
+  2. 페이지별 개별 max-width 처리 대신 전역 루트 정책으로 일관성을 확보함.
+- **구현 요약**:
+  - `apps/web/src/index.css`
+    - `#root { width: min(100%, 1440px); margin: 0 auto; min-height: 100vh; }`
+    - `body`의 flex 레이아웃 제거(기본 블록 흐름으로 단순화).
+  - 검증: viewport `1800px`에서 `#root` 폭 `1440px`, 좌우 여백 `180px`로 중앙 정렬 확인.
+
+## [2026-02-18] 모바일 회귀 대응: `dvh` 고정/측정 분리 변경 롤백 + 업로드 `blob URL` 전환
+- **결정**: 모바일에서 스크롤 불가/업로드 체감 지연 회귀가 발생해 레이아웃 고정 실험(`dvh`, 외부 측정 ref 분리)을 롤백하고, 로컬 업로드 경로를 `dataURL`에서 `blob URL`로 전환함.
+- **이유**:
+  1. 회귀 영향(스크롤/업로드 실패 체감)이 기능 안정성 이슈보다 우선적으로 큼.
+  2. 대용량 로컬 파일에서 base64 변환(`FileReader.readAsDataURL`)은 메인 스레드 비용이 커서 체감 지연을 유발함.
+- **구현 요약**:
+  - `apps/web/src/components/MemeEditor.tsx`, `apps/web/src/components/editor/MemeCanvas.tsx`
+    - `dvh` 및 외부 측정 ref 기반 변경 원복.
+  - `apps/web/src/hooks/useMemeEditor.ts`
+    - `handleImageUpload`: `URL.createObjectURL(file)` 사용.
+    - `setBackgroundImage`: blob URL 사용 시 성공/실패 후 `URL.revokeObjectURL` 처리.
+
+## [2026-02-18] 모바일 무한 리사이즈 루프 차단: 에디터 루트 높이를 `dvh` 고정
+- **결정**: 모바일 에디터 루트 레이아웃을 `min-height` 중심에서 `h-dvh/min-h-dvh` 고정으로 전환하고, 중간 flex 컨테이너에 `min-h-0`를 추가함.
+- **이유**:
+  1. `min-height` 기반 모바일 컬럼 레이아웃에서 캔버스 표시 크기 계산값이 다시 부모 높이에 영향을 주며 축소 루프가 발생함.
+  2. 캔버스/패널이 세로 스택인 모바일에서 부모 높이 기준이 불안정하면 `ResizeObserver -> displayScale -> height` 순환이 끊기지 않음.
+- **구현 요약**:
+  - `apps/web/src/components/MemeEditor.tsx`
+    - 루트 `Layout`: `min-h-screen` -> `h-dvh min-h-dvh` 변경
+    - 내부 래퍼: `min-h-0` 추가
+  - 실측 검증(390x844, 배경 3000x5000): 3초 연속 샘플에서 `mainH/canvasCssH` 값이 고정되어 루프 해소 확인.
+
+## [2026-02-18] 캔버스 리사이즈 재계산 보정: viewport usable 영역 기준으로 통일
+- **결정**: 화면/해상도 변경 시 캔버스 표시 스케일을 viewport 실측값(`clientWidth/clientHeight`) 기반으로 재계산하고, canvas border를 usable 영역에 반영하도록 변경함.
+- **이유**:
+  1. 특정 해상도에서 경계 1~수 px 클리핑이 발생하는 원인은 스케일 계산값과 실제 박스(border 포함) 크기 불일치였음.
+  2. `ResizeObserver`만으로 누락될 수 있는 케이스(회전/브라우저 줌)를 `window.resize` 구독으로 보강할 필요가 있음.
+- **구현 요약**:
+  - `apps/web/src/components/editor/MemeCanvas.tsx`
+    - `displayScale` 계산을 usable viewport 기준으로 단일화.
+    - canvas border 두께를 측정해 usable width/height에서 차감.
+    - viewport 측정에 `clientWidth/clientHeight` 사용 + `window.resize` 리스너 추가.
+
+## [2026-02-18] 대형 원본 이미지 로드 가드: 작업영역/백킹캔버스 안전 한계 적용
+- **결정**: 대형 원본 업로드 시 작업영역 크기를 `max edge 8192` + `max area 16MP` 기준으로 정규화하고, 렌더 백킹캔버스도 동일 한계 내에서 render scale을 자동 캡함.
+- **이유**:
+  1. 브라우저 캔버스 내부 최대 크기 한계를 넘는 초고해상도 이미지에서 렌더 클리핑(일부 잘림)이 발생할 수 있음.
+  2. 로드 단계에서 안전 크기로 정규화하면 편집/내보내기 파이프라인 전반의 안정성이 높아짐.
+- **구현 요약**:
+  - `apps/web/src/hooks/useMemeEditor.ts`
+    - `normalizeWorkspaceSize` 유틸 추가(`edge + area` 동시 제한).
+    - `setBackgroundImage`에서 캔버스/배경 객체 크기를 정규화 크기로 적용.
+    - 축소 적용 시 사용자 안내 메시지 표시.
+  - `apps/web/src/components/editor/MemeCanvas.tsx`
+    - `setRenderScale`에 백킹캔버스 `edge/area` 캡 추가.
+
+## [2026-02-18] 템플릿 업데이트 품질 보존: 배경 무변경 시 재업로드 스킵
+- **결정**: 템플릿 업데이트 시 배경/도형 계열 변경이 없으면 `backgroundDataUrl`를 생성·전송하지 않고 기존 배경 URL을 그대로 재사용함.
+- **이유**:
+  1. 제목/설명/공개범위만 변경하는 업데이트에서 불필요한 webp 재인코딩으로 품질 저하가 누적되는 문제를 방지함.
+  2. R2 업로드/전송 비용을 줄여 저장 지연을 완화함.
+- **구현 요약**:
+  - `apps/web/src/hooks/useMemeEditor.ts`
+    - 비텍스트 객체 변경 기반 `isBackgroundDirtyRef` 추적 추가.
+    - 저장 시 dirty가 아니면 기존 배경 `src`를 `content`에 유지하고 `backgroundDataUrl` 전송 생략.
+    - 저장 성공 후 dirty 플래그 초기화.
+
+## [2026-02-18] 공유 UX 정리: `밈플릿 게시`/`리믹스 게시` 모달 입력 플로우 전환
+- **결정**: 공유 탭에서 게시 관련 입력폼을 인라인으로 노출하지 않고, `밈플릿 게시`, `리믹스 게시` 버튼 클릭 시 모달에서 입력/확정하도록 변경함.
+- **이유**:
+  1. 공유 탭 길이를 줄여 편집 맥락을 유지하고 액션 집중도를 높임.
+  2. 게시 확정 액션을 모달로 분리해 입력/제출 흐름을 명확히 함.
+- **구현 요약**:
+  - `apps/web/src/components/editor/MemePropertyPanel.tsx`
+    - 인라인 입력폼 제거 후 액션 카드 + 모달 구조로 전환.
+    - 게시 성공 시에만 각 모달을 닫도록 처리.
+
 ## [2026-02-18] 게시 포맷 정책 보정: 밈플릿/리믹스는 `webp`, 다운로드 기본값은 `png` 유지
 - **결정**: 밈플릿 저장(배경 평탄화)과 리믹스 게시 포맷은 `webp`로 통일하고, 다운로드 기본 선택값은 기존 `png`를 유지함.
 - **이유**:

@@ -4,6 +4,7 @@ import Icon from '@mdi/react';
 import { mdiImage } from '@mdi/js';
 import { Canvas, Textbox } from '../../core/canvas';
 import { resolveTextLayout } from '../../core/canvas/textLayout';
+import { MAX_CANVAS_AREA_PX, MAX_CANVAS_EDGE_PX } from '../../constants/canvasLimits';
 
 const { Content } = Layout;
 const { Title, Text } = Typography;
@@ -17,8 +18,6 @@ interface MemeCanvasProps {
   canvasInstance?: Canvas | null;
   workspaceSize?: { width: number; height: number };
 }
-
-const MAX_DISPLAY_EDGE_PX = 800;
 
 const MemeCanvas: React.FC<MemeCanvasProps> = ({ 
   canvasRef, 
@@ -46,52 +45,92 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
 
   const intrinsicWidth = workspaceSize?.width || 0;
   const intrinsicHeight = workspaceSize?.height || 0;
-  const intrinsicMaxEdge = Math.max(intrinsicWidth, intrinsicHeight, 1);
+  const [canvasBorderSize, setCanvasBorderSize] = React.useState({ width: 0, height: 0 });
+  const isMobileViewport = viewportSize.width < 768;
 
   const displayScale = React.useMemo(() => {
     if (!intrinsicWidth || !intrinsicHeight || !viewportSize.width || !viewportSize.height) {
       return 1;
     }
+    const usableWidth = Math.max(1, viewportSize.width - canvasBorderSize.width);
+    if (isMobileViewport) {
+      return Math.min(1, usableWidth / intrinsicWidth);
+    }
+    const usableHeight = Math.max(1, viewportSize.height - canvasBorderSize.height);
     const viewportScale = Math.min(
-      viewportSize.width / intrinsicWidth,
-      viewportSize.height / intrinsicHeight
+      usableWidth / intrinsicWidth,
+      usableHeight / intrinsicHeight
     );
-    const maxEdgeScale = MAX_DISPLAY_EDGE_PX / intrinsicMaxEdge;
-    return Math.min(viewportScale, maxEdgeScale);
-  }, [intrinsicWidth, intrinsicHeight, intrinsicMaxEdge, viewportSize.width, viewportSize.height]);
+    return Math.min(1, viewportScale);
+  }, [intrinsicWidth, intrinsicHeight, viewportSize.width, viewportSize.height, canvasBorderSize.width, canvasBorderSize.height, isMobileViewport]);
+
+  const usableViewportWidth = Math.max(1, viewportSize.width - canvasBorderSize.width);
+  const usableViewportHeight = Math.max(1, viewportSize.height - canvasBorderSize.height);
 
   const displayWidth = intrinsicWidth
-    ? Math.max(1, Math.floor(intrinsicWidth * displayScale))
+    ? (isMobileViewport
+        ? Math.max(1, Math.floor(intrinsicWidth * displayScale))
+        : Math.min(usableViewportWidth, Math.max(1, Math.floor(intrinsicWidth * displayScale))))
     : 0;
   const displayHeight = intrinsicHeight
-    ? Math.max(1, Math.floor(intrinsicHeight * displayScale))
+    ? (isMobileViewport
+        ? Math.max(1, Math.floor(intrinsicHeight * displayScale))
+        : Math.min(usableViewportHeight, Math.max(1, Math.floor(intrinsicHeight * displayScale))))
     : 0;
 
   React.useEffect(() => {
     if (!canvasInstance) return;
     const dpr = Math.max(1, window.devicePixelRatio || 1);
     const upscale = Math.max(1, displayScale);
-    canvasInstance.setRenderScale(Math.min(4, dpr * upscale));
-  }, [canvasInstance, displayScale]);
+    const targetScale = Math.min(4, dpr * upscale);
+    const intrinsicArea = Math.max(1, intrinsicWidth * intrinsicHeight);
+    const edgeCap = intrinsicWidth && intrinsicHeight
+      ? Math.min(
+          MAX_CANVAS_EDGE_PX / Math.max(1, intrinsicWidth),
+          MAX_CANVAS_EDGE_PX / Math.max(1, intrinsicHeight)
+        )
+      : 1;
+    const areaCap = Math.sqrt(MAX_CANVAS_AREA_PX / intrinsicArea);
+    const safeScale = Math.max(0.1, Math.min(targetScale, edgeCap, areaCap));
+    canvasInstance.setRenderScale(safeScale);
+  }, [canvasInstance, displayScale, intrinsicWidth, intrinsicHeight]);
 
   React.useEffect(() => {
-    const viewport = canvasViewportRef.current;
-    if (!viewport) return;
+    const layoutContainer = containerRef.current;
+    if (!layoutContainer) return;
 
     const updateViewportSize = () => {
-      const rect = viewport.getBoundingClientRect();
+      const style = window.getComputedStyle(layoutContainer);
+      const paddingX = (Number.parseFloat(style.paddingLeft) || 0) + (Number.parseFloat(style.paddingRight) || 0);
+      const paddingY = (Number.parseFloat(style.paddingTop) || 0) + (Number.parseFloat(style.paddingBottom) || 0);
       setViewportSize({
-        width: Math.max(0, Math.round(rect.width)),
-        height: Math.max(0, Math.round(rect.height))
+        width: Math.max(0, Math.round(layoutContainer.clientWidth - paddingX)),
+        height: Math.max(0, Math.round(layoutContainer.clientHeight - paddingY))
       });
     };
 
     updateViewportSize();
     const observer = new ResizeObserver(updateViewportSize);
-    observer.observe(viewport);
+    observer.observe(layoutContainer);
+    window.addEventListener('resize', updateViewportSize);
 
-    return () => observer.disconnect();
-  }, []);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', updateViewportSize);
+    };
+  }, [containerRef]);
+
+  React.useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const style = window.getComputedStyle(canvas);
+    const borderX = (Number.parseFloat(style.borderLeftWidth) || 0) + (Number.parseFloat(style.borderRightWidth) || 0);
+    const borderY = (Number.parseFloat(style.borderTopWidth) || 0) + (Number.parseFloat(style.borderBottomWidth) || 0);
+    setCanvasBorderSize({
+      width: Math.round(borderX),
+      height: Math.round(borderY)
+    });
+  }, [canvasRef, hasBackground]);
 
   React.useEffect(() => {
     const canvas = canvasRef.current;

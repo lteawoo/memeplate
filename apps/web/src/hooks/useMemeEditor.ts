@@ -5,6 +5,7 @@ import type { ToolType } from '../components/editor/MemeToolbar';
 import { message } from 'antd';
 import type { TemplateRecord, TemplateVisibility } from '../types/template';
 import { apiFetch } from '../lib/apiFetch';
+import { MAX_CANVAS_AREA_PX, MAX_CANVAS_EDGE_PX } from '../constants/canvasLimits';
 
 type MessageInstance = ReturnType<typeof message.useMessage>[0];
 
@@ -20,6 +21,10 @@ interface HistoryItem {
 }
 
 interface CanvasDoubleClickEvent {
+  target?: CanvasObject;
+}
+
+interface CanvasObjectEvent {
   target?: CanvasObject;
 }
 
@@ -135,6 +140,36 @@ const estimateDataUrlBytes = (dataUrl: string) => {
   return Math.max(0, Math.floor((base64.length * 3) / 4) - padding);
 };
 
+const normalizeWorkspaceSize = (width: number, height: number) => {
+  const safeWidth = Number.isFinite(width) && width > 0 ? Math.round(width) : 1;
+  const safeHeight = Number.isFinite(height) && height > 0 ? Math.round(height) : 1;
+  const longEdge = Math.max(safeWidth, safeHeight, 1);
+  const area = safeWidth * safeHeight;
+  const edgeScale = MAX_CANVAS_EDGE_PX / longEdge;
+  const areaScale = area > MAX_CANVAS_AREA_PX
+    ? Math.sqrt(MAX_CANVAS_AREA_PX / area)
+    : 1;
+  const scale = Math.min(1, edgeScale, areaScale);
+  if (scale >= 1) {
+    return { width: safeWidth, height: safeHeight, scaled: false };
+  }
+  return {
+    width: Math.max(1, Math.round(safeWidth * scale)),
+    height: Math.max(1, Math.round(safeHeight * scale)),
+    scaled: true
+  };
+};
+
+const isTextObject = (obj?: CanvasObject | null) => obj instanceof Textbox || obj?.type === 'text';
+
+const getBackgroundSourceFromCanvas = (canvas: Canvas) => {
+  const objects = canvas.getObjects();
+  const background = objects.find((obj) => obj.name === 'background' && obj.type === 'image');
+  const fallbackImage = objects.find((obj) => obj.type === 'image');
+  const src = (background ?? fallbackImage)?.src;
+  return typeof src === 'string' ? src.trim() : '';
+};
+
 const createBackgroundImageObject = (src: string, width: number, height: number): Record<string, unknown> => ({
   id: crypto.randomUUID(),
   type: 'image',
@@ -190,6 +225,7 @@ export const useMemeEditor = (messageApi: MessageInstance, options?: UseMemeEdit
   const historyRef = useRef<HistoryItem[]>([]);
   const indexRef = useRef(-1);
   const historyDebounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isBackgroundDirtyRef = useRef(false);
   const loadedTemplateKeyRef = useRef<string | null>(null);
   const [isCanvasReady, setIsCanvasReady] = useState(false);
 
@@ -328,7 +364,10 @@ export const useMemeEditor = (messageApi: MessageInstance, options?: UseMemeEdit
       }
     };
 
-    const handleUpdate = () => {
+    const handleUpdate = (event?: CanvasObjectEvent) => {
+        if (event?.target && !isTextObject(event.target)) {
+          isBackgroundDirtyRef.current = true;
+        }
         saveHistoryNow();
         setLayers([...canvas.getObjects()]);
     }
@@ -461,6 +500,7 @@ export const useMemeEditor = (messageApi: MessageInstance, options?: UseMemeEdit
       } else {
         setSavedTemplate(null);
       }
+      isBackgroundDirtyRef.current = false;
 
       isHistoryLocked.current = false;
     }).catch((err) => {
@@ -478,23 +518,25 @@ export const useMemeEditor = (messageApi: MessageInstance, options?: UseMemeEdit
     isHistoryLocked.current = true;
 
     const safeImageUrl = toCanvasSafeImageSrc(url);
+    const shouldRevokeObjectUrl = safeImageUrl.startsWith('blob:');
 
     CanvasImage.fromURL(safeImageUrl).then((img) => {
       const canvas = canvasInstanceRef.current!;
       const logicalW = img.element?.naturalWidth || img.width;
       const logicalH = img.element?.naturalHeight || img.height;
+      const normalizedSize = normalizeWorkspaceSize(logicalW, logicalH);
 
-      canvas.setDimensions({ width: logicalW, height: logicalH });
-      const newSize = { width: logicalW, height: logicalH };
+      canvas.setDimensions({ width: normalizedSize.width, height: normalizedSize.height });
+      const newSize = { width: normalizedSize.width, height: normalizedSize.height };
       setWorkspaceSize(newSize);
       workspaceSizeRef.current = newSize;
 
-      img.set('width', logicalW);
-      img.set('height', logicalH);
+      img.set('width', normalizedSize.width);
+      img.set('height', normalizedSize.height);
       img.set('scaleX', 1);
       img.set('scaleY', 1);
-      img.set('left', logicalW / 2);
-      img.set('top', logicalH / 2);
+      img.set('left', normalizedSize.width / 2);
+      img.set('top', normalizedSize.height / 2);
       img.set('selectable', false);
       img.set('evented', false);
       img.set('name', 'background');
@@ -503,11 +545,18 @@ export const useMemeEditor = (messageApi: MessageInstance, options?: UseMemeEdit
       canvas.add(img);
       canvas.sendObjectToBack(img);
       canvas.renderAll();
+      if (normalizedSize.scaled) {
+        messageApi.info(`큰 원본이라 편집 안정성을 위해 ${normalizedSize.width}x${normalizedSize.height}로 조정했습니다.`);
+      }
+      isBackgroundDirtyRef.current = true;
       isHistoryLocked.current = false;
 
       setTimeout(() => {
         if (canvasInstanceRef.current) canvasInstanceRef.current.requestRender();
       }, 100);
+      if (shouldRevokeObjectUrl) {
+        URL.revokeObjectURL(safeImageUrl);
+      }
     }).catch((err) => {
       console.error('Failed to load image:', err);
       messageApi.error('이미지를 불러오는데 실패했습니다.');
@@ -515,6 +564,9 @@ export const useMemeEditor = (messageApi: MessageInstance, options?: UseMemeEdit
       setBgUrl('');
       setActiveTool(null);
       isHistoryLocked.current = false;
+      if (shouldRevokeObjectUrl) {
+        URL.revokeObjectURL(safeImageUrl);
+      }
     });
   };
 
@@ -532,11 +584,8 @@ export const useMemeEditor = (messageApi: MessageInstance, options?: UseMemeEdit
     ) ? maybeFile.originFileObj : maybeFile;
 
     if (file instanceof File || file instanceof Blob) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        if (e.target?.result) setBackgroundImage(e.target.result as string);
-      };
-      reader.readAsDataURL(file);
+      const objectUrl = URL.createObjectURL(file);
+      setBackgroundImage(objectUrl);
     }
   };
 
@@ -565,6 +614,9 @@ export const useMemeEditor = (messageApi: MessageInstance, options?: UseMemeEdit
         active.set(key, value);
         canvasInstanceRef.current.renderAll();
         if (key === 'fill') setColor(value as string);
+        if (!isTextObject(active)) {
+          isBackgroundDirtyRef.current = true;
+        }
         setLayers([...canvasInstanceRef.current.getObjects()]);
         saveHistoryDebounced();
     }
@@ -574,6 +626,9 @@ export const useMemeEditor = (messageApi: MessageInstance, options?: UseMemeEdit
     if (!canvasInstanceRef.current) return;
     const active = canvasInstanceRef.current.getActiveObject();
     if (active && active.name !== 'background') {
+        if (!isTextObject(active)) {
+          isBackgroundDirtyRef.current = true;
+        }
         canvasInstanceRef.current.remove(active);
         canvasInstanceRef.current.discardActiveObject();
     }
@@ -591,6 +646,7 @@ export const useMemeEditor = (messageApi: MessageInstance, options?: UseMemeEdit
     
     canvasInstanceRef.current.add(shape); 
     canvasInstanceRef.current.setActiveObject(shape); 
+    isBackgroundDirtyRef.current = true;
   };
 
   const downloadImage = async (format: 'png' | 'jpg' | 'webp' | 'pdf') => {
@@ -737,26 +793,32 @@ export const useMemeEditor = (messageApi: MessageInstance, options?: UseMemeEdit
         .filter((obj) => obj instanceof Textbox || obj.type === 'text')
         .map((obj) => ({ obj, visible: obj.visible }));
 
+      const backgroundSrc = getBackgroundSourceFromCanvas(canvas);
+      const shouldUploadBackground = isBackgroundDirtyRef.current
+        || !backgroundSrc
+        || backgroundSrc.startsWith('data:image/');
       let flattenedBackgroundDataUrl = '';
-      try {
-        textObjects.forEach(({ obj }) => obj.set('visible', false));
-        // Bake non-text layers (background + shapes) into one base image.
-        flattenedBackgroundDataUrl = canvas.toDataURL({
-          format: 'webp',
-          multiplier: 1,
-          width: workspaceSize.width,
-          height: workspaceSize.height,
-          quality: TEMPLATE_BACKGROUND_QUALITY
-        });
-      } finally {
-        textObjects.forEach(({ obj, visible }) => obj.set('visible', visible));
+      if (shouldUploadBackground) {
+        try {
+          textObjects.forEach(({ obj }) => obj.set('visible', false));
+          // Bake non-text layers (background + shapes) into one base image.
+          flattenedBackgroundDataUrl = canvas.toDataURL({
+            format: 'webp',
+            multiplier: 1,
+            width: workspaceSize.width,
+            height: workspaceSize.height,
+            quality: TEMPLATE_BACKGROUND_QUALITY
+          });
+        } finally {
+          textObjects.forEach(({ obj, visible }) => obj.set('visible', visible));
+        }
       }
 
       const content = {
         width: workspaceSize.width,
         height: workspaceSize.height,
         objects: [
-          createBackgroundImageObject('', workspaceSize.width, workspaceSize.height),
+          createBackgroundImageObject(shouldUploadBackground ? '' : backgroundSrc, workspaceSize.width, workspaceSize.height),
           ...textLayerObjects
         ]
       };
@@ -765,7 +827,7 @@ export const useMemeEditor = (messageApi: MessageInstance, options?: UseMemeEdit
         title: title.trim(),
         description: description.trim() || undefined,
         content,
-        backgroundDataUrl: flattenedBackgroundDataUrl,
+        backgroundDataUrl: shouldUploadBackground ? flattenedBackgroundDataUrl : undefined,
         visibility
       });
 
@@ -801,6 +863,7 @@ export const useMemeEditor = (messageApi: MessageInstance, options?: UseMemeEdit
         shareSlug: payload.template.shareSlug
       };
       setSavedTemplate(template);
+      isBackgroundDirtyRef.current = false;
       messageApi.success('밈플릿이 저장되었습니다.');
       return template;
     } catch (err) {
@@ -834,6 +897,9 @@ export const useMemeEditor = (messageApi: MessageInstance, options?: UseMemeEdit
       case 'backward': canvas.sendObjectBackwards(activeObject); break;
       case 'front': canvas.bringObjectToFront(activeObject); break;
       case 'back': canvas.sendObjectToBack(activeObject); break;
+    }
+    if (!isTextObject(activeObject)) {
+      isBackgroundDirtyRef.current = true;
     }
     setLayers([...canvas.getObjects()]);
   };
