@@ -7,6 +7,7 @@ import {
   Empty,
   Segmented,
   Dropdown,
+  Modal,
   type MenuProps
 } from 'antd';
 import type { UploadChangeParam, UploadFile } from 'antd/es/upload';
@@ -106,6 +107,8 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
   const [templateVisibility, setTemplateVisibility] = React.useState<'private' | 'public'>('private');
   const [remixTitle, setRemixTitle] = React.useState('새 리믹스');
   const [remixDescription, setRemixDescription] = React.useState('');
+  const [isTemplateModalOpen, setIsTemplateModalOpen] = React.useState(false);
+  const [isRemixModalOpen, setIsRemixModalOpen] = React.useState(false);
   const textLayerOrder = React.useMemo(() => {
     const textLayerIds = layers
       .filter((layer): layer is Textbox => layer instanceof Textbox)
@@ -119,6 +122,20 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
     setTemplateDescription(savedTemplate.description || '');
     setTemplateVisibility(savedTemplate.visibility);
   }, [savedTemplate]);
+
+  const handleTemplatePublish = async () => {
+    const published = await saveTemplate(templateTitle, templateDescription, templateVisibility);
+    if (published) {
+      setIsTemplateModalOpen(false);
+    }
+  };
+
+  const handleRemixPublish = async () => {
+    const published = await publishImage(remixTitle, remixDescription);
+    if (published) {
+      setIsRemixModalOpen(false);
+    }
+  };
 
   const shapeItems: MenuProps['items'] = [
     {
@@ -475,38 +492,14 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
         return (
           <div className="flex flex-col gap-8 w-full">
             {!isTemplateSaveDisabled && (
-              <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                <Text strong className="text-slate-700">밈플릿 공유</Text>
-                <Input
-                  value={templateTitle}
-                  onChange={(e) => setTemplateTitle(e.target.value)}
-                  maxLength={100}
-                  placeholder="밈플릿 제목"
-                />
-                <Input.TextArea
-                  value={templateDescription}
-                  onChange={(e) => setTemplateDescription(e.target.value)}
-                  maxLength={500}
-                  autoSize={{ minRows: 2, maxRows: 4 }}
-                  placeholder="밈플릿 설명 (선택)"
-                />
-                <Segmented
-                  value={templateVisibility}
-                  onChange={(value) => setTemplateVisibility(value as 'private' | 'public')}
-                  options={[
-                    { label: '비공개', value: 'private' },
-                    { label: '공개', value: 'public' }
-                  ]}
-                  block
-                />
+              <div className="flex flex-col gap-2">
                 <Button
                   type="primary"
                   icon={<Icon path={mdiContentSave} size={0.9} />}
-                  loading={isTemplateSaving}
-                  onClick={() => void saveTemplate(templateTitle, templateDescription, templateVisibility)}
+                  onClick={() => setIsTemplateModalOpen(true)}
                   className="h-11 rounded-xl font-bold"
                 >
-                  {savedTemplate ? '밈플릿 업데이트' : '밈플릿 저장'}
+                  {savedTemplate ? '밈플릿 업데이트' : '밈플릿 게시'}
                 </Button>
                 {savedTemplate?.visibility === 'public' && (
                   <Button
@@ -522,26 +515,11 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
             
             <div className="flex flex-col gap-4">
                {canPublishRemix ? (
-                 <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                   <Text strong className="text-slate-700">리믹스 게시</Text>
-                   <Input
-                     value={remixTitle}
-                     onChange={(e) => setRemixTitle(e.target.value)}
-                     maxLength={100}
-                     placeholder="리믹스 제목"
-                   />
-                   <Input.TextArea
-                     value={remixDescription}
-                     onChange={(e) => setRemixDescription(e.target.value)}
-                     maxLength={500}
-                     autoSize={{ minRows: 2, maxRows: 4 }}
-                     placeholder="리믹스 설명 (선택)"
-                   />
+                 <div className="flex flex-col gap-2">
                    <Button
                      type="primary"
                      icon={<Icon path={mdiShareVariant} size={0.9} />}
-                     onClick={() => void publishImage(remixTitle, remixDescription)}
-                     loading={isImagePublishing}
+                     onClick={() => setIsRemixModalOpen(true)}
                      className="h-11 rounded-xl font-bold"
                    >
                      리믹스 게시
@@ -601,6 +579,67 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
           {renderPanelContent()}
         </div>
       </div>
+
+      <Modal
+        title={savedTemplate ? '밈플릿 업데이트' : '밈플릿 게시'}
+        open={isTemplateModalOpen}
+        onCancel={() => setIsTemplateModalOpen(false)}
+        onOk={() => void handleTemplatePublish()}
+        okText={savedTemplate ? '업데이트' : '게시'}
+        cancelText="취소"
+        confirmLoading={isTemplateSaving}
+      >
+        <div className="flex flex-col gap-3 pt-2">
+          <Input
+            value={templateTitle}
+            onChange={(e) => setTemplateTitle(e.target.value)}
+            maxLength={100}
+            placeholder="밈플릿 제목"
+          />
+          <Input.TextArea
+            value={templateDescription}
+            onChange={(e) => setTemplateDescription(e.target.value)}
+            maxLength={500}
+            autoSize={{ minRows: 2, maxRows: 4 }}
+            placeholder="밈플릿 설명 (선택)"
+          />
+          <Segmented
+            value={templateVisibility}
+            onChange={(value) => setTemplateVisibility(value as 'private' | 'public')}
+            options={[
+              { label: '비공개', value: 'private' },
+              { label: '공개', value: 'public' }
+            ]}
+            block
+          />
+        </div>
+      </Modal>
+
+      <Modal
+        title="리믹스 게시"
+        open={isRemixModalOpen}
+        onCancel={() => setIsRemixModalOpen(false)}
+        onOk={() => void handleRemixPublish()}
+        okText="게시"
+        cancelText="취소"
+        confirmLoading={isImagePublishing}
+      >
+        <div className="flex flex-col gap-3 pt-2">
+          <Input
+            value={remixTitle}
+            onChange={(e) => setRemixTitle(e.target.value)}
+            maxLength={100}
+            placeholder="리믹스 제목"
+          />
+          <Input.TextArea
+            value={remixDescription}
+            onChange={(e) => setRemixDescription(e.target.value)}
+            maxLength={500}
+            autoSize={{ minRows: 2, maxRows: 4 }}
+            placeholder="리믹스 설명 (선택)"
+          />
+        </div>
+      </Modal>
     </div>
   );
 };

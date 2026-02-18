@@ -8,11 +8,14 @@
 
 body {
   margin: 0;
-  display: flex;
   min-width: 320px;
   min-height: 100vh;
+  background-color: #e5e7eb;
 }
 
 #root {
-  width: 100%;
+  width: min(100%, 1440px);
+  min-height: 100vh;
+  margin: 0 auto;
+  background-color: #ffffff;
 }
