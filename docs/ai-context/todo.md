@@ -93,6 +93,7 @@
   - [x] 프론트 상태관리 1차 (`zustand` auth store, React Query 목록 캐시)
   - [x] 공개 목록 API 작성자명 조회 1쿼리화 (`templates`, `meme_images`)
   - [x] 조회수 증가 API 원자 업데이트 적용 (DB 함수 + RPC 전환)
+  - [x] 공유 탭 UI 정합화 (`리믹스 게시` 카드 디자인 통일 + 사이드패널 스크롤 보강)
   - [ ] 웹 워커(Web Worker) 기반 내보내기 처리
   - [ ] Undo/Redo 로직 정밀화
 

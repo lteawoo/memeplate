@@ -522,32 +522,31 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
             
             <div className="flex flex-col gap-4">
                {canPublishRemix ? (
-                 <>
+                 <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                   <Text strong className="text-slate-700">리믹스 게시</Text>
                    <Input
-                      value={remixTitle}
-                      onChange={(e) => setRemixTitle(e.target.value)}
-                      maxLength={100}
-                      placeholder="리믹스 제목"
+                     value={remixTitle}
+                     onChange={(e) => setRemixTitle(e.target.value)}
+                     maxLength={100}
+                     placeholder="리믹스 제목"
                    />
                    <Input.TextArea
-                      value={remixDescription}
-                      onChange={(e) => setRemixDescription(e.target.value)}
-                      maxLength={500}
-                      autoSize={{ minRows: 2, maxRows: 4 }}
-                      placeholder="리믹스 설명 (선택)"
+                     value={remixDescription}
+                     onChange={(e) => setRemixDescription(e.target.value)}
+                     maxLength={500}
+                     autoSize={{ minRows: 2, maxRows: 4 }}
+                     placeholder="리믹스 설명 (선택)"
                    />
                    <Button
-                      type="primary"
-                      icon={<Icon path={mdiShareVariant} size={1} />}
-                      onClick={() => void publishImage(remixTitle, remixDescription)}
-                      loading={isImagePublishing}
-                      size="large"
-                      block
-                      className="h-16 text-lg font-bold shadow-lg shadow-emerald-500/20 rounded-2xl border-none bg-emerald-600 hover:bg-emerald-500"
+                     type="primary"
+                     icon={<Icon path={mdiShareVariant} size={0.9} />}
+                     onClick={() => void publishImage(remixTitle, remixDescription)}
+                     loading={isImagePublishing}
+                     className="h-11 rounded-xl font-bold"
                    >
-                      리믹스 게시
+                     리믹스 게시
                    </Button>
-                 </>
+                 </div>
                ) : null}
 
                <div className="bg-slate-50 p-2 rounded-2xl border border-slate-100">
@@ -595,9 +594,9 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
   };
 
     return (
-    <div className="flex-1 h-full flex flex-col bg-white overflow-hidden">
+    <div className="w-full flex flex-col bg-white md:min-h-0 md:flex-1 md:h-full md:overflow-hidden">
       {/* 1. Property Section (Scrollable) */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar px-4 py-4 md:px-6 md:py-6">
+      <div className="px-4 py-4 md:flex-1 md:overflow-y-auto custom-scrollbar md:px-6 md:py-6">
         <div className="w-full max-w-full animate-in fade-in slide-in-from-top-4 duration-500">
           {renderPanelContent()}
         </div>

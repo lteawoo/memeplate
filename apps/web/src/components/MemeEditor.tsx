@@ -83,14 +83,14 @@ const MemeEditor: React.FC<MemeEditorProps> = ({ initialTemplate, initialTemplat
     changeZIndex
   };
   return (
-    <Layout className="h-screen flex flex-col bg-white">
+    <Layout className="min-h-screen md:h-screen flex flex-col bg-white">
       {contextHolder}
       <MainHeader />
       
-      <div className="flex-1 flex flex-col md:flex-row overflow-hidden relative">
+      <div className="flex-1 flex flex-col md:flex-row relative md:overflow-hidden">
         <EditorLayout
           sidebar={
-            <div className="hidden md:flex flex-col h-full w-[400px] bg-white border-r border-slate-200 shrink-0 relative z-20">
+            <div className="hidden md:flex flex-col h-full min-h-0 w-[400px] bg-white border-r border-slate-200 shrink-0 relative z-20">
               <MemeToolbar 
                 activeTool={activeTool} 
                 setActiveTool={setActiveTool}
@@ -118,7 +118,7 @@ const MemeEditor: React.FC<MemeEditorProps> = ({ initialTemplate, initialTemplat
                   </div>
                 </div>
               )}
-              <div className="flex-1 overflow-hidden">
+              <div className="flex-1 min-h-0 overflow-hidden">
                 <MemePropertyPanel {...panelProps} />
               </div>
             </div>
