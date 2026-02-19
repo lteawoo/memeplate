@@ -515,7 +515,7 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
                   <Button
                     icon={<Icon path={mdiLinkVariant} size={0.9} />}
                     onClick={() => void copyTemplateShareLink()}
-                    className="h-10 rounded-xl font-semibold"
+                    className="h-11 rounded-xl font-semibold"
                   >
                     공유 링크 복사
                   </Button>
@@ -557,9 +557,8 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
                   type="primary" 
                   icon={<Icon path={mdiDownload} size={1} />} 
                   onClick={() => downloadImage(downloadFormat)}
-                  size="large"
                   block
-                  className="h-16 text-lg font-bold shadow-lg shadow-blue-500/20 rounded-2xl border-none bg-blue-600 hover:bg-blue-500"
+                  className="h-11 text-base font-bold shadow-lg shadow-blue-500/20 rounded-xl border-none bg-blue-600 hover:bg-blue-500"
                >
                   다운로드
                </Button>
@@ -567,9 +566,8 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
                <Button 
                   icon={<Icon path={mdiContentCopy} size={0.9} />} 
                   onClick={copyToClipboard}
-                  size="large"
                   block
-                  className="h-16 text-lg font-bold rounded-2xl bg-white border border-slate-200 text-slate-600 hover:text-slate-800 hover:border-slate-300"
+                  className="h-11 text-base font-bold rounded-xl bg-white border border-slate-200 text-slate-600 hover:text-slate-800 hover:border-slate-300"
                >
                   클립보드 복사
                </Button>
