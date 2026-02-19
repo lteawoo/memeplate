@@ -33,20 +33,20 @@ const SidebarItem: React.FC<SidebarItemProps> = ({ icon, label, isActive, onClic
       transition-all duration-300 rounded-xl relative
       border-none outline-none cursor-pointer active:scale-95 shrink-0
       ${disabled 
-          ? 'bg-transparent text-slate-300 cursor-not-allowed opacity-50' 
+          ? 'bg-transparent text-slate-500 cursor-not-allowed opacity-70 ring-1 ring-transparent' 
           : isActive 
-              ? 'bg-white text-blue-600 shadow-sm ring-1 ring-black/5' 
-              : 'bg-transparent text-slate-500 hover:bg-white/40 hover:text-slate-700'}
+              ? 'bg-slate-50 text-slate-900 shadow-sm ring-1 ring-blue-400/40' 
+              : 'bg-transparent text-slate-600 ring-1 ring-transparent hover:bg-slate-50 hover:text-slate-800 hover:ring-slate-200/80'}
     `}
   >
     <Icon 
       path={icon} 
       size={window.innerWidth < 768 ? 0.85 : 1} 
-      className={`transition-all duration-300 ${isActive ? 'scale-110' : 'opacity-70'}`} 
+      className={`transition-all duration-300 ${isActive ? 'scale-110' : 'opacity-100'}`} 
     />
     <span className={`
       text-[9px] md:text-[10px] font-black uppercase tracking-tighter transition-colors duration-300
-      ${isActive ? 'text-blue-600' : 'text-slate-500'}
+      ${isActive ? 'text-slate-900' : 'text-slate-600'}
     `}>
       {label}
     </span>
@@ -59,9 +59,9 @@ const MemeToolbar: React.FC<MemeToolbarProps> = ({
   hasBackground
 }) => {
   return (
-    <div className="w-full h-20 border-b border-slate-100 bg-white flex flex-row items-center justify-center py-1 gap-1 px-3 shrink-0 z-20">
+    <div className="w-full h-20 border-b border-slate-200 bg-slate-50 flex flex-row items-center justify-center py-1 gap-1 px-3 shrink-0 z-20">
       {/* Main Tools Group - Simplified to 3 core tools */}
-      <div className="flex flex-row w-full gap-1 bg-slate-200/40 p-1 rounded-xl shrink-0">
+      <div className="flex flex-row w-full gap-1 bg-slate-100/80 border border-slate-200 p-1 rounded-xl shrink-0">
         <SidebarItem 
           icon={mdiImage} 
           label="이미지" 

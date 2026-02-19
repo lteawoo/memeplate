@@ -14,12 +14,23 @@ import { useThemeMode } from './theme/useThemeMode';
 
 const App: React.FC = () => {
   const { mode } = useThemeMode();
+  const antThemeConfig = mode === 'dark'
+    ? {
+        token: getAntThemeTokens(mode),
+        components: {
+          Button: {
+            primaryShadow: 'none',
+            defaultShadow: 'none'
+          }
+        }
+      }
+    : {
+        token: getAntThemeTokens(mode)
+      };
 
   return (
     <ConfigProvider
-      theme={{
-        token: getAntThemeTokens(mode)
-      }}
+      theme={antThemeConfig}
     >
       <BrowserRouter>
         <Routes>

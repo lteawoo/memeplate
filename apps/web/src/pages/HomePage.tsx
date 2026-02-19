@@ -28,7 +28,7 @@ const HomePage: React.FC = () => {
             size="large" 
             icon={<Icon path={mdiPlus} size={1} />}
             onClick={() => navigate('/create')}
-            className="h-16 px-10 text-xl font-bold rounded-2xl shadow-xl shadow-blue-500/20 flex items-center gap-3 mx-auto"
+            className="h-16 px-10 text-xl font-bold rounded-2xl flex items-center gap-3 mx-auto"
           >
             밈플릿 생성
           </Button>

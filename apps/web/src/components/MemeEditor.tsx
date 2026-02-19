@@ -85,15 +85,23 @@ const MemeEditor: React.FC<MemeEditorProps> = ({ initialTemplate, initialTemplat
     isTemplateSaveDisabled,
     changeZIndex
   };
+  const historyButtonClassName = '!bg-slate-50 !text-slate-700 !border-slate-200 hover:!bg-slate-100 hover:!text-slate-900 disabled:!bg-slate-100 disabled:!text-slate-500 disabled:!border-slate-200';
+
   return (
-    <Layout className="min-h-screen md:h-screen flex flex-col bg-white">
+    <Layout
+      className="min-h-screen md:h-screen flex flex-col bg-slate-100"
+      style={{ backgroundColor: 'var(--app-surface)' }}
+    >
       {contextHolder}
       <MainHeader />
       
       <div className="flex-1 flex flex-col md:flex-row relative md:overflow-hidden">
         <EditorLayout
           sidebar={
-            <div className="hidden md:flex flex-col h-full min-h-0 w-[400px] bg-white border-r border-slate-200 shrink-0 relative z-20">
+            <div
+              className="hidden md:flex flex-col h-full min-h-0 w-[400px] border-r shrink-0 relative z-20"
+              style={{ backgroundColor: 'var(--editor-sidebar-bg)', borderColor: 'var(--editor-divider)' }}
+            >
               <MemeToolbar 
                 activeTool={activeTool} 
                 setActiveTool={setActiveTool}
@@ -108,6 +116,7 @@ const MemeEditor: React.FC<MemeEditorProps> = ({ initialTemplate, initialTemplat
                         icon={<Icon path={mdiUndo} size={0.8} />}
                         onClick={undo}
                         disabled={historyIndex <= 0}
+                        className={historyButtonClassName}
                       />
                     </Tooltip>
                     <Tooltip title="다시 실행 (Ctrl+Y)">
@@ -116,6 +125,7 @@ const MemeEditor: React.FC<MemeEditorProps> = ({ initialTemplate, initialTemplat
                         icon={<Icon path={mdiRedo} size={0.8} />}
                         onClick={redo}
                         disabled={historyIndex >= history.length - 1}
+                        className={historyButtonClassName}
                       />
                     </Tooltip>
                   </div>
@@ -152,8 +162,11 @@ const MemeEditor: React.FC<MemeEditorProps> = ({ initialTemplate, initialTemplat
             </div>
 
             {/* Mobile Only: Toolbar & Property Panel (Stacked below canvas) */}
-            <div className="md:hidden shrink-0 flex flex-col bg-white border-t border-slate-200">
-                <div className="bg-white border-b border-slate-100 sticky top-0 z-10">
+            <div
+              className="md:hidden shrink-0 flex flex-col border-t"
+              style={{ backgroundColor: 'var(--editor-sidebar-bg)', borderColor: 'var(--editor-divider)' }}
+            >
+                <div className="border-b border-slate-100 sticky top-0 z-10" style={{ backgroundColor: 'var(--editor-sidebar-subtle-bg)' }}>
                     <MemeToolbar activeTool={activeTool} setActiveTool={setActiveTool} hasBackground={hasBackground} />
                 </div>
                 {hasBackground && (
@@ -166,6 +179,7 @@ const MemeEditor: React.FC<MemeEditorProps> = ({ initialTemplate, initialTemplat
                           onClick={undo}
                           disabled={historyIndex <= 0}
                           size="small"
+                          className={historyButtonClassName}
                         />
                       </Tooltip>
                       <Tooltip title="다시 실행 (Ctrl+Y)">
@@ -175,6 +189,7 @@ const MemeEditor: React.FC<MemeEditorProps> = ({ initialTemplate, initialTemplat
                           onClick={redo}
                           disabled={historyIndex >= history.length - 1}
                           size="small"
+                          className={historyButtonClassName}
                         />
                       </Tooltip>
                     </div>

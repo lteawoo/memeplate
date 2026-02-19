@@ -64,6 +64,10 @@
   --app-text-secondary: var(--dusk-blue-500);
   --app-text-muted: var(--dusty-denim-500);
   --app-on-accent: var(--alabaster-grey-900);
+  --editor-canvas-bg: var(--app-surface);
+  --editor-sidebar-bg: var(--app-surface-elevated);
+  --editor-sidebar-subtle-bg: var(--app-surface);
+  --editor-divider: var(--app-border);
 
   --tw-slate-50: var(--app-surface-elevated);
   --tw-slate-100: var(--app-surface);
@@ -104,6 +108,10 @@
   --app-text-secondary: var(--dusk-blue-800);
   --app-text-muted: var(--dusk-blue-700);
   --app-on-accent: var(--alabaster-grey-900);
+  --editor-canvas-bg: var(--ink-black-200);
+  --editor-sidebar-bg: var(--prussian-blue-400);
+  --editor-sidebar-subtle-bg: var(--prussian-blue-300);
+  --editor-divider: var(--dusk-blue-300);
 
   --tw-slate-50: var(--prussian-blue-400);
   --tw-slate-100: var(--prussian-blue-300);
@@ -162,7 +170,7 @@
 }
 
 :where(.ant-card) {
-  background-color: #ffffff;
+  background-color: var(--app-surface-elevated);
   border-color: var(--app-border);
   box-shadow: none !important;
 }
@@ -173,18 +181,32 @@
 }
 
 :where(.ant-card-hoverable:hover) {
-  background-color: #ffffff !important;
+  background-color: var(--app-surface-elevated) !important;
   border-color: transparent !important;
   box-shadow: 0 6px 14px rgba(13, 27, 42, 0.08) !important;
 }
 
-:root[data-theme='dark'] :where(.ant-card) {
-  background-color: var(--app-surface-elevated);
+:root[data-theme='dark'] :where(.ant-card-hoverable:hover) {
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.32) !important;
 }
 
-:root[data-theme='dark'] :where(.ant-card-hoverable:hover) {
-  background-color: var(--app-surface-elevated) !important;
-  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.32) !important;
+:where(.upload-guide) {
+  display: block;
+}
+
+:where(.upload-guide) :where(.ant-upload-drag) {
+  border: 2px dashed var(--tw-slate-200) !important;
+  border-radius: 24px !important;
+  background-color: var(--tw-slate-100) !important;
+  transition: background-color 180ms ease;
+}
+
+:where(.upload-guide):where(.ant-upload-wrapper):hover :where(.ant-upload-drag) {
+  background-color: var(--tw-slate-50) !important;
+}
+
+:where(.upload-guide) :where(.ant-upload-btn) {
+  padding: 0 !important;
 }
 
 body {

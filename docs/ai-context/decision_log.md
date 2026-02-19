@@ -1,5 +1,233 @@
 # 결정 로그 (Decision Log)
 
+## [2026-02-19] `EditorGuideCard` 공통 컴포넌트 도입: 에디터 가이드 UI 단일 렌더 경로화
+- **결정**:
+  1. 에디터의 가이드성 UI(도구 선택 전, 업로드 드롭존 내부 안내, 레이어 empty)를 `EditorGuideCard` 단일 컴포넌트로 통합함.
+  2. `Upload.Dragger`는 인터랙션만 담당하고, 시각 렌더는 `EditorGuideCard`가 담당하도록 분리함.
+- **이유**:
+  1. 동일 성격 UI가 컴포넌트별(`Empty`, `Upload.Dragger`) 기본 스타일에 의존해 서로 다른 모양으로 드리프트하던 문제가 있었음.
+  2. 이후 다크/라이트 미세조정 시 한 곳만 수정해도 전 구간에 반영되도록 유지보수 비용을 낮추기 위함.
+- **구현 요약**:
+  - `apps/web/src/components/editor/EditorGuideCard.tsx` 신규 추가
+  - `apps/web/src/components/editor/MemePropertyPanel.tsx`
+    - no-tool 가이드: `EditorGuideCard(mdiTune)`
+    - 업로드 안내: `Upload.Dragger` 내부에 `EditorGuideCard(mdiCloudUpload)` 사용
+    - 레이어 empty 가이드: `EditorGuideCard(mdiShape)`
+    - `Empty` 직접 사용 제거
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 스크린샷
+    - `docs/ai-context/screenshots/2026-02-19_dark_editor_guidecard_unified_notool_v1.png`
+    - `docs/ai-context/screenshots/2026-02-19_dark_editor_guidecard_unified_upload_v1.png`
+    - `docs/ai-context/screenshots/2026-02-19_dark_editor_guidecard_unified_layerempty_v1.png`
+
+## [2026-02-19] 다크모드 전역 색상 규칙 정합화 1차: `white` 직접 사용 제거 + surface 토큰 통일
+- **결정**:
+  1. 공통 카드 배경 규칙에서 `#ffffff` 하드코딩을 제거하고 `--app-surface-elevated`를 단일 Source of Truth로 사용함.
+  2. 템플릿 목록/상세/에디터 내부의 `bg-white` 계열 표현을 `slate` 토큰 계층(`bg-slate-100`, `bg-slate-50`)으로 통일함.
+  3. 에디터 빈 상태 가이드(도구 선택/개체 없음/업로드 안내)의 아이콘/문구 스타일 언어를 하나로 맞춤.
+- **이유**:
+  1. 사용자 피드백처럼 화면별로 `white` 표현과 토큰 표현이 섞이면 다크모드에서 규칙이 불명확하게 느껴짐.
+  2. 실제 색상값이 같아도 표현 레벨이 다르면 유지보수 중 회귀 가능성이 커짐.
+- **구현 요약**:
+  - `apps/web/src/index.css`
+    - `:where(.ant-card)` 배경 `#ffffff -> var(--app-surface-elevated)`
+    - `:where(.ant-card-hoverable:hover)` 배경 `#ffffff -> var(--app-surface-elevated)`
+  - `apps/web/src/pages/TemplatesPage.tsx`
+    - 페이지 루트 `bg-white -> bg-slate-100`
+    - skeleton 카드 `bg-white -> bg-slate-50 + border-slate-200`
+  - `apps/web/src/pages/TemplateShareDetailPage.tsx`
+    - 페이지 루트 `bg-white -> bg-slate-100`
+    - skeleton 카드 `bg-white -> bg-slate-50 + border-slate-200`
+    - `미리보기 없음` 텍스트 대비 `text-slate-400 -> text-slate-500`
+  - `apps/web/src/components/editor/MemePropertyPanel.tsx`
+    - 레이어 비선택 배경 `bg-white/80 -> bg-slate-50/80`
+    - `클립보드 복사` 버튼 표면 `bg-white -> bg-slate-50`
+    - 빈상태/업로드 안내 아이콘+문구 스타일(`text-blue-500`, `text-slate-500`) 통일
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 다크 스크린샷
+    - `docs/ai-context/screenshots/2026-02-19_dark_editor_global_rule_unified_v1.png`
+    - `docs/ai-context/screenshots/2026-02-19_dark_editor_empty_layer_guide_v1.png`
+
+## [2026-02-19] 에디터 가이드 UI 정합화 미세조정: 레이어 외곽선 정책 정정 + 업로드 박스 스타일 일치
+- **결정**:
+  1. 레이어 섹션은 원래 컨테이너 외곽선(`border`)을 유지하고, 레이어가 없을 때만 나타나는 내부 가이드 박스의 보더를 제거함.
+  2. `Upload.Dragger`의 보더 두께/스타일/라운드는 guide 카드와 동일 규칙으로 맞춤.
+- **이유**:
+  1. 사용성 관점에서 레이어 섹션 자체의 경계는 항상 보여야 하고, 레이어 유무에 따라 외곽선이 생겼다/사라지면 시각적으로 불안정함.
+  2. `클릭 또는 드래그하여 업로드` 박스가 `도구 선택/개체 없음` 가이드와 다른 스타일이면 전역 룰 일관성이 깨짐.
+- **구현 요약**:
+  - `apps/web/src/components/editor/MemePropertyPanel.tsx`
+    - 레이어 섹션 컨테이너 `border border-slate-200` 복원
+    - 레이어 empty 가이드는 `EditorGuideCard`에 `!border-0 !bg-transparent`를 적용해 내부 보더 제거
+    - 업로드 드롭존은 `Upload.Dragger` 내부 `EditorGuideCard` 렌더로 통일
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - 스크린샷
+    - `docs/ai-context/screenshots/2026-02-19_dark_editor_upload_vs_guide_unified_v1.png`
+    - `docs/ai-context/screenshots/2026-02-19_dark_editor_layer_border_keep_inner_remove_v1.png`
+
+## [2026-02-19] 업로드 드롭존 보더 아티팩트 제거: wrapper/drag 이중 보더 해소
+- **결정**:
+  1. 업로드 드롭존의 외곽선은 `.ant-upload-drag` 단일 레이어에만 적용하고, `.ant-upload-wrapper` 보더는 제거함.
+  2. `upload-guide` 전용 CSS를 도입해 `display:block`, 내부 버튼 패딩 제거를 함께 고정함.
+- **이유**:
+  1. 기존에는 `upload-wrapper(2px dashed)`와 `ant-upload-drag(1px dashed)`가 동시에 렌더되어 좌측/하단에서 아티팩트처럼 보이는 이중선이 발생.
+- **구현 요약**:
+  - `apps/web/src/components/editor/MemePropertyPanel.tsx`
+    - `Upload.Dragger` 클래스명을 `upload-guide`로 변경
+  - `apps/web/src/index.css`
+    - `.upload-guide .ant-upload-drag`에 단일 `2px dashed` 보더/라운드/배경 적용
+    - `.upload-guide .ant-upload-btn` 패딩 제거
+    - wrapper 자체는 보더 없이 block 렌더
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - 스크린샷
+    - `docs/ai-context/screenshots/2026-02-19_dark_editor_upload_single_border_v3.png`
+
+## [2026-02-19] 리믹스 진입 에디터 다크 가시성 보강 2차: 패널/캔버스 분리 + 레이어 아이콘 인지성 강화
+- **결정**:
+  1. 리믹스 진입 화면(`/create?shareSlug=...`)에서 에디터 패널과 캔버스의 배경 토큰을 분리해 영역 경계를 명확히 함.
+  2. 레이어 컨트롤(위/아래, 설정, 삭제) 아이콘 버튼의 크기/보더/색 대비를 상향해 다크 모드 조작점을 강화함.
+  3. 툴바 비활성/활성 상태의 표면 대비를 올려 아이콘이 텍스트 대비 묻히지 않도록 조정함.
+- **이유**:
+  1. 사용자 피드백 기준으로 다크 모드에서 아이콘/버튼 존재감이 약해 보이는 구간이 지속됨.
+  2. 색상값 변경만으로는 개선 폭이 제한적이라 아이콘 크기/버튼 경계(보더)까지 함께 보강이 필요했음.
+- **구현 요약**:
+  - `apps/web/src/index.css`
+    - `--editor-canvas-bg`, `--editor-sidebar-bg`, `--editor-sidebar-subtle-bg`, `--editor-divider` 토큰 추가(light/dark 모두 정의)
+  - `apps/web/src/components/MemeEditor.tsx`
+    - 데스크탑/모바일 사이드패널 배경/경계에 editor 토큰 적용
+    - Undo/Redo disabled 상태 가독성 소폭 상향
+  - `apps/web/src/components/editor/MemeCanvas.tsx`
+    - 캔버스 영역 배경을 `--editor-canvas-bg`로 고정
+    - empty 상태 보조 문구를 일반 `<p className=\"text-slate-500\">`로 전환
+    - 로딩 오버레이를 `bg-slate-100/80`로 조정
+  - `apps/web/src/components/editor/MemeToolbar.tsx`
+    - inactive 아이콘 opacity 제거(100%) 및 active/inactive/disabled 표면 대비 강화
+  - `apps/web/src/components/editor/MemePropertyPanel.tsx`
+    - 레이어 패널 보더 강화
+    - 정렬/설정/삭제 아이콘 버튼 크기(`0.5~0.6 -> 0.58~0.7`) 및 보더/색 대비 상향
+    - 레이어 라벨/입력 텍스트 대비 상향
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 다크 `/create?shareSlug=tmpl_53x_Wcs1` 대비 재계측: `contrast < 3.2` 텍스트/아이콘 항목 `0건`
+  - 스크린샷(전/후)
+    - `docs/ai-context/screenshots/2026-02-19_dark_remix_editor_before_v1.png`
+    - `docs/ai-context/screenshots/2026-02-19_dark_remix_editor_after_v1.png`
+
+## [2026-02-19] 밈플릿 목록/상세 다크 가시성 보강 1차: `Text secondary` 제거
+- **결정**:
+  1. `TemplatesPage`, `TemplateShareDetailPage`, `MyTemplatesPage`의 `Typography.Text type="secondary"`를 제거하고 `text-slate-500` 기반으로 통일함.
+  2. 공통 카드/마이 레이아웃의 저대비 보조 텍스트(`text-slate-400`)를 `text-slate-500`로 상향함.
+- **이유**:
+  1. 다크 모드에서 `type=\"secondary\"` 텍스트가 `rgba(0,0,0,0.45)`로 렌더되어 대비가 붕괴되는 구간이 확인됨.
+  2. 동일 이슈가 템플릿 목록 설명/상세 보조 문구에서 반복되어 페이지 간 일관 수정이 필요했음.
+- **구현 요약**:
+  - `apps/web/src/pages/TemplatesPage.tsx`
+    - 상단 설명을 `Typography.Text`에서 일반 `<p className=\"text-slate-500\">`로 전환
+  - `apps/web/src/pages/TemplateShareDetailPage.tsx`
+    - `원본 밈플릿`, `총 N개` 보조 문구를 `Typography.Text`에서 일반 `<span className=\"text-slate-500\">`로 전환
+  - `apps/web/src/pages/MyTemplatesPage.tsx`
+    - 카드 메타 `업데이트` 문구를 `<p className=\"text-slate-500\">`로 전환
+    - `미리보기 없음` 보조 텍스트 대비 상향
+  - `apps/web/src/components/ThumbnailCard.tsx`
+    - `fallbackText` 색상 `text-slate-400 -> text-slate-500`
+  - `apps/web/src/components/layout/MySectionLayout.tsx`
+    - 좌측 섹션 라벨 `My` 색상 `text-slate-400 -> text-slate-500`
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 다크 모드 수동 검증(`templates`, `template detail`)에서 `contrast < 3.2` 항목 `0건`
+  - 스크린샷
+    - `docs/ai-context/screenshots/2026-02-19_dark_templates_visibility_v4.png`
+    - `docs/ai-context/screenshots/2026-02-19_dark_template_detail_visibility_v4.png`
+  - 주의: `/my/templates`는 인증 필요로 로컬 비로그인 상태에서 런타임 화면 검증은 불가(코드 기준 동일 패턴 교정만 반영).
+
+## [2026-02-19] 다크 에디터 컨트롤 가시성 보강 1차: 아이콘/버튼 대비 상향
+- **결정**:
+  1. 에디터 툴바 버튼을 투명 기반에서 표면/보더 기반으로 조정해 버튼 경계를 더 명확히 표현함.
+  2. Undo/Redo 아이콘 버튼의 disabled 색상을 검정 계열(`rgba(0,0,0,0.25)`)에서 토큰 기반 slate 계열로 교체해 다크 배경에서 가시성을 확보함.
+  3. 레이어/세부설정 보조 라벨 및 아이콘 버튼의 저대비 slate 톤을 한 단계 상향(`slate-400 -> slate-500`)함.
+- **이유**:
+  1. 사용자 피드백 기준으로 다크 에디터에서 텍스트 대비 대비해 아이콘/버튼의 존재감이 낮게 인지됨.
+  2. 특히 disabled 아이콘 버튼과 보조 라벨이 배경과 붙어 보이는 구간이 있어 조작 가능 영역 인지가 약했음.
+- **구현 요약**:
+  - `apps/web/src/components/editor/MemeToolbar.tsx`
+    - inactive 아이콘 opacity `0.7 -> 0.9`
+    - disabled/inactive/active 버튼에 `bg + ring + text` 계층 스타일 강화
+  - `apps/web/src/components/MemeEditor.tsx`
+    - 데스크탑/모바일 Undo/Redo 버튼에 공통 클래스(`historyButtonClassName`) 적용
+    - disabled 상태에서도 토큰 기반 색/보더 유지
+  - `apps/web/src/components/editor/MemePropertyPanel.tsx`
+    - `텍스트/도형` 버튼에 `!bg/!border` 기반 명시 스타일 적용
+    - 레이어 정렬/설정/삭제 아이콘 버튼 배경/색 대비 상향
+    - `Layers`, `또는`, 상세 설정 섹션 라벨 등 보조 텍스트를 `text-slate-500`로 상향
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 다크 에디터 대비 재계측: sidebar 내 텍스트/아이콘 요소 기준 `contrast < 3.2` 항목 `0건`
+  - 스크린샷: `docs/ai-context/screenshots/2026-02-19_dark_editor_controls_visibility_v2.png`
+
+## [2026-02-19] 에디터 배경 계층 분리 1차: `surface` 바닥 + `elevated` 패널/캔버스 프레임
+- **결정**:
+  1. 에디터 전체 바닥면은 `--app-surface`를 사용해 페이지 배경(`--app-bg`)과 한 단계 분리함.
+  2. 실제 조작 영역(사이드 패널/툴바/캔버스 프레임)은 `--app-surface-elevated` 계열을 유지해 인터랙션 영역을 또 한 단계 올림.
+  3. 캔버스 프레임 경계선을 `border-slate-200`으로 조정해 배경과의 경계 인지성을 강화함.
+- **이유**:
+  1. 기존에는 에디터 주요 영역이 동일한 `bg-white` 계열로 겹쳐 보여 섹션 경계 인지가 약했음.
+  2. semantic token 체계를 유지한 상태에서 라이트/다크 동시 일관성을 확보하려면 `app-bg -> app-surface -> app-surface-elevated` 3단 계층이 가장 안정적임.
+- **적용 색상 기준**:
+  - Light: `app-bg #ececea`, `app-surface #f2f3f1`, `app-surface-elevated #ffffff`
+  - Dark: `app-bg #050b11`, `app-surface #08111a`, `app-surface-elevated #161f30`
+- **구현 요약**:
+  - `apps/web/src/components/MemeEditor.tsx`
+    - root `Layout`를 `bg-slate-100` + `style={{ backgroundColor: 'var(--app-surface)' }}`로 고정
+    - 데스크탑/모바일 패널 래퍼를 `bg-slate-50`로 조정
+  - `apps/web/src/components/editor/EditorLayout.tsx`
+    - root `Layout`를 `bg-slate-100` + `style={{ backgroundColor: 'var(--app-surface)' }}`로 고정
+  - `apps/web/src/components/editor/MemeCanvas.tsx`
+    - 캔버스 영역 배경 `bg-slate-100`으로 조정
+    - 캔버스 프레임 경계 `border-slate-100 -> border-slate-200`
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 라이트/다크 스크린샷
+    - `docs/ai-context/screenshots/2026-02-19_editor_bg_separation_light.png`
+    - `docs/ai-context/screenshots/2026-02-19_editor_bg_separation_dark.png`
+
+## [2026-02-19] 다크모드 버튼 톤다운 1차: Primary 채도/명도 하향 + 그림자 제거
+- **결정**:
+  1. 다크모드의 Ant Design `primary` 버튼 색상을 `#91a2ba`에서 `#5172af`로 낮추고, 버튼 그림자를 제거함.
+  2. 에디터 툴바 활성 버튼 배경을 `white` 계열에서 `slate-100` 계열로 하향 조정함.
+  3. 홈 CTA/다운로드 버튼의 추가 블루 그림자를 제거해 다크 화면에서의 발광 느낌을 완화함.
+- **이유**:
+  1. 다크 배경에서 primary 버튼이 과도하게 밝고(특히 그림자 포함) 시선이 과집중된다는 사용자 피드백이 있었음.
+  2. 버튼 시인성은 유지하되, 전체 톤과의 일관성을 높이기 위해 명도 대비를 한 단계 낮출 필요가 있었음.
+- **구현 요약**:
+  - `apps/web/src/theme/theme.ts`
+    - dark 토큰 `colorPrimary`, `colorInfo`를 `#5172af`로 조정
+    - `colorPrimaryHover`, `colorPrimaryActive`를 추가해 밝기 상승 폭 제한
+  - `apps/web/src/App.tsx`
+    - dark 모드에서 AntD `Button` 컴포넌트 토큰 `primaryShadow/defaultShadow`를 `none`으로 설정
+  - `apps/web/src/components/editor/MemeToolbar.tsx`
+    - 활성 버튼 스타일을 `bg-slate-100`, `text-blue-500`, `ring-slate-300/40`으로 조정
+    - 툴바 컨테이너 배경을 `bg-slate-50`로 조정
+  - `apps/web/src/pages/HomePage.tsx`
+    - 메인 CTA 버튼의 추가 그림자 클래스 제거
+  - `apps/web/src/components/editor/MemePropertyPanel.tsx`
+    - 다운로드 버튼의 추가 그림자 제거 및 hover 밝기 상승 제거
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 다크 모드 시각 검증 스크린샷
+    - `docs/ai-context/screenshots/2026-02-19_dark_buttons_tuned_home.png`
+    - `docs/ai-context/screenshots/2026-02-19_dark_buttons_tuned_editor.png`
+
 ## [2026-02-19] 목록 아이템 카드 밀도 조정: 외곽선 제거 + 썸네일/본문 간격 컴팩트화
 - **결정**: 목록 카드 아이템의 기본 외곽선을 제거하고, 썸네일과 텍스트 영역 사이의 밀도를 더 촘촘하게 조정함.
 - **이유**:

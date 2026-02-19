@@ -44,3 +44,6 @@ playwright-report/
 blob-report/
 .playwright-mcp/
 .serena
+
+# AI context screenshots
+docs/ai-context/screenshots/

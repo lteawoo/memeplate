@@ -4,7 +4,6 @@ import {
   Input, 
   Upload, 
   Typography, 
-  Empty,
   Segmented,
   Dropdown,
   Modal,
@@ -40,6 +39,7 @@ import {
 import type { ToolType } from './MemeToolbar';
 import { Rect, Circle, Textbox, type CanvasObject } from '../../core/canvas';
 import MemeColorPicker from './MemeColorPicker';
+import EditorGuideCard from './EditorGuideCard';
 import { Popover, Slider, InputNumber } from 'antd';
 
 const { Text } = Typography;
@@ -153,9 +153,16 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
       onClick: () => addShape('circle'),
     },
   ];
-
   const renderPanelContent = () => {
-    if (!activeTool) return <Empty description="도구를 선택하여 편집을 시작하세요" />;
+    if (!activeTool) {
+      return (
+        <EditorGuideCard
+          iconPath={mdiTune}
+          description="도구를 선택하여 편집을 시작하세요"
+          className="py-14"
+        />
+      );
+    }
     
     switch(activeTool) {
       case 'background':
@@ -175,21 +182,21 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
                   handleImageUpload({ file: file as unknown as UploadFile, fileList: [] });
                   return false; // Prevent default upload behavior
                 }}
-                className="bg-slate-50 hover:bg-slate-100 transition-colors border-slate-200"
-                style={{ padding: window.innerWidth < 768 ? '16px 0' : '24px 0', border: '2px dashed var(--tw-slate-200)' }}
+                className="upload-guide"
+                style={{ padding: 0 }}
               >
-                <p className="flex justify-center mb-1 md:mb-2">
-                  <Icon path={mdiCloudUpload} size={window.innerWidth < 768 ? 1.8 : 2.5} color="var(--tw-blue-500)" />
-                </p>
-                <p className="ant-upload-text text-slate-600 font-semibold mt-1 md:mt-2 text-xs md:text-sm">
-                  {isBackgroundApplying ? '이미지 처리 중...' : '클릭 또는 드래그하여 업로드'}
-                </p>
+                <EditorGuideCard
+                  iconPath={mdiCloudUpload}
+                  iconSize={window.innerWidth < 768 ? 1.9 : 2.1}
+                  description={isBackgroundApplying ? '이미지 처리 중...' : '클릭 또는 드래그하여 업로드'}
+                  className="py-6 !border-0 !bg-transparent rounded-none"
+                />
               </Upload.Dragger>
             </div>
             
             <div className="flex items-center gap-3 md:gap-4">
                <div className="h-px bg-slate-200 flex-1"></div>
-               <span className="text-[10px] md:text-xs text-slate-400 font-bold uppercase tracking-wider">또는</span>
+               <span className="text-[10px] md:text-xs text-slate-500 font-bold uppercase tracking-wider">또는</span>
                <div className="h-px bg-slate-200 flex-1"></div>
             </div>
             
@@ -197,7 +204,7 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
               <Text strong className="block mb-3 md:mb-4 text-slate-700 text-sm md:text-base">외부 URL 로드</Text>
               <div className="flex flex-col gap-2">
                 <Input 
-                  prefix={<Icon path={mdiLinkVariant} size={0.7} className="text-slate-400" />}
+                  prefix={<Icon path={mdiLinkVariant} size={0.7} className="text-slate-500" />}
                   placeholder="https://example.com/image.jpg" 
                   value={bgUrl}
                   onChange={(e) => setBgUrl(e.target.value)}
@@ -223,12 +230,12 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
         return (
           <div className="flex flex-col gap-4 w-full">
             {/* 1. Compact Action Bar */}
-            <div className="flex items-center gap-2 bg-slate-100/50 p-2 rounded-2xl mb-2">
+            <div className="flex items-center gap-2 bg-slate-100/50 p-2 rounded-2xl mb-2 border border-slate-200">
                <Button 
                   type="text"
                   icon={<Icon path={mdiFormatColorText} size={0.7} />} 
                   onClick={() => addText()}
-                  className="flex-1 h-10 hover:bg-white hover:shadow-sm font-bold text-xs rounded-xl transition-all"
+                  className="flex-1 h-10 !text-slate-700 !bg-slate-50 !border !border-slate-200 hover:!bg-slate-100 hover:!border-slate-300 hover:shadow-sm font-bold text-xs rounded-xl transition-all"
                >
                   텍스트
                </Button>
@@ -237,16 +244,16 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
                  <Button 
                     type="text"
                     icon={<Icon path={mdiShape} size={0.7} />} 
-                    className="flex-1 h-10 hover:bg-white hover:shadow-sm font-bold text-xs rounded-xl transition-all"
+                    className="flex-1 h-10 !text-slate-700 !bg-slate-50 !border !border-slate-200 hover:!bg-slate-100 hover:!border-slate-300 hover:shadow-sm font-bold text-xs rounded-xl transition-all"
                  >
                     도형
                  </Button>
                </Dropdown>
             </div>
 
-            <div className="flex flex-col gap-0 border border-slate-100 rounded-lg overflow-hidden">
-              <div className="flex items-center justify-between px-3 py-2 bg-slate-50 border-b border-slate-100">
-                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Layers ({layers.length})</span>
+            <div className="flex flex-col gap-0 border border-slate-200 rounded-lg overflow-hidden">
+              <div className="flex items-center justify-between px-3 py-2 bg-slate-50 border-b border-slate-200">
+                <span className="text-[10px] font-black uppercase tracking-widest text-slate-600">Layers ({layers.length})</span>
               </div>
               
               <div className="flex flex-col overflow-y-auto max-h-[65vh] custom-scrollbar">
@@ -261,38 +268,38 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
                     <div 
                       key={obj.id || idx} 
                       className={`
-                        group flex flex-col p-1.5 transition-all border-b border-slate-50 last:border-b-0
-                        ${isSelected ? 'bg-blue-50 border-l-4 border-l-blue-600' : 'bg-white hover:bg-slate-50/50 border-l-4 border-l-transparent'}
+                        group flex flex-col p-2 transition-all border-b border-slate-100 last:border-b-0
+                        ${isSelected ? 'bg-blue-50/80 border-l-4 border-l-blue-600' : 'bg-slate-50/80 hover:bg-slate-50 border-l-4 border-l-transparent'}
                       `}
                       onClick={() => selectLayer(obj)}
                     >
                       <div className="flex items-center gap-2">
-                        <div className="flex flex-col bg-white rounded border border-slate-200 overflow-hidden shrink-0">
+                        <div className="flex flex-col rounded-md border border-slate-200 bg-slate-50 overflow-hidden shrink-0">
                           <Button 
                             type="text"
                             size="small"
-                            icon={<Icon path={mdiChevronUp} size={0.5} />} 
+                            icon={<Icon path={mdiChevronUp} size={0.58} />} 
                             onClick={(e) => { e.stopPropagation(); selectLayer(obj); changeZIndex('forward'); }}
-                            className="w-6 h-4 flex items-center justify-center text-slate-400 hover:text-blue-600 p-0"
+                            className="w-7 h-5 flex items-center justify-center !text-slate-600 !bg-transparent hover:!text-blue-600 hover:!bg-slate-100 p-0"
                           />
                           <Button 
                             type="text"
                             size="small"
-                            icon={<Icon path={mdiChevronDown} size={0.5} />} 
+                            icon={<Icon path={mdiChevronDown} size={0.58} />} 
                             onClick={(e) => { e.stopPropagation(); selectLayer(obj); changeZIndex('backward'); }}
-                            className="w-6 h-4 flex items-center justify-center text-slate-400 hover:text-blue-600 p-0"
+                            className="w-7 h-5 flex items-center justify-center !text-slate-600 !bg-transparent hover:!text-blue-600 hover:!bg-slate-100 p-0"
                           />
                         </div>
-                        <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${isSelected ? 'bg-blue-700 text-on-accent shadow-sm' : 'bg-slate-100 text-slate-400'}`}>
-                          <Icon path={isText ? mdiFormatColorText : mdiShape} size={0.5} />
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border ${isSelected ? 'bg-blue-700 text-on-accent shadow-sm border-blue-600' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>
+                          <Icon path={isText ? mdiFormatColorText : mdiShape} size={0.58} />
                         </div>
                         
                         {isText ? (
-                          <span className={`text-[11px] font-bold truncate flex-1 pl-1 ${isSelected ? 'text-blue-900' : 'text-slate-500'}`}>
+                          <span className={`text-[11px] font-bold truncate flex-1 pl-1 ${isSelected ? 'text-blue-900' : 'text-slate-600'}`}>
                             텍스트 레이어
                           </span>
                         ) : (
-                          <span className={`text-[11px] font-bold truncate flex-1 pl-1 ${isSelected ? 'text-blue-900' : 'text-slate-500'}`}>
+                          <span className={`text-[11px] font-bold truncate flex-1 pl-1 ${isSelected ? 'text-blue-900' : 'text-slate-600'}`}>
                             {isRect ? '사각형' : isCircle ? '원형' : '도형'}
                           </span>
                         )}
@@ -329,7 +336,7 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
                                 <div className="flex flex-col gap-5 w-72 p-1">
                                   {/* 1. Font Style & Weight */}
                                   <div className="flex flex-col gap-2">
-                                    <Text className="text-[11px] text-slate-400 font-bold uppercase block">스타일</Text>
+                                    <Text className="text-[11px] text-slate-500 font-bold uppercase block">스타일</Text>
                                     <div className="flex gap-2">
                                       <Button 
                                         type={(obj as Textbox).fontWeight === 'bold' ? 'primary' : 'default'}
@@ -356,7 +363,7 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
 
                                   {/* 2. Horizontal Align */}
                                   <div>
-                                    <Text className="text-[11px] text-slate-400 font-bold uppercase block mb-2">가로 정렬</Text>
+                                    <Text className="text-[11px] text-slate-500 font-bold uppercase block mb-2">가로 정렬</Text>
                                     <Segmented
                                       block
                                       value={(obj as Textbox).textAlign}
@@ -374,7 +381,7 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
 
                                   {/* 3. Vertical Align */}
                                   <div>
-                                    <Text className="text-[11px] text-slate-400 font-bold uppercase block mb-2">세로 정렬</Text>
+                                    <Text className="text-[11px] text-slate-500 font-bold uppercase block mb-2">세로 정렬</Text>
                                     <Segmented
                                       block
                                       value={(obj as Textbox).verticalAlign}
@@ -393,7 +400,7 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
                                   {/* 4. Max Font Size */}
                                   <div>
                                     <div className="flex justify-between items-center mb-1">
-                                      <Text className="text-[11px] text-slate-400 font-bold uppercase">최대 크기</Text>
+                                      <Text className="text-[11px] text-slate-500 font-bold uppercase">최대 크기</Text>
                                       <InputNumber
                                         min={8} max={300} size="small" variant="borderless"
                                         value={(obj as Textbox).fontSize}
@@ -412,7 +419,7 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
                                   {/* 5. Stroke Width */}
                                   <div>
                                     <div className="flex justify-between items-center mb-1">
-                                      <Text className="text-[11px] text-slate-400 font-bold uppercase">외곽선 강도</Text>
+                                      <Text className="text-[11px] text-slate-500 font-bold uppercase">외곽선 강도</Text>
                                       <InputNumber
                                         min={0} max={10} step={0.1} size="small" variant="borderless"
                                         value={(obj as Textbox).strokeWidth}
@@ -431,7 +438,7 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
                                   {/* 6. Opacity */}
                                   <div>
                                     <div className="flex justify-between items-center mb-1">
-                                      <Text className="text-[11px] text-slate-400 font-bold uppercase px-0.5">
+                                      <Text className="text-[11px] text-slate-500 font-bold uppercase px-0.5">
                                         <Icon path={mdiOpacity} size={0.4} className="inline mr-1" /> 불투명도
                                       </Text>
                                       <Text className="text-[11px] font-bold text-blue-600">{Math.round((obj as Textbox).opacity * 100)}%</Text>
@@ -449,22 +456,22 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
                               <Button 
                                 type="text"
                                 size="small"
-                                icon={<Icon path={mdiTune} size={0.6} />} 
+                                icon={<Icon path={mdiTune} size={0.7} />} 
                                 onClick={(e) => { e.stopPropagation(); selectLayer(obj); }}
-                                className={`w-7 h-7 flex items-center justify-center rounded-lg p-0 ${isSelected ? 'text-blue-600 bg-blue-50/50 hover:bg-blue-100' : 'text-slate-400 hover:text-blue-600 hover:bg-slate-100'}`}
+                                className={`w-8 h-8 flex items-center justify-center rounded-lg p-0 border ${isSelected ? '!text-blue-700 !bg-blue-50/70 !border-blue-200 hover:!bg-blue-100' : '!text-slate-600 !bg-slate-50 !border-slate-200 hover:!text-blue-600 hover:!bg-slate-100 hover:!border-slate-300'}`}
                               />
                             </Popover>
                           )}
                           <Button 
                             type="text"
                             size="small"
-                            icon={<Icon path={mdiDelete} size={0.6} />} 
+                            icon={<Icon path={mdiDelete} size={0.7} />} 
                             onClick={(e) => {
                                 e.stopPropagation();
                                 selectLayer(obj);
                                 deleteActiveObject();
                             }}
-                            className="w-7 h-7 flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg p-0"
+                            className="w-8 h-8 flex items-center justify-center !text-slate-600 !bg-slate-50 !border !border-slate-200 hover:!text-red-500 hover:!bg-red-50 hover:!border-red-200 rounded-lg p-0"
                           />
                         </div>
                       </div>
@@ -480,7 +487,7 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
                             onKeyDown={(e) => e.stopPropagation()}
                             onClick={(e) => e.stopPropagation()}
                             autoSize={{ minRows: 1, maxRows: 3 }}
-                            className="w-full border border-slate-200 bg-white hover:border-slate-300 focus:border-blue-400 transition-colors rounded-md text-xs font-semibold px-2 py-1"
+                            className="w-full border border-slate-200 bg-slate-50 hover:border-slate-300 focus:border-blue-400 transition-colors rounded-md text-xs font-semibold text-slate-700 placeholder:text-slate-500 px-2 py-1"
                             placeholder={`텍스트-${textLayerNumber}`}
                           />
                         </div>
@@ -489,9 +496,11 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
                   );
                 })}
                 {layers.length === 0 && (
-                  <div className="py-12 text-center bg-slate-50/50 rounded-3xl border border-dashed border-slate-200">
-                    <Empty description="편집할 개체를 추가하세요" image={Empty.PRESENTED_IMAGE_SIMPLE} />
-                  </div>
+                  <EditorGuideCard
+                    iconPath={mdiShape}
+                    description="편집할 개체를 추가하세요"
+                    className="py-12 !border-0 !bg-transparent rounded-none"
+                  />
                 )}
               </div>
             </div>
@@ -558,7 +567,7 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
                   icon={<Icon path={mdiDownload} size={1} />} 
                   onClick={() => downloadImage(downloadFormat)}
                   block
-                  className="h-11 text-base font-bold shadow-lg shadow-blue-500/20 rounded-xl border-none bg-blue-700 hover:bg-blue-600 text-on-accent"
+                  className="h-11 text-base font-bold rounded-xl border-none bg-blue-700 hover:bg-blue-700 text-on-accent"
                >
                   다운로드
                </Button>
@@ -567,7 +576,7 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
                   icon={<Icon path={mdiContentCopy} size={0.9} />} 
                   onClick={copyToClipboard}
                   block
-                  className="h-11 text-base font-bold rounded-xl bg-white border border-slate-200 text-slate-600 hover:text-slate-800 hover:border-slate-300"
+                  className="h-11 text-base font-bold rounded-xl bg-slate-50 border border-slate-200 text-slate-600 hover:text-slate-800 hover:border-slate-300"
                >
                   클립보드 복사
                </Button>
@@ -580,7 +589,10 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
   };
 
     return (
-    <div className="w-full flex flex-col bg-white md:min-h-0 md:flex-1 md:h-full md:overflow-hidden">
+    <div
+      className="w-full flex flex-col md:min-h-0 md:flex-1 md:h-full md:overflow-hidden"
+      style={{ backgroundColor: 'var(--editor-sidebar-bg)' }}
+    >
       {/* 1. Property Section (Scrollable) */}
       <div className="px-4 py-4 md:flex-1 md:overflow-y-auto custom-scrollbar md:px-6 md:py-6">
         <div className="w-full max-w-full animate-in fade-in slide-in-from-top-4 duration-500">

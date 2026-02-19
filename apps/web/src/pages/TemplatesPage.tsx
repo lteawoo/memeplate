@@ -8,7 +8,7 @@ import PageContainer from '../components/layout/PageContainer';
 import TemplateThumbnailCard from '../components/TemplateThumbnailCard';
 import type { TemplateRecord, TemplatesResponse } from '../types/template';
 
-const { Title, Text } = Typography;
+const { Title } = Typography;
 const SKELETON_ITEMS = Array.from({ length: 6 }, (_, idx) => idx);
 
 const fetchPublicTemplates = async (): Promise<TemplateRecord[]> => {
@@ -33,13 +33,13 @@ const TemplatesPage: React.FC = () => {
   });
 
   return (
-    <Layout className="min-h-screen bg-white">
+    <Layout className="min-h-screen bg-slate-100">
       <MainHeader />
       <PageContainer className="py-8">
         <div className="mb-6 flex items-end justify-between gap-3">
           <div>
             <Title level={2} className="!mb-1">밈플릿 목록</Title>
-            <Text type="secondary">텍스트 레이어를 채워 쓸 수 있는 밈플릿을 최신순으로 확인합니다.</Text>
+            <p className="m-0 text-sm text-slate-500">텍스트 레이어를 채워 쓸 수 있는 밈플릿을 최신순으로 확인합니다.</p>
           </div>
           <Button type="primary" onClick={() => navigate('/create')}>새로 만들기</Button>
         </div>
@@ -50,7 +50,7 @@ const TemplatesPage: React.FC = () => {
             style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))' }}
           >
             {SKELETON_ITEMS.map((key) => (
-              <div key={key} className="overflow-hidden rounded-xl bg-white">
+              <div key={key} className="overflow-hidden rounded-xl bg-slate-50 border border-slate-200">
                 <div className="h-52 bg-slate-100 p-2">
                   <div className="h-full w-full animate-pulse rounded-lg bg-gradient-to-br from-slate-100 to-slate-200" />
                 </div>
