@@ -36,7 +36,7 @@ const MySectionLayout: React.FC<MySectionLayoutProps> = ({
         <Sider
           width={220}
           className="hidden md:block border-r border-slate-200 bg-white"
-          style={{ background: '#fff' }}
+          style={{ background: 'var(--app-surface-elevated)' }}
         >
           <div className="px-4 py-5 text-xs font-bold uppercase tracking-wider text-slate-400">My</div>
           <Menu

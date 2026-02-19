@@ -4,18 +4,200 @@
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
+
+  --ink-black-100: #030609;
+  --ink-black-200: #050b11;
+  --ink-black-300: #08111a;
+  --ink-black-400: #0b1622;
+  --ink-black-500: #0d1b2a;
+  --ink-black-600: #234870;
+  --ink-black-700: #3875b6;
+  --ink-black-800: #74a3d4;
+  --ink-black-900: #bad1ea;
+
+  --prussian-blue-100: #05080c;
+  --prussian-blue-200: #0b0f18;
+  --prussian-blue-300: #101724;
+  --prussian-blue-400: #161f30;
+  --prussian-blue-500: #1b263b;
+  --prussian-blue-600: #364c75;
+  --prussian-blue-700: #5172af;
+  --prussian-blue-800: #8ba1ca;
+  --prussian-blue-900: #c5d0e4;
+
+  --dusk-blue-100: #0d1218;
+  --dusk-blue-200: #1a242f;
+  --dusk-blue-300: #273647;
+  --dusk-blue-400: #34485f;
+  --dusk-blue-500: #415a77;
+  --dusk-blue-600: #587aa1;
+  --dusk-blue-700: #819bb9;
+  --dusk-blue-800: #abbcd1;
+  --dusk-blue-900: #d5dee8;
+
+  --dusty-denim-100: #161c23;
+  --dusty-denim-200: #2c3746;
+  --dusty-denim-300: #425369;
+  --dusty-denim-400: #586f8d;
+  --dusty-denim-500: #778da9;
+  --dusty-denim-600: #91a2ba;
+  --dusty-denim-700: #acbacb;
+  --dusty-denim-800: #c8d1dc;
+  --dusty-denim-900: #e3e8ee;
+
+  --alabaster-grey-100: #2e2f2a;
+  --alabaster-grey-200: #5b5e53;
+  --alabaster-grey-300: #898c7e;
+  --alabaster-grey-400: #b4b6ad;
+  --alabaster-grey-500: #e0e1dd;
+  --alabaster-grey-600: #e5e6e3;
+  --alabaster-grey-700: #ececea;
+  --alabaster-grey-800: #f2f3f1;
+  --alabaster-grey-900: #f9f9f8;
+
+  --app-bg: var(--alabaster-grey-700);
+  --app-surface: var(--alabaster-grey-800);
+  --app-surface-elevated: #ffffff;
+  --app-border: var(--dusty-denim-700);
+  --app-border-strong: var(--dusty-denim-600);
+  --app-text-primary: var(--ink-black-500);
+  --app-text-secondary: var(--dusk-blue-500);
+  --app-text-muted: var(--dusty-denim-500);
+  --app-on-accent: var(--alabaster-grey-900);
+
+  --tw-slate-50: var(--app-surface-elevated);
+  --tw-slate-100: var(--app-surface);
+  --tw-slate-200: var(--app-border);
+  --tw-slate-300: var(--app-border-strong);
+  --tw-slate-400: var(--dusty-denim-500);
+  --tw-slate-500: var(--dusk-blue-600);
+  --tw-slate-600: var(--dusk-blue-500);
+  --tw-slate-700: var(--prussian-blue-600);
+  --tw-slate-800: var(--prussian-blue-500);
+  --tw-slate-900: var(--ink-black-500);
+
+  --tw-blue-50: var(--dusty-denim-900);
+  --tw-blue-100: var(--dusty-denim-800);
+  --tw-blue-200: var(--dusty-denim-700);
+  --tw-blue-400: var(--dusk-blue-600);
+  --tw-blue-500: var(--dusk-blue-500);
+  --tw-blue-600: var(--prussian-blue-600);
+  --tw-blue-700: var(--prussian-blue-500);
+  --tw-blue-900: var(--ink-black-500);
+
+  --canvas-control-stroke: var(--tw-blue-600);
+  --canvas-control-fill: var(--tw-slate-50);
+  --canvas-fill-default: var(--alabaster-grey-900);
+  --canvas-stroke-default: var(--ink-black-500);
+  --canvas-text-default: var(--alabaster-grey-900);
+  --canvas-caret-on-dark: var(--alabaster-grey-900);
+  --canvas-caret-on-light: var(--ink-black-500);
+}
+
+:root[data-theme='dark'] {
+  --app-bg: var(--ink-black-200);
+  --app-surface: var(--ink-black-300);
+  --app-surface-elevated: var(--prussian-blue-400);
+  --app-border: var(--dusk-blue-300);
+  --app-border-strong: var(--dusk-blue-400);
+  --app-text-primary: var(--alabaster-grey-900);
+  --app-text-secondary: var(--dusk-blue-800);
+  --app-text-muted: var(--dusk-blue-700);
+  --app-on-accent: var(--alabaster-grey-900);
+
+  --tw-slate-50: var(--prussian-blue-400);
+  --tw-slate-100: var(--prussian-blue-300);
+  --tw-slate-200: var(--dusk-blue-300);
+  --tw-slate-300: var(--dusk-blue-400);
+  --tw-slate-400: var(--dusk-blue-500);
+  --tw-slate-500: var(--dusk-blue-700);
+  --tw-slate-600: var(--dusk-blue-800);
+  --tw-slate-700: var(--prussian-blue-900);
+  --tw-slate-800: var(--alabaster-grey-700);
+  --tw-slate-900: var(--alabaster-grey-900);
+
+  --tw-blue-50: var(--dusk-blue-200);
+  --tw-blue-100: var(--dusk-blue-300);
+  --tw-blue-200: var(--dusk-blue-400);
+  --tw-blue-400: var(--dusk-blue-600);
+  --tw-blue-500: var(--dusty-denim-500);
+  --tw-blue-600: var(--dusty-denim-600);
+  --tw-blue-700: var(--dusk-blue-500);
+  --tw-blue-900: var(--dusk-blue-900);
+
+  --canvas-control-stroke: var(--tw-blue-600);
+  --canvas-control-fill: var(--tw-slate-50);
+  --canvas-fill-default: var(--alabaster-grey-900);
+  --canvas-stroke-default: var(--ink-black-500);
+  --canvas-text-default: var(--alabaster-grey-900);
+  --canvas-caret-on-dark: var(--alabaster-grey-900);
+  --canvas-caret-on-light: var(--ink-black-500);
+}
+
+@theme inline {
+  --color-white: var(--app-surface-elevated);
+  --color-slate-50: var(--tw-slate-50);
+  --color-slate-100: var(--tw-slate-100);
+  --color-slate-200: var(--tw-slate-200);
+  --color-slate-300: var(--tw-slate-300);
+  --color-slate-400: var(--tw-slate-400);
+  --color-slate-500: var(--tw-slate-500);
+  --color-slate-600: var(--tw-slate-600);
+  --color-slate-700: var(--tw-slate-700);
+  --color-slate-800: var(--tw-slate-800);
+  --color-slate-900: var(--tw-slate-900);
+  --color-blue-50: var(--tw-blue-50);
+  --color-blue-100: var(--tw-blue-100);
+  --color-blue-200: var(--tw-blue-200);
+  --color-blue-400: var(--tw-blue-400);
+  --color-blue-500: var(--tw-blue-500);
+  --color-blue-600: var(--tw-blue-600);
+  --color-blue-700: var(--tw-blue-700);
+  --color-blue-900: var(--tw-blue-900);
+  --color-gray-700: var(--tw-slate-700);
+}
+
+.text-on-accent {
+  color: var(--app-on-accent);
+}
+
+:where(.ant-card) {
+  background-color: #ffffff;
+  border-color: var(--app-border);
+  box-shadow: none !important;
+}
+
+:where(.ant-card-hoverable) {
+  border: 1px solid transparent !important;
+  transition: box-shadow 180ms ease, background-color 180ms ease;
+}
+
+:where(.ant-card-hoverable:hover) {
+  background-color: #ffffff !important;
+  border-color: transparent !important;
+  box-shadow: 0 6px 14px rgba(13, 27, 42, 0.08) !important;
+}
+
+:root[data-theme='dark'] :where(.ant-card) {
+  background-color: var(--app-surface-elevated);
+}
+
+:root[data-theme='dark'] :where(.ant-card-hoverable:hover) {
+  background-color: var(--app-surface-elevated) !important;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.32) !important;
 }
 
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  background-color: #ffffff;
+  background-color: var(--app-bg);
+  color: var(--app-text-primary);
 }
 
 #root {
   width: 100%;
   min-height: 100vh;
   margin: 0;
-  background-color: #ffffff;
+  background-color: var(--app-bg);
 }

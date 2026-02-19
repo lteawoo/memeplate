@@ -1,5 +1,114 @@
 # 결정 로그 (Decision Log)
 
+## [2026-02-19] 목록 아이템 카드 밀도 조정: 외곽선 제거 + 썸네일/본문 간격 컴팩트화
+- **결정**: 목록 카드 아이템의 기본 외곽선을 제거하고, 썸네일과 텍스트 영역 사이의 밀도를 더 촘촘하게 조정함.
+- **이유**:
+  1. 목록 아이템 외곽선이 시각적으로 과하게 분리되어 보이는 문제를 완화하기 위함.
+  2. 카드 내부 상하 여백이 커서 정보 스캔 속도가 떨어져 컴팩트한 밀도로 조정할 필요가 있었음.
+- **구현 요약**:
+  - `apps/web/src/components/ThumbnailCard.tsx`
+    - `Card bordered={false}` 적용
+    - 카드 본문 패딩 축소(`styles.body`)
+    - 썸네일 커버의 `border-b` 제거 및 패딩 축소
+  - `apps/web/src/pages/TemplatesPage.tsx`
+    - 목록 스켈레톤 카드 여백/간격 축소
+    - 카드 본문 텍스트 블록 `space-y-2 -> space-y-1`
+  - `apps/web/src/pages/TemplateShareDetailPage.tsx`
+    - 리믹스 목록 스켈레톤 카드 여백/간격 축소
+  - 검증
+    - `pnpm --filter memeplate-web lint`
+    - `pnpm --filter memeplate-web build`
+    - 스크린샷: `docs/ai-context/screenshots/2026-02-19_list_item_borderless_compact_v1.png`
+  - 후속 보정
+    - Ant Design hover 상태 그림자 잔존으로 `apps/web/src/index.css`에 `:where(.ant-card-hoverable:hover) { box-shadow: none !important; }` 추가
+    - 스크린샷: `docs/ai-context/screenshots/2026-02-19_list_item_borderless_compact_v2_noshadowforce.png`
+  - 최종 보정
+    - hover 시 카드가 떠 보이도록 `transform: translateY(-2px)` 적용
+    - hover 배경 흰색 + 외곽선(`--app-border-strong`) 적용, 그림자는 계속 제거
+    - 스크린샷: `docs/ai-context/screenshots/2026-02-19_list_item_hover_lift_border_white_v1.png`
+  - 사용자 피드백 후 조정
+    - hover 외곽선 제거, 약한 그림자만 적용
+    - `apps/web/src/index.css`의 hover 상태를 `border-color: transparent`, `box-shadow: 0 6px 14px rgba(13, 27, 42, 0.08)`로 변경
+    - 스크린샷: `docs/ai-context/screenshots/2026-02-19_list_item_hover_shadow_only_v1.png`
+  - 추가 조정
+    - hover 시 카드 이동 모션 제거(`transform` 제거), 그림자만 유지
+    - 스크린샷: `docs/ai-context/screenshots/2026-02-19_list_item_hover_shadow_only_v2_no_motion.png`
+  - 다크 모드 보정
+    - 다크에서 hover 배경/그림자가 라이트 값으로 적용되지 않도록 `:root[data-theme='dark'] :where(.ant-card-hoverable:hover)` 분기 추가
+    - hover 배경은 `--app-surface-elevated`, 그림자는 `rgba(0,0,0,0.32)`로 조정
+
+## [2026-02-19] 카드 시각 정책 재조정: 그림자 제거 + 흰 배경 고정(라이트), 텍스트 기본색 복원
+- **결정**:
+  1. 카드 영역의 그림자(elevation)를 전면 제거하고, 라이트 모드 카드 배경은 흰색으로 유지함.
+  2. 에디터 텍스트 레이어 기본 색상값을 기존 정책(채움 `#ffffff`, 외곽선 `#000000`)으로 복원함.
+- **이유**:
+  1. 카드와 바깥 배경 구분은 경계선 대비로 해결하고, 그림자 스타일은 사용하지 않기로 결정됨.
+  2. 텍스트 레이어 기본값은 사용자가 기대하는 기존 편집 흐름(완전 흰색/검정) 유지가 우선.
+- **구현 요약**:
+  - `apps/web/src/index.css`
+    - `.ant-card`의 `box-shadow` 제거
+    - 라이트 모드 카드 배경 흰색 유지, 다크 모드는 기존 표면 토큰 유지
+  - `apps/web/src/hooks/useMemeEditor.ts`
+    - `addText` 기본값 `fill/stroke`를 `#ffffff/#000000`으로 복원
+    - `color` 초기값을 `#ffffff`로 복원
+    - `addShape` 기본값 `fill/stroke`를 `#ffffff/#000000`으로 복원
+  - `apps/web/src/components/editor/MemePropertyPanel.tsx`
+    - 텍스트 외곽선 색상 fallback을 `#000000`으로 복원
+  - `apps/web/src/core/canvas/Textbox.ts`
+    - 텍스트 기본 fill fallback을 `#000000`으로 복원
+  - 검증
+    - `pnpm --filter memeplate-web lint`
+    - `pnpm --filter memeplate-web build`
+    - 스크린샷: `docs/ai-context/screenshots/2026-02-19_theme_light_templates_v3_noshadow.png`
+
+## [2026-02-19] 카드 섹션 대비 보정: 배경 단계 차 확대 + 공통 카드 elevation 추가
+- **결정**: 카드 섹션과 바깥 배경의 구분이 약하다는 피드백에 따라, light 테마 기준 `app-bg`를 한 단계 어둡게 조정하고(`alabaster-700`), 공통 카드(`.ant-card`)에 경계선/그림자(elevation)를 적용함.
+- **이유**:
+  1. 현재 톤에서 카드 배경과 페이지 배경의 명도 차가 작아 섹션 경계 인지가 약했음.
+  2. 페이지별 개별 수정 대신 전역 토큰/공통 카드 규칙으로 일괄 보정해야 유지보수성이 높음.
+- **구현 요약**:
+  - `apps/web/src/index.css`
+    - light 테마 `--app-bg`, `--app-border`, `--app-border-strong` 대비 강화
+    - `.ant-card` 전역 배경/경계선/그림자 추가
+    - dark 테마 카드 그림자 보강
+  - 검증 스크린샷
+    - `docs/ai-context/screenshots/2026-02-19_theme_light_templates_v2.png`
+    - `docs/ai-context/screenshots/2026-02-19_theme_dark_templates_v2.png`
+    - `docs/ai-context/screenshots/2026-02-19_theme_light_template_detail_v2.png`
+    - `docs/ai-context/screenshots/2026-02-19_theme_dark_template_detail_v2.png`
+
+## [2026-02-19] 색상 시스템 단일화 완료: semantic token + `data-theme`(light/dark)
+- **결정**: 색상 관리 기준을 semantic token 기반으로 통일하고, 라이트/다크 모드 전환은 `data-theme=\"light|dark\"` + 공통 토큰 매핑으로 구현함. 실행 단위는 GitHub 이슈 `#92`.
+- **이유**:
+  1. 현재 Tailwind 유틸/인라인 HEX/Ant Design token/Canvas 색상이 분산돼 있어 일관성 유지와 변경 비용이 큼.
+  2. 이후 다크모드 도입 시 파일별 색상 치환 대신 토큰값 교체만으로 확장 가능한 구조가 필요함.
+  3. 공통화 선행 없이는 페이지별 디자인 조정 시 회귀 가능성이 높음.
+- **구현 요약**:
+  - 테마 인프라
+    - `apps/web/src/theme/theme.ts`
+    - `apps/web/src/theme/ThemeProvider.tsx`
+    - `apps/web/src/theme/themeModeContext.ts`
+    - `apps/web/src/theme/useThemeMode.ts`
+  - 전역 토큰/팔레트 매핑
+    - `apps/web/src/index.css`
+    - 제공 팔레트를 CSS 변수로 정의하고 light/dark별 `slate/blue/white` 유틸 매핑 적용
+  - Ant Design 연동
+    - `apps/web/src/App.tsx`
+    - `apps/web/src/main.tsx`
+  - UI 연동
+    - `apps/web/src/components/layout/MainHeader.tsx` (테마 토글 추가)
+    - `apps/web/src/components/layout/MySectionLayout.tsx`
+    - `apps/web/src/components/editor/MemePropertyPanel.tsx`
+    - `apps/web/src/components/editor/MemeCanvas.tsx`
+  - Canvas 색상 토큰화
+    - `apps/web/src/core/canvas/Canvas.ts`
+    - `apps/web/src/core/canvas/Textbox.ts`
+    - `apps/web/src/hooks/useMemeEditor.ts`
+  - 검증
+    - `pnpm --filter memeplate-web lint`
+    - `pnpm --filter memeplate-web build`
+    - 스크린샷: `docs/ai-context/screenshots/2026-02-19_theme_*.png`
+
 ## [2026-02-19] 공유 섹션 액션 버튼 높이 통일
 - **결정**: 공유 탭의 주요 액션 버튼(밈플릿 게시/링크복사/리믹스 게시/다운로드/클립보드 복사) 높이를 `h-11` 기준으로 통일함.
 - **이유**:

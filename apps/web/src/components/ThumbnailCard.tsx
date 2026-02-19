@@ -32,7 +32,9 @@ const ThumbnailCard: React.FC<ThumbnailCardProps> = ({
   return (
     <Card
       hoverable={hoverable}
+      bordered={false}
       actions={actions}
+      styles={{ body: { padding: '10px 12px' } }}
       onClick={onClick}
       onKeyDown={(e) => {
         if (!onClick) return;
@@ -45,7 +47,7 @@ const ThumbnailCard: React.FC<ThumbnailCardProps> = ({
       tabIndex={isClickable ? 0 : undefined}
       className={isClickable ? 'cursor-pointer' : undefined}
       cover={(
-        <div className="h-52 w-full border-b border-slate-100 bg-slate-50 p-3">
+        <div className="h-52 w-full bg-slate-50 p-2">
           {imageUrl && !hasImageError ? (
             <div className="relative flex h-full items-center justify-center overflow-hidden rounded-lg bg-slate-100">
               {!hasImageLoaded ? (

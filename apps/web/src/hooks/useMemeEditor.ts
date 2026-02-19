@@ -677,7 +677,12 @@ export const useMemeEditor = (messageApi: MessageInstance, options?: UseMemeEdit
     if (!canvasInstanceRef.current) return;
     const centerX = CANVAS_MARGIN + workspaceSize.width/2;
     const centerY = CANVAS_MARGIN + workspaceSize.height/2;
-    const common = { fill: '#ffffff', stroke: '#000000', strokeWidth: 0, name: 'shape' };
+    const common = {
+      fill: '#ffffff',
+      stroke: '#000000',
+      strokeWidth: 0,
+      name: 'shape'
+    };
     
     let shape;
     if (type === 'rect') shape = new Rect({ ...common, left: centerX, top: centerY, width: 100, height: 100 });

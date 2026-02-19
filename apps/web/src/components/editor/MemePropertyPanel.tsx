@@ -176,10 +176,10 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
                   return false; // Prevent default upload behavior
                 }}
                 className="bg-slate-50 hover:bg-slate-100 transition-colors border-slate-200"
-                style={{ padding: window.innerWidth < 768 ? '16px 0' : '24px 0', border: '2px dashed #e2e8f0' }}
+                style={{ padding: window.innerWidth < 768 ? '16px 0' : '24px 0', border: '2px dashed var(--tw-slate-200)' }}
               >
                 <p className="flex justify-center mb-1 md:mb-2">
-                  <Icon path={mdiCloudUpload} size={window.innerWidth < 768 ? 1.8 : 2.5} color="#1677ff" />
+                  <Icon path={mdiCloudUpload} size={window.innerWidth < 768 ? 1.8 : 2.5} color="var(--tw-blue-500)" />
                 </p>
                 <p className="ant-upload-text text-slate-600 font-semibold mt-1 md:mt-2 text-xs md:text-sm">
                   {isBackgroundApplying ? '이미지 처리 중...' : '클릭 또는 드래그하여 업로드'}
@@ -283,7 +283,7 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
                             className="w-6 h-4 flex items-center justify-center text-slate-400 hover:text-blue-600 p-0"
                           />
                         </div>
-                        <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${isSelected ? 'bg-blue-600 text-white shadow-sm' : 'bg-slate-100 text-slate-400'}`}>
+                        <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${isSelected ? 'bg-blue-700 text-on-accent shadow-sm' : 'bg-slate-100 text-slate-400'}`}>
                           <Icon path={isText ? mdiFormatColorText : mdiShape} size={0.5} />
                         </div>
                         
@@ -309,7 +309,7 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
                             compact
                           />
                           {isText && (
-                            <MemeColorPicker 
+                              <MemeColorPicker 
                               label="" 
                               value={obj.stroke as string || '#000000'} 
                               onChange={(val) => {
@@ -558,7 +558,7 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
                   icon={<Icon path={mdiDownload} size={1} />} 
                   onClick={() => downloadImage(downloadFormat)}
                   block
-                  className="h-11 text-base font-bold shadow-lg shadow-blue-500/20 rounded-xl border-none bg-blue-600 hover:bg-blue-500"
+                  className="h-11 text-base font-bold shadow-lg shadow-blue-500/20 rounded-xl border-none bg-blue-700 hover:bg-blue-600 text-on-accent"
                >
                   다운로드
                </Button>
