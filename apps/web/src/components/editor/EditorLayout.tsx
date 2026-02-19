@@ -1,5 +1,4 @@
 import React from 'react';
-import { Layout } from 'antd';
 
 interface EditorLayoutProps {
   sidebar: React.ReactNode;
@@ -8,10 +7,7 @@ interface EditorLayoutProps {
 
 const EditorLayout: React.FC<EditorLayoutProps> = ({ sidebar, children }) => {
   return (
-    <Layout
-      className="flex-1 min-h-0 flex flex-col md:flex-row bg-slate-100 md:overflow-hidden"
-      style={{ backgroundColor: 'var(--app-surface)' }}
-    >
+    <div className="flex-1 min-h-0 flex flex-col bg-app-surface md:flex-row md:overflow-hidden">
       {/* 
          Desktop: Sidebar is at the left.
          Mobile: Stacked vertically.
@@ -20,7 +16,7 @@ const EditorLayout: React.FC<EditorLayoutProps> = ({ sidebar, children }) => {
         {sidebar}
         {children}
       </div>
-    </Layout>
+    </div>
   );
 };
 

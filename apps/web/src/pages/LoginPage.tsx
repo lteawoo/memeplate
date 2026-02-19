@@ -1,10 +1,7 @@
 import React from 'react';
-import { Button, Layout, Typography } from 'antd';
 import Icon from '@mdi/react';
 import { mdiGoogle } from '@mdi/js';
-
-const { Content } = Layout;
-const { Title } = Typography;
+import { Button } from '@/components/ui/button';
 
 const LoginPage: React.FC = () => {
   const handleGoogleLogin = () => {
@@ -12,25 +9,23 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    <Layout className="h-screen bg-white">
-      <Content className="flex h-full items-center justify-center px-6">
+    <div className="h-screen bg-app-bg">
+      <main className="flex h-full items-center justify-center px-6">
         <div className="w-full max-w-sm text-center">
-          <Title level={1} className="!mb-8 !text-5xl !font-black tracking-tighter md:!text-6xl">
+          <h1 className="mb-8 text-5xl font-black tracking-tighter text-slate-900 md:text-6xl">
             Memeplate
-          </Title>
+          </h1>
           <Button
-            type="primary"
-            size="large"
-            block
-            icon={<Icon path={mdiGoogle} size={0.9} />}
+            type="button"
             onClick={handleGoogleLogin}
-            className="h-14 rounded-2xl text-base font-bold"
+            className="h-14 w-full rounded-2xl text-base font-bold"
           >
+            <Icon path={mdiGoogle} size={0.9} />
             구글 로그인
           </Button>
         </div>
-      </Content>
-    </Layout>
+      </main>
+    </div>
   );
 };
 

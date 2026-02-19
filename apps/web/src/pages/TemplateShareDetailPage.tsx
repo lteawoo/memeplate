@@ -1,13 +1,13 @@
 import React from 'react';
-import { Alert, Button, Card, Empty, Layout, Segmented, Skeleton, Typography } from 'antd';
 import { useNavigate, useParams } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import MainHeader from '../components/layout/MainHeader';
 import PageContainer from '../components/layout/PageContainer';
 import type { TemplateResponse, TemplateRecord } from '../types/template';
 import type { MemeImageRecord, MemeImagesResponse } from '../types/image';
 import ThumbnailCard from '../components/ThumbnailCard';
 
-const { Title } = Typography;
 const RELATED_SKELETON_ITEMS = Array.from({ length: 6 }, (_, idx) => idx);
 
 type ImageMeta = {
@@ -45,7 +45,7 @@ const TemplateShareDetailPage: React.FC = () => {
   const [imageMeta, setImageMeta] = React.useState<ImageMeta>({
     format: '-',
     resolution: '-',
-    fileSize: '-'
+    fileSize: '-',
   });
   const [relatedImages, setRelatedImages] = React.useState<MemeImageRecord[]>([]);
   const [isRelatedLoading, setIsRelatedLoading] = React.useState(false);
@@ -54,6 +54,7 @@ const TemplateShareDetailPage: React.FC = () => {
   const [isMainImageLoaded, setIsMainImageLoaded] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
+
   const sortedRelatedImages = React.useMemo(() => {
     const next = [...relatedImages];
     if (relatedSort === 'popular') {
@@ -67,7 +68,7 @@ const TemplateShareDetailPage: React.FC = () => {
       return next;
     }
     next.sort(
-      (a, b) => new Date(b.updatedAt ?? b.createdAt ?? 0).getTime() - new Date(a.updatedAt ?? a.createdAt ?? 0).getTime()
+      (a, b) => new Date(b.updatedAt ?? b.createdAt ?? 0).getTime() - new Date(a.updatedAt ?? a.createdAt ?? 0).getTime(),
     );
     return next;
   }, [relatedImages, relatedSort]);
@@ -111,7 +112,7 @@ const TemplateShareDetailPage: React.FC = () => {
             image.onerror = reject;
             image.src = template.thumbnailUrl;
           }),
-          fetch(template.thumbnailUrl)
+          fetch(template.thumbnailUrl),
         ]);
 
         const blob = await response.blob();
@@ -119,13 +120,13 @@ const TemplateShareDetailPage: React.FC = () => {
         setImageMeta({
           format,
           resolution: `${imageInfo.width} x ${imageInfo.height}`,
-          fileSize: formatBytes(blob.size)
+          fileSize: formatBytes(blob.size),
         });
       } catch {
         setImageMeta({
           format: formatMimeToLabel(null, template.thumbnailUrl),
           resolution: '-',
-          fileSize: '-'
+          fileSize: '-',
         });
       }
     };
@@ -172,14 +173,12 @@ const TemplateShareDetailPage: React.FC = () => {
     const incrementView = async () => {
       try {
         const res = await fetch(`/api/v1/templates/s/${shareSlug}/view`, {
-          method: 'POST'
+          method: 'POST',
         });
         if (!res.ok) return;
         const payload = (await res.json().catch(() => ({}))) as { viewCount?: number };
         if (typeof payload.viewCount !== 'number') return;
-        setTemplate((prev) => (
-          prev ? { ...prev, viewCount: payload.viewCount } : prev
-        ));
+        setTemplate((prev) => (prev ? { ...prev, viewCount: payload.viewCount } : prev));
       } catch {
         // 조회수 증가는 실패해도 화면 흐름을 막지 않는다.
       }
@@ -189,15 +188,15 @@ const TemplateShareDetailPage: React.FC = () => {
   }, [shareSlug, template]);
 
   return (
-    <Layout className="min-h-screen bg-slate-100">
+    <div className="min-h-screen bg-slate-100">
       <MainHeader />
       <PageContainer className="py-10">
         {isLoading ? (
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-[340px_minmax(0,1fr)]">
-            <Card className="rounded-2xl">
+            <div className="rounded-2xl border border-slate-200 bg-white p-6">
               <div className="mb-4 space-y-2">
-                <Skeleton.Input active size="small" block />
-                <Skeleton.Input active size="small" style={{ width: 120 }} />
+                <div className="h-5 w-full animate-pulse rounded bg-slate-200" />
+                <div className="h-4 w-28 animate-pulse rounded bg-slate-200" />
               </div>
               <div className="h-56 rounded-xl border border-slate-200 bg-slate-100">
                 <div className="h-full w-full animate-pulse rounded-xl bg-gradient-to-br from-slate-100 to-slate-200" />
@@ -205,57 +204,54 @@ const TemplateShareDetailPage: React.FC = () => {
               <div className="mt-4 space-y-2">
                 {Array.from({ length: 6 }, (_, idx) => (
                   <div key={idx} className="flex items-center justify-between gap-3">
-                    <Skeleton.Input active size="small" style={{ width: 72 }} />
-                    <Skeleton.Input active size="small" style={{ width: 120 }} />
+                    <div className="h-4 w-16 animate-pulse rounded bg-slate-200" />
+                    <div className="h-4 w-28 animate-pulse rounded bg-slate-200" />
                   </div>
                 ))}
               </div>
-              <div className="mt-5 space-y-2">
-                <Skeleton.Button active block />
-                <Skeleton.Button active block />
-              </div>
-            </Card>
-            <Card className="rounded-2xl">
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-white p-6">
               <div className="mb-4 flex items-end justify-between gap-3">
                 <div className="space-y-2">
-                  <Skeleton.Input active size="small" style={{ width: 180 }} />
-                  <Skeleton.Input active size="small" style={{ width: 90 }} />
+                  <div className="h-5 w-44 animate-pulse rounded bg-slate-200" />
+                  <div className="h-4 w-24 animate-pulse rounded bg-slate-200" />
                 </div>
-                <Skeleton.Input active size="small" style={{ width: 120 }} />
+                <div className="h-8 w-28 animate-pulse rounded bg-slate-200" />
               </div>
               <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' }}>
                 {RELATED_SKELETON_ITEMS.map((key) => (
-                  <div key={key} className="overflow-hidden rounded-xl bg-slate-50 border border-slate-200">
+                  <div key={key} className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
                     <div className="h-52 bg-slate-100 p-2">
                       <div className="h-full w-full animate-pulse rounded-lg bg-gradient-to-br from-slate-100 to-slate-200" />
                     </div>
                     <div className="space-y-2 p-3">
-                      <Skeleton.Input active size="small" block />
+                      <div className="h-4 w-full animate-pulse rounded bg-slate-200" />
                       <div className="flex items-center justify-between gap-3">
-                        <Skeleton.Input active size="small" style={{ width: 96 }} />
-                        <Skeleton.Input active size="small" style={{ width: 76 }} />
+                        <div className="h-4 w-20 animate-pulse rounded bg-slate-200" />
+                        <div className="h-4 w-16 animate-pulse rounded bg-slate-200" />
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
-            </Card>
+            </div>
           </div>
         ) : error ? (
-          <Alert type="error" message={error} />
+          <Alert variant="destructive">
+            <AlertTitle>상세 로딩 실패</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
         ) : template ? (
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-[340px_minmax(0,1fr)]">
             <div className="lg:sticky lg:top-20 lg:self-start">
-              <Card className="rounded-2xl">
-              <div className="mb-4">
-                <Title level={3} className="!mb-1">{template.title}</Title>
-                <span className="text-sm text-slate-500">원본 밈플릿</span>
-                {template.description ? (
-                  <div className="mt-2 whitespace-pre-wrap text-sm text-slate-600">
-                    {template.description}
-                  </div>
-                ) : null}
-              </div>
+              <div className="rounded-2xl border border-slate-200 bg-white p-6">
+                <div className="mb-4">
+                  <h3 className="mb-1 text-2xl font-bold text-slate-900">{template.title}</h3>
+                  <span className="text-sm text-slate-500">원본 밈플릿</span>
+                  {template.description ? (
+                    <div className="mt-2 whitespace-pre-wrap text-sm text-slate-600">{template.description}</div>
+                  ) : null}
+                </div>
                 <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
                   {template.thumbnailUrl ? (
                     <div className="relative flex items-center justify-center p-4">
@@ -274,21 +270,17 @@ const TemplateShareDetailPage: React.FC = () => {
                       />
                     </div>
                   ) : (
-                    <div className="h-56 flex items-center justify-center text-slate-500">미리보기 없음</div>
+                    <div className="flex h-56 items-center justify-center text-slate-500">미리보기 없음</div>
                   )}
                 </div>
                 <div className="mt-4 space-y-2 text-sm">
                   <div className="flex items-start justify-between gap-3">
                     <span className="text-slate-500">만든 사람</span>
-                    <span className="text-right font-medium text-slate-800">
-                      {template.ownerDisplayName || template.ownerId || '-'}
-                    </span>
+                    <span className="text-right font-medium text-slate-800">{template.ownerDisplayName || template.ownerId || '-'}</span>
                   </div>
                   <div className="flex items-start justify-between gap-3">
                     <span className="text-slate-500">생성일</span>
-                    <span className="text-right font-medium text-slate-800">
-                      {template.createdAt ? new Date(template.createdAt).toLocaleDateString() : '-'}
-                    </span>
+                    <span className="text-right font-medium text-slate-800">{template.createdAt ? new Date(template.createdAt).toLocaleDateString() : '-'}</span>
                   </div>
                   <div className="flex items-start justify-between gap-3">
                     <span className="text-slate-500">이미지 포맷</span>
@@ -308,50 +300,62 @@ const TemplateShareDetailPage: React.FC = () => {
                   </div>
                 </div>
                 <div className="mt-5 flex flex-col gap-2">
-                  <Button type="primary" onClick={() => navigate(`/create?shareSlug=${template.shareSlug}`)}>
-                    리믹스
-                  </Button>
-                  <Button onClick={() => navigate('/templates')}>밈플릿 목록으로</Button>
+                  <Button type="button" onClick={() => navigate(`/create?shareSlug=${template.shareSlug}`)}>리믹스</Button>
+                  <Button type="button" variant="outline" onClick={() => navigate('/templates')}>밈플릿 목록으로</Button>
                 </div>
-              </Card>
+              </div>
             </div>
-            <Card className="rounded-2xl">
+
+            <div className="rounded-2xl border border-slate-200 bg-white p-6">
               <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
                 <div>
-                  <Title level={4} className="!mb-1">리믹스 목록</Title>
+                  <h4 className="mb-1 text-xl font-bold text-slate-900">리믹스 목록</h4>
                   <span className="text-sm text-slate-500">총 {relatedImages.length.toLocaleString()}개</span>
                 </div>
-                <Segmented
-                  size="small"
-                  value={relatedSort}
-                  onChange={(value) => setRelatedSort(value as 'latest' | 'popular')}
-                  options={[
-                    { label: '최신순', value: 'latest' },
-                    { label: '인기순', value: 'popular' }
-                  ]}
-                />
+                <div className="flex items-center rounded-xl border border-slate-200 bg-slate-50 p-1">
+                  <button
+                    type="button"
+                    onClick={() => setRelatedSort('latest')}
+                    className={`h-8 rounded-lg px-3 text-xs font-bold ${relatedSort === 'latest' ? 'bg-blue-700 text-on-accent' : 'text-slate-600 hover:bg-slate-100'}`}
+                  >
+                    최신순
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRelatedSort('popular')}
+                    className={`h-8 rounded-lg px-3 text-xs font-bold ${relatedSort === 'popular' ? 'bg-blue-700 text-on-accent' : 'text-slate-600 hover:bg-slate-100'}`}
+                  >
+                    인기순
+                  </button>
+                </div>
               </div>
+
               {isRelatedLoading ? (
                 <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' }}>
                   {RELATED_SKELETON_ITEMS.map((key) => (
-                    <div key={key} className="overflow-hidden rounded-xl bg-slate-50 border border-slate-200">
+                    <div key={key} className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
                       <div className="h-52 bg-slate-100 p-2">
                         <div className="h-full w-full animate-pulse rounded-lg bg-gradient-to-br from-slate-100 to-slate-200" />
                       </div>
                       <div className="space-y-2 p-3">
-                        <Skeleton.Input active size="small" block />
+                        <div className="h-4 w-full animate-pulse rounded bg-slate-200" />
                         <div className="flex items-center justify-between gap-3">
-                          <Skeleton.Input active size="small" style={{ width: 96 }} />
-                          <Skeleton.Input active size="small" style={{ width: 76 }} />
+                          <div className="h-4 w-20 animate-pulse rounded bg-slate-200" />
+                          <div className="h-4 w-16 animate-pulse rounded bg-slate-200" />
                         </div>
                       </div>
                     </div>
                   ))}
                 </div>
               ) : relatedError ? (
-                <Alert type="error" message={relatedError} />
+                <Alert variant="destructive">
+                  <AlertTitle>연관 이미지 로딩 실패</AlertTitle>
+                  <AlertDescription>{relatedError}</AlertDescription>
+                </Alert>
               ) : relatedImages.length === 0 ? (
-                <Empty description="아직 등록된 리믹스가 없습니다." />
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-10 text-center text-sm text-slate-500">
+                  아직 등록된 리믹스가 없습니다.
+                </div>
               ) : (
                 <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' }}>
                   {sortedRelatedImages.map((image) => (
@@ -373,11 +377,11 @@ const TemplateShareDetailPage: React.FC = () => {
                   ))}
                 </div>
               )}
-            </Card>
+            </div>
           </div>
         ) : null}
       </PageContainer>
-    </Layout>
+    </div>
   );
 };
 

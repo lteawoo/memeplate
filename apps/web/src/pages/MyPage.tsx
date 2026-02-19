@@ -1,16 +1,20 @@
 import React from 'react';
-import { Alert, Button, Card, Form, Input, Spin, Typography, message } from 'antd';
 import { useNavigate } from 'react-router-dom';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import MySectionLayout from '../components/layout/MySectionLayout';
 import { useAuthStore } from '../stores/authStore';
-const { Text } = Typography;
 
 const MyPage: React.FC = () => {
   const navigate = useNavigate();
-  const [messageApi, contextHolder] = message.useMessage();
-  const [form] = Form.useForm<{ displayName: string }>();
   const [isSaving, setIsSaving] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = React.useState<string | null>(null);
+  const [displayName, setDisplayName] = React.useState('');
+
   const user = useAuthStore((state) => state.user);
   const isLoading = useAuthStore((state) => state.isLoading);
   const initialized = useAuthStore((state) => state.initialized);
@@ -29,7 +33,7 @@ const MyPage: React.FC = () => {
           navigate('/');
           return;
         }
-        form.setFieldsValue({ displayName: nextUser.displayName ?? '' });
+        setDisplayName(nextUser.displayName ?? '');
       } catch (err) {
         const msg = err instanceof Error ? err.message : '사용자 정보를 불러오지 못했습니다.';
         setError(msg);
@@ -37,21 +41,33 @@ const MyPage: React.FC = () => {
     };
 
     void loadMe();
-  }, [form, initialized, navigate, syncSession]);
+  }, [initialized, navigate, syncSession]);
 
-  const onSaveProfile = async (values: { displayName: string }) => {
+  const onSaveProfile = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    const trimmed = displayName.trim();
+    if (trimmed.length < 1 || trimmed.length > 60) {
+      setError('이름은 1~60자로 입력하세요.');
+      setSuccessMessage(null);
+      return;
+    }
+
+    setError(null);
+    setSuccessMessage(null);
     setIsSaving(true);
+
     try {
-      const nextUser = await updateDisplayName(values.displayName.trim());
-      form.setFieldsValue({ displayName: nextUser.displayName ?? '' });
-      messageApi.success('내 정보를 저장했습니다.');
+      const nextUser = await updateDisplayName(trimmed);
+      setDisplayName(nextUser.displayName ?? '');
+      setSuccessMessage('내 정보를 저장했습니다.');
     } catch (err) {
       const msg = err instanceof Error ? err.message : '내 정보 저장에 실패했습니다.';
       if (msg.includes('만료')) {
         navigate('/');
         return;
       }
-      messageApi.error(msg);
+      setError(msg);
     } finally {
       setIsSaving(false);
     }
@@ -62,46 +78,49 @@ const MyPage: React.FC = () => {
       title="마이페이지"
       description="내 계정 정보를 확인하고 수정할 수 있습니다."
     >
-      {contextHolder}
       {isLoading ? (
-        <div className="py-20 text-center"><Spin size="large" /></div>
+        <div className="py-20 text-center">
+          <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-slate-500" />
+        </div>
       ) : error ? (
-        <Alert
-          type="error"
-          message={error}
-          action={<Button size="small" type="primary" onClick={() => navigate('/login')}>로그인</Button>}
-        />
+        <Alert variant="destructive">
+          <AlertTitle>오류</AlertTitle>
+          <AlertDescription className="flex flex-col gap-3">
+            <span>{error}</span>
+            <Button type="button" className="w-fit" onClick={() => navigate('/login')}>로그인</Button>
+          </AlertDescription>
+        </Alert>
       ) : (
-        <Card>
-          <div className="flex flex-col gap-4">
-            <Form
-              form={form}
-              layout="vertical"
-              onFinish={(values) => {
-                void onSaveProfile(values);
-              }}
-            >
-              <Form.Item
-                label="이름"
-                name="displayName"
-                rules={[
-                  { required: true, message: '이름을 입력하세요.' },
-                  { min: 1, max: 60, message: '이름은 1~60자로 입력하세요.' }
-                ]}
-              >
-                <Input maxLength={60} placeholder="이름" />
-              </Form.Item>
-              <Form.Item className="!mb-0">
-                <Button htmlType="submit" type="primary" loading={isSaving}>
-                  내 정보 수정
+        <Card className="border-slate-200 bg-white shadow-none">
+          <CardContent className="flex flex-col gap-4 p-6">
+            <form className="flex flex-col gap-4" onSubmit={onSaveProfile}>
+              <div className="space-y-2">
+                <Label htmlFor="displayName">이름</Label>
+                <Input
+                  id="displayName"
+                  maxLength={60}
+                  placeholder="이름"
+                  value={displayName}
+                  onChange={(event) => setDisplayName(event.target.value)}
+                />
+              </div>
+              <div>
+                <Button type="submit" disabled={isSaving}>
+                  {isSaving ? '저장 중...' : '내 정보 수정'}
                 </Button>
-              </Form.Item>
-            </Form>
+              </div>
+            </form>
+            {successMessage ? (
+              <Alert>
+                <AlertTitle>완료</AlertTitle>
+                <AlertDescription>{successMessage}</AlertDescription>
+              </Alert>
+            ) : null}
             <div>
-              <Text type="secondary">이메일</Text>
+              <p className="text-sm text-slate-500">이메일</p>
               <div className="text-base font-semibold text-slate-800">{user?.email || '-'}</div>
             </div>
-          </div>
+          </CardContent>
         </Card>
       )}
     </MySectionLayout>

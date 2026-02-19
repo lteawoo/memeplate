@@ -2,12 +2,10 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Canvas, CanvasObject, Rect, Circle, Textbox, CanvasImage } from '../core/canvas';
 import type { CanvasObjectOptions } from '../core/canvas';
 import type { ToolType } from '../components/editor/MemeToolbar';
-import { message } from 'antd';
+import { toast } from 'sonner';
 import type { TemplateRecord, TemplateVisibility } from '../types/template';
 import { apiFetch } from '../lib/apiFetch';
 import { MAX_CANVAS_AREA_PX, MAX_CANVAS_EDGE_PX } from '../constants/canvasLimits';
-
-type MessageInstance = ReturnType<typeof message.useMessage>[0];
 
 const CANVAS_MARGIN = 0;
 const PUBLISH_IMAGE_LONG_EDGE = 1920;
@@ -192,7 +190,7 @@ const createBackgroundImageObject = (src: string, width: number, height: number)
   visible: true
 });
 
-export const useMemeEditor = (messageApi: MessageInstance, options?: UseMemeEditorOptions) => {
+export const useMemeEditor = (options?: UseMemeEditorOptions) => {
   const initialTemplate = options?.initialTemplate ?? null;
   const initialTemplateMode = options?.initialTemplateMode;
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -567,7 +565,7 @@ export const useMemeEditor = (messageApi: MessageInstance, options?: UseMemeEdit
       setBgUrl(url);
       setActiveTool('background');
       if (normalizedSize.scaled) {
-        messageApi.info(`큰 원본이라 편집 안정성을 위해 ${normalizedSize.width}x${normalizedSize.height}로 조정했습니다.`);
+        toast.info(`큰 원본이라 편집 안정성을 위해 ${normalizedSize.width}x${normalizedSize.height}로 조정했습니다.`);
       }
       isBackgroundDirtyRef.current = true;
       isHistoryLocked.current = false;
@@ -586,7 +584,7 @@ export const useMemeEditor = (messageApi: MessageInstance, options?: UseMemeEdit
         return;
       }
       console.error('Failed to load image:', err);
-      messageApi.error('이미지를 불러오는데 실패했습니다.');
+      toast.error('이미지를 불러오는데 실패했습니다.');
       isHistoryLocked.current = false;
       if (shouldRevokeObjectUrl) {
         URL.revokeObjectURL(safeImageUrl);
@@ -705,8 +703,8 @@ export const useMemeEditor = (messageApi: MessageInstance, options?: UseMemeEdit
     });
 
     if (format === 'pdf') {
+      const toastId = toast.loading('PDF 생성 중...');
       try {
-        messageApi.loading('PDF 생성 중...');
         const { default: jsPDF } = await import('jspdf');
         const pdf = new jsPDF({ 
           orientation: workspaceSize.width > workspaceSize.height ? 'landscape' : 'portrait', 
@@ -715,16 +713,16 @@ export const useMemeEditor = (messageApi: MessageInstance, options?: UseMemeEdit
         });
         pdf.addImage(dataURL, 'PNG', 0, 0, workspaceSize.width, workspaceSize.height);
         pdf.save(`meme-${Date.now()}.pdf`);
-        messageApi.success('PDF 다운로드 완료');
+        toast.success('PDF 다운로드 완료', { id: toastId });
       } catch {
-        messageApi.error('PDF 생성에 실패했습니다');
+        toast.error('PDF 생성에 실패했습니다', { id: toastId });
       }
     } else {
       const link = document.createElement('a'); 
       link.download = `meme-${Date.now()}.${format}`;
       link.href = dataURL;
       link.click();
-      messageApi.success('이미지 다운로드 시작');
+      toast.success('이미지 다운로드 시작');
     }
   };
 
@@ -736,16 +734,16 @@ export const useMemeEditor = (messageApi: MessageInstance, options?: UseMemeEdit
       });
       const blob = await (await fetch(dataURL)).blob();
       await navigator.clipboard.write([ new ClipboardItem({ [blob.type]: blob }) ]);
-      messageApi.success('클립보드에 복사되었습니다');
+      toast.success('클립보드에 복사되었습니다');
     } catch {
-      messageApi.error('복사에 실패했습니다');
+      toast.error('복사에 실패했습니다');
     }
   };
 
   const publishImage = async (title: string, description: string) => {
     if (!canvasInstanceRef.current) return null;
     if (!linkedTemplateId) {
-      messageApi.warning('리믹스 게시 전 밈플릿을 먼저 선택하거나 저장하세요.');
+      toast.warning('리믹스 게시 전 밈플릿을 먼저 선택하거나 저장하세요.');
       return null;
     }
     const imageTitle = title.trim() || '새 이미지';
@@ -786,7 +784,7 @@ export const useMemeEditor = (messageApi: MessageInstance, options?: UseMemeEdit
       });
 
       if (res.status === 401) {
-        messageApi.error('로그인이 필요합니다.');
+        toast.error('로그인이 필요합니다.');
         return null;
       }
 
@@ -799,14 +797,14 @@ export const useMemeEditor = (messageApi: MessageInstance, options?: UseMemeEdit
       const shareUrl = `${window.location.origin}/images/s/${payload.image.shareSlug}`;
       try {
         await navigator.clipboard.writeText(shareUrl);
-        messageApi.success('리믹스를 게시했고 링크를 복사했습니다.');
+        toast.success('리믹스를 게시했고 링크를 복사했습니다.');
       } catch {
-        messageApi.success('리믹스를 게시했습니다.');
+        toast.success('리믹스를 게시했습니다.');
       }
       return payload.image;
     } catch (err) {
       const msg = err instanceof Error ? err.message : '리믹스 게시에 실패했습니다.';
-      messageApi.error(msg);
+      toast.error(msg);
       return null;
     } finally {
       setIsImagePublishing(false);
@@ -816,11 +814,11 @@ export const useMemeEditor = (messageApi: MessageInstance, options?: UseMemeEdit
   const saveTemplate = async (title: string, description: string, visibility: TemplateVisibility) => {
     if (!canvasInstanceRef.current) return null;
     if (isTemplateSaveDisabled) {
-      messageApi.warning('공개 밈플릿으로 시작한 작업은 밈플릿 저장/공유를 지원하지 않습니다.');
+      toast.warning('공개 밈플릿으로 시작한 작업은 밈플릿 저장/공유를 지원하지 않습니다.');
       return null;
     }
     if (!title.trim()) {
-      messageApi.error('밈플릿 제목을 입력하세요.');
+      toast.error('밈플릿 제목을 입력하세요.');
       return null;
     }
 
@@ -889,7 +887,7 @@ export const useMemeEditor = (messageApi: MessageInstance, options?: UseMemeEdit
       });
 
       if (res.status === 401) {
-        messageApi.error('로그인이 필요합니다.');
+        toast.error('로그인이 필요합니다.');
         return null;
       }
 
@@ -908,11 +906,11 @@ export const useMemeEditor = (messageApi: MessageInstance, options?: UseMemeEdit
       };
       setSavedTemplate(template);
       isBackgroundDirtyRef.current = false;
-      messageApi.success('밈플릿이 저장되었습니다.');
+      toast.success('밈플릿이 저장되었습니다.');
       return template;
     } catch (err) {
       const msg = err instanceof Error ? err.message : '밈플릿 저장에 실패했습니다.';
-      messageApi.error(msg);
+      toast.error(msg);
       return null;
     } finally {
       setIsTemplateSaving(false);
@@ -921,15 +919,15 @@ export const useMemeEditor = (messageApi: MessageInstance, options?: UseMemeEdit
 
   const copyTemplateShareLink = async () => {
     if (!savedTemplate?.shareSlug) {
-      messageApi.warning('공유 가능한 밈플릿이 없습니다.');
+      toast.warning('공유 가능한 밈플릿이 없습니다.');
       return;
     }
     const shareUrl = `${window.location.origin}/templates/s/${savedTemplate.shareSlug}`;
     try {
       await navigator.clipboard.writeText(shareUrl);
-      messageApi.success('밈플릿 공유 링크가 복사되었습니다.');
+      toast.success('밈플릿 공유 링크가 복사되었습니다.');
     } catch {
-      messageApi.error('링크 복사에 실패했습니다.');
+      toast.error('링크 복사에 실패했습니다.');
     }
   };
 

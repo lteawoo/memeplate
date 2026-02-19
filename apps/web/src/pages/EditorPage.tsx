@@ -1,9 +1,10 @@
 import React from 'react';
-import { Alert, Spin } from 'antd';
 import { useSearchParams } from 'react-router-dom';
 import MemeEditor from '../components/MemeEditor';
 import type { TemplateResponse, TemplateRecord } from '../types/template';
 import { apiFetch } from '../lib/apiFetch';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+
 type EditorLoadMode = 'mine' | 'public';
 
 const EditorPage: React.FC = () => {
@@ -61,7 +62,7 @@ const EditorPage: React.FC = () => {
   if (isLoading) {
     return (
       <div className="h-screen w-full flex items-center justify-center bg-white">
-        <Spin size="large" />
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-slate-500" />
       </div>
     );
   }
@@ -69,7 +70,10 @@ const EditorPage: React.FC = () => {
   if (loadError) {
     return (
       <div className="h-screen w-full p-8 bg-white">
-        <Alert type="error" message={loadError} />
+        <Alert variant="destructive">
+          <AlertTitle>불러오기 실패</AlertTitle>
+          <AlertDescription>{loadError}</AlertDescription>
+        </Alert>
       </div>
     );
   }

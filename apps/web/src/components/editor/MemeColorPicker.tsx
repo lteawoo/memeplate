@@ -1,7 +1,5 @@
 import React from 'react';
-import { ColorPicker, Typography } from 'antd';
-
-const { Text } = Typography;
+import { Input } from '@/components/ui/input';
 
 interface MemeColorPickerProps {
   value: string;
@@ -11,39 +9,66 @@ interface MemeColorPickerProps {
   compact?: boolean;
 }
 
-const MemeColorPicker: React.FC<MemeColorPickerProps> = ({ 
-  value, 
-  onChange, 
-  label, 
-  height = "h-12",
-  compact = false
+const isValidHex = (value: string) => /^#([0-9A-Fa-f]{3}){1,2}$/.test(value.trim());
+
+const MemeColorPicker: React.FC<MemeColorPickerProps> = ({
+  value,
+  onChange,
+  height = 'h-12',
+  compact = false,
+  label,
 }) => {
+  const [textValue, setTextValue] = React.useState(value);
+
+  React.useEffect(() => {
+    setTextValue(value);
+  }, [value]);
+
   if (compact) {
     return (
-      <div className="shrink-0 flex items-center">
-        <input 
-            type="color" 
-            value={value} 
-            onChange={(e) => onChange(e.target.value)}
-            className="w-10 h-8 rounded-lg border-none p-0 cursor-pointer bg-transparent overflow-hidden shadow-sm"
+      <div className="flex shrink-0 items-center">
+        <input
+          type="color"
+          value={isValidHex(value) ? value : '#ffffff'}
+          onChange={(e) => onChange(e.target.value)}
+          className="h-8 w-10 cursor-pointer overflow-hidden rounded-lg border-none bg-transparent p-0 shadow-sm"
         />
       </div>
     );
   }
 
   return (
-  <div>
-    <div className="flex justify-between items-center mb-4">
-        <Text type="secondary" className="text-xs font-bold text-slate-500 uppercase tracking-wider">{label}</Text>
+    <div>
+      <div className="mb-2 flex items-center justify-between">
+        <span className="text-xs font-bold uppercase tracking-wider text-slate-500">{label}</span>
+      </div>
+      <div className={`flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 ${height}`}>
+        <input
+          type="color"
+          value={isValidHex(value) ? value : '#ffffff'}
+          onChange={(e) => onChange(e.target.value)}
+          className="h-8 w-10 cursor-pointer overflow-hidden rounded-lg border-none bg-transparent p-0 shadow-sm"
+        />
+        <Input
+          value={textValue}
+          onChange={(e) => {
+            const next = e.target.value;
+            setTextValue(next);
+            if (isValidHex(next)) {
+              onChange(next);
+            }
+          }}
+          onBlur={() => {
+            if (!isValidHex(textValue)) {
+              setTextValue(value);
+            }
+          }}
+          className="h-8 border-slate-200 bg-white text-xs font-semibold text-slate-700"
+          placeholder="#FFFFFF"
+          maxLength={7}
+        />
+      </div>
     </div>
-    <ColorPicker 
-        value={value} 
-        onChange={(c) => onChange(c.toHexString())} 
-        showText
-        size="large"
-        className={`w-full ${height} flex items-center justify-center gap-4 p-0`}
-    />
-  </div>
   );
 };
 
