@@ -293,7 +293,7 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
 
   return (
     <Content 
-      className="flex-1 min-h-0 min-w-0 relative flex flex-col items-center justify-center bg-white p-4 md:p-6 overflow-hidden" 
+      className="flex-1 min-h-0 min-w-0 relative flex flex-col items-center justify-center bg-slate-100 p-4 md:p-6 overflow-hidden" 
       ref={containerRef}
       style={{ touchAction: 'none' }}
     >
@@ -306,7 +306,7 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
       >
          <canvas 
             ref={canvasRef} 
-            className="border border-slate-100 shadow-sm bg-white"
+            className="border border-slate-200 shadow-sm bg-white"
             style={{ 
               touchAction: 'none',
               width: displayWidth ? `${displayWidth}px` : undefined,

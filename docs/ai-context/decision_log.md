@@ -1,5 +1,85 @@
 # 결정 로그 (Decision Log)
 
+## [2026-02-19] 다크 에디터 컨트롤 가시성 보강 1차: 아이콘/버튼 대비 상향
+- **결정**:
+  1. 에디터 툴바 버튼을 투명 기반에서 표면/보더 기반으로 조정해 버튼 경계를 더 명확히 표현함.
+  2. Undo/Redo 아이콘 버튼의 disabled 색상을 검정 계열(`rgba(0,0,0,0.25)`)에서 토큰 기반 slate 계열로 교체해 다크 배경에서 가시성을 확보함.
+  3. 레이어/세부설정 보조 라벨 및 아이콘 버튼의 저대비 slate 톤을 한 단계 상향(`slate-400 -> slate-500`)함.
+- **이유**:
+  1. 사용자 피드백 기준으로 다크 에디터에서 텍스트 대비 대비해 아이콘/버튼의 존재감이 낮게 인지됨.
+  2. 특히 disabled 아이콘 버튼과 보조 라벨이 배경과 붙어 보이는 구간이 있어 조작 가능 영역 인지가 약했음.
+- **구현 요약**:
+  - `apps/web/src/components/editor/MemeToolbar.tsx`
+    - inactive 아이콘 opacity `0.7 -> 0.9`
+    - disabled/inactive/active 버튼에 `bg + ring + text` 계층 스타일 강화
+  - `apps/web/src/components/MemeEditor.tsx`
+    - 데스크탑/모바일 Undo/Redo 버튼에 공통 클래스(`historyButtonClassName`) 적용
+    - disabled 상태에서도 토큰 기반 색/보더 유지
+  - `apps/web/src/components/editor/MemePropertyPanel.tsx`
+    - `텍스트/도형` 버튼에 `!bg/!border` 기반 명시 스타일 적용
+    - 레이어 정렬/설정/삭제 아이콘 버튼 배경/색 대비 상향
+    - `Layers`, `또는`, 상세 설정 섹션 라벨 등 보조 텍스트를 `text-slate-500`로 상향
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 다크 에디터 대비 재계측: sidebar 내 텍스트/아이콘 요소 기준 `contrast < 3.2` 항목 `0건`
+  - 스크린샷: `docs/ai-context/screenshots/2026-02-19_dark_editor_controls_visibility_v2.png`
+
+## [2026-02-19] 에디터 배경 계층 분리 1차: `surface` 바닥 + `elevated` 패널/캔버스 프레임
+- **결정**:
+  1. 에디터 전체 바닥면은 `--app-surface`를 사용해 페이지 배경(`--app-bg`)과 한 단계 분리함.
+  2. 실제 조작 영역(사이드 패널/툴바/캔버스 프레임)은 `--app-surface-elevated` 계열을 유지해 인터랙션 영역을 또 한 단계 올림.
+  3. 캔버스 프레임 경계선을 `border-slate-200`으로 조정해 배경과의 경계 인지성을 강화함.
+- **이유**:
+  1. 기존에는 에디터 주요 영역이 동일한 `bg-white` 계열로 겹쳐 보여 섹션 경계 인지가 약했음.
+  2. semantic token 체계를 유지한 상태에서 라이트/다크 동시 일관성을 확보하려면 `app-bg -> app-surface -> app-surface-elevated` 3단 계층이 가장 안정적임.
+- **적용 색상 기준**:
+  - Light: `app-bg #ececea`, `app-surface #f2f3f1`, `app-surface-elevated #ffffff`
+  - Dark: `app-bg #050b11`, `app-surface #08111a`, `app-surface-elevated #161f30`
+- **구현 요약**:
+  - `apps/web/src/components/MemeEditor.tsx`
+    - root `Layout`를 `bg-slate-100` + `style={{ backgroundColor: 'var(--app-surface)' }}`로 고정
+    - 데스크탑/모바일 패널 래퍼를 `bg-slate-50`로 조정
+  - `apps/web/src/components/editor/EditorLayout.tsx`
+    - root `Layout`를 `bg-slate-100` + `style={{ backgroundColor: 'var(--app-surface)' }}`로 고정
+  - `apps/web/src/components/editor/MemeCanvas.tsx`
+    - 캔버스 영역 배경 `bg-slate-100`으로 조정
+    - 캔버스 프레임 경계 `border-slate-100 -> border-slate-200`
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 라이트/다크 스크린샷
+    - `docs/ai-context/screenshots/2026-02-19_editor_bg_separation_light.png`
+    - `docs/ai-context/screenshots/2026-02-19_editor_bg_separation_dark.png`
+
+## [2026-02-19] 다크모드 버튼 톤다운 1차: Primary 채도/명도 하향 + 그림자 제거
+- **결정**:
+  1. 다크모드의 Ant Design `primary` 버튼 색상을 `#91a2ba`에서 `#5172af`로 낮추고, 버튼 그림자를 제거함.
+  2. 에디터 툴바 활성 버튼 배경을 `white` 계열에서 `slate-100` 계열로 하향 조정함.
+  3. 홈 CTA/다운로드 버튼의 추가 블루 그림자를 제거해 다크 화면에서의 발광 느낌을 완화함.
+- **이유**:
+  1. 다크 배경에서 primary 버튼이 과도하게 밝고(특히 그림자 포함) 시선이 과집중된다는 사용자 피드백이 있었음.
+  2. 버튼 시인성은 유지하되, 전체 톤과의 일관성을 높이기 위해 명도 대비를 한 단계 낮출 필요가 있었음.
+- **구현 요약**:
+  - `apps/web/src/theme/theme.ts`
+    - dark 토큰 `colorPrimary`, `colorInfo`를 `#5172af`로 조정
+    - `colorPrimaryHover`, `colorPrimaryActive`를 추가해 밝기 상승 폭 제한
+  - `apps/web/src/App.tsx`
+    - dark 모드에서 AntD `Button` 컴포넌트 토큰 `primaryShadow/defaultShadow`를 `none`으로 설정
+  - `apps/web/src/components/editor/MemeToolbar.tsx`
+    - 활성 버튼 스타일을 `bg-slate-100`, `text-blue-500`, `ring-slate-300/40`으로 조정
+    - 툴바 컨테이너 배경을 `bg-slate-50`로 조정
+  - `apps/web/src/pages/HomePage.tsx`
+    - 메인 CTA 버튼의 추가 그림자 클래스 제거
+  - `apps/web/src/components/editor/MemePropertyPanel.tsx`
+    - 다운로드 버튼의 추가 그림자 제거 및 hover 밝기 상승 제거
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 다크 모드 시각 검증 스크린샷
+    - `docs/ai-context/screenshots/2026-02-19_dark_buttons_tuned_home.png`
+    - `docs/ai-context/screenshots/2026-02-19_dark_buttons_tuned_editor.png`
+
 ## [2026-02-19] 목록 아이템 카드 밀도 조정: 외곽선 제거 + 썸네일/본문 간격 컴팩트화
 - **결정**: 목록 카드 아이템의 기본 외곽선을 제거하고, 썸네일과 텍스트 영역 사이의 밀도를 더 촘촘하게 조정함.
 - **이유**:

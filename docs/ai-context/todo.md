@@ -115,6 +115,9 @@
   - [x] 색상 토큰 공통화 및 라이트/다크 모드 기반 테마 시스템 도입 (`#92`)
   - [x] `index.css` semantic token(light/dark) 정의 및 전역 적용
   - [x] `App.tsx` Ant Design 토큰을 semantic token으로 연동
+  - [x] 다크모드 버튼 밝기 톤다운 1차 (`colorPrimary` 하향 + Button shadow 제거 + 주요 버튼 그림자 정리)
+  - [x] 에디터 배경 계층 분리 1차 (`app-surface` 바닥 + `app-surface-elevated` 패널/캔버스 프레임)
+  - [x] 다크 에디터 컨트롤 가시성 보강 1차 (툴바/히스토리/레이어 아이콘 버튼 대비 상향)
   - [x] 공통 레이아웃/헤더/카드 색상 유틸 치환(`slate/blue` 직접 의존 제거)
   - [x] 에디터/캔버스 하드코딩 색상(HEX) 토큰화
   - [x] 라이트/다크 수동 검증 + 스크린샷 비교

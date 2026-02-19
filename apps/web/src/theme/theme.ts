@@ -22,6 +22,8 @@ export const getInitialThemeMode = (): ThemeMode => {
 
 type AntThemeToken = {
   colorPrimary: string;
+  colorPrimaryHover?: string;
+  colorPrimaryActive?: string;
   colorInfo: string;
   colorBgBase: string;
   colorBgContainer: string;
@@ -49,8 +51,10 @@ const ANT_TOKENS: Record<ThemeMode, AntThemeToken> = {
     borderRadius: 12
   },
   dark: {
-    colorPrimary: '#91a2ba',
-    colorInfo: '#91a2ba',
+    colorPrimary: '#5172af',
+    colorPrimaryHover: '#5172af',
+    colorPrimaryActive: '#415a77',
+    colorInfo: '#5172af',
     colorBgBase: '#050b11',
     colorBgContainer: '#08111a',
     colorBgElevated: '#161f30',

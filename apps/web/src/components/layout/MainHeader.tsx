@@ -155,13 +155,13 @@ const MainHeader: React.FC = () => {
               className={`flex items-center rounded-xl border px-4 py-3 text-sm font-bold no-underline transition-colors ${
                 isLinkActive(link.to)
                   ? 'border-blue-200 bg-blue-50 text-blue-700'
-                  : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:text-slate-900'
+                  : 'border-slate-200 bg-slate-50 text-slate-700 hover:border-slate-300 hover:bg-slate-100 hover:text-slate-900'
               }`}
             >
               {link.label}
             </Link>
           ))}
-          <div className="mt-2 rounded-xl border border-slate-200 bg-slate-50 p-4">
+          <div className="mt-2 rounded-xl border border-slate-200 bg-slate-100 p-4">
             {isAuthLoading ? null : authUser ? (
               <div className="flex flex-col gap-3">
                 <span className="text-xs font-semibold text-slate-500">계정</span>

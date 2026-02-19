@@ -10,6 +10,23 @@
   - [x] AntD + Tailwind + Canvas 토큰 연동
   - [x] 핵심 화면 회귀 검증(라이트/다크)
   - [x] 스크린샷 기록 (`docs/ai-context/screenshots/2026-02-19_theme_*.png`)
+- [x] **다크모드 버튼 톤다운 1차 (완료 - 2026-02-19)**
+  - [x] Ant Design dark `colorPrimary`를 `#91a2ba -> #5172af`로 하향 조정
+  - [x] dark 모드 Button 그림자(`primaryShadow/defaultShadow`) 제거
+  - [x] 에디터 툴바 활성 버튼을 `bg-white`에서 `bg-slate-100` 계열로 조정
+  - [x] 홈 CTA/다운로드 버튼의 추가 블루 그림자 제거
+  - [x] `pnpm --filter memeplate-web lint`, `pnpm --filter memeplate-web build`, 다크 스크린샷 검증 완료
+- [x] **에디터 배경 계층 분리 1차 (완료 - 2026-02-19)**
+  - [x] 에디터 바닥면을 `--app-surface`로 고정해 페이지 배경과 톤 분리
+  - [x] 사이드 패널/툴바/캔버스 프레임을 `--app-surface-elevated` 계열로 유지
+  - [x] 캔버스 경계선을 `border-slate-200`으로 조정해 프레임 인지성 강화
+  - [x] `pnpm --filter memeplate-web lint`, `pnpm --filter memeplate-web build`, 라이트/다크 스크린샷 검증 완료
+- [x] **다크 에디터 컨트롤 가시성 보강 1차 (완료 - 2026-02-19)**
+  - [x] 툴바 비활성 버튼 opacity 하향폭 축소(`0.7 -> 0.9`) 및 버튼 표면/보더 가시성 강화
+  - [x] Undo/Redo 아이콘 버튼의 disabled 상태 대비 개선(검정 25% 계열 제거)
+  - [x] 레이어/세부설정 보조 라벨(`text-slate-400`)을 `text-slate-500`로 상향
+  - [x] 편집 패널의 `텍스트/도형` 및 아이콘 버튼에 명시적 배경/보더 적용(`!bg/!border`)
+  - [x] 다크 에디터 대비 재계측(low contrast < 3.2 구간 0건) + 스크린샷 검증 완료
 - [x] UI 구조 리팩토링 (완료)
 - [x] 모바일 사용성 개선 (Mobile UX)
 - [x] Fabric.js 제거 및 자체 엔진 전환 (완료)
