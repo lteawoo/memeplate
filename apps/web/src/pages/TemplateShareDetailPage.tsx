@@ -2,11 +2,11 @@ import React from 'react';
 import { Alert, Button, Card, Empty, Layout, Segmented, Skeleton, Typography } from 'antd';
 import { useNavigate, useParams } from 'react-router-dom';
 import MainHeader from '../components/layout/MainHeader';
+import PageContainer from '../components/layout/PageContainer';
 import type { TemplateResponse, TemplateRecord } from '../types/template';
 import type { MemeImageRecord, MemeImagesResponse } from '../types/image';
 import ThumbnailCard from '../components/ThumbnailCard';
 
-const { Content } = Layout;
 const { Title, Text } = Typography;
 const RELATED_SKELETON_ITEMS = Array.from({ length: 6 }, (_, idx) => idx);
 
@@ -191,7 +191,7 @@ const TemplateShareDetailPage: React.FC = () => {
   return (
     <Layout className="min-h-screen bg-white">
       <MainHeader />
-      <Content className="mx-auto w-full max-w-6xl px-6 py-10">
+      <PageContainer className="py-10">
         {isLoading ? (
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-[340px_minmax(0,1fr)]">
             <Card className="rounded-2xl">
@@ -376,7 +376,7 @@ const TemplateShareDetailPage: React.FC = () => {
             </Card>
           </div>
         ) : null}
-      </Content>
+      </PageContainer>
     </Layout>
   );
 };

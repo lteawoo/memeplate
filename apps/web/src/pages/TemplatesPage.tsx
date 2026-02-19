@@ -4,10 +4,10 @@ import { Button, Empty, Layout, Skeleton, Typography } from 'antd';
 import { EyeOutlined, HeartOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import MainHeader from '../components/layout/MainHeader';
+import PageContainer from '../components/layout/PageContainer';
 import TemplateThumbnailCard from '../components/TemplateThumbnailCard';
 import type { TemplateRecord, TemplatesResponse } from '../types/template';
 
-const { Content } = Layout;
 const { Title, Text } = Typography;
 const SKELETON_ITEMS = Array.from({ length: 6 }, (_, idx) => idx);
 
@@ -35,7 +35,7 @@ const TemplatesPage: React.FC = () => {
   return (
     <Layout className="min-h-screen bg-white">
       <MainHeader />
-      <Content className="mx-auto w-full max-w-6xl px-6 py-8">
+      <PageContainer className="py-8">
         <div className="mb-6 flex items-end justify-between gap-3">
           <div>
             <Title level={2} className="!mb-1">밈플릿 목록</Title>
@@ -105,7 +105,7 @@ const TemplatesPage: React.FC = () => {
             ))}
           </div>
         )}
-      </Content>
+      </PageContainer>
     </Layout>
   );
 };

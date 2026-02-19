@@ -10,12 +10,12 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  background-color: #e5e7eb;
+  background-color: #ffffff;
 }
 
 #root {
-  width: min(100%, 1440px);
+  width: 100%;
   min-height: 100vh;
-  margin: 0 auto;
+  margin: 0;
   background-color: #ffffff;
 }

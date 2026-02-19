@@ -2,9 +2,9 @@ import React from 'react';
 import { Alert, Button, Card, Layout, Skeleton, Typography } from 'antd';
 import { useNavigate, useParams } from 'react-router-dom';
 import MainHeader from '../components/layout/MainHeader';
+import PageContainer from '../components/layout/PageContainer';
 import type { MemeImageRecord, MemeImageResponse } from '../types/image';
 
-const { Content } = Layout;
 const { Title, Text } = Typography;
 
 const formatBytes = (bytes: number) => {
@@ -77,7 +77,7 @@ const ImageShareDetailPage: React.FC = () => {
   return (
     <Layout className="min-h-screen bg-white">
       <MainHeader />
-      <Content className="mx-auto w-full max-w-6xl px-6 py-10">
+      <PageContainer className="py-10">
         {isLoading ? (
           <Card className="rounded-2xl">
             <div className="mb-6 space-y-2">
@@ -188,7 +188,7 @@ const ImageShareDetailPage: React.FC = () => {
             </div>
           </Card>
         ) : null}
-      </Content>
+      </PageContainer>
     </Layout>
   );
 };
