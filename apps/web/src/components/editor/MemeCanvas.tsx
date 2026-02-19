@@ -5,9 +5,22 @@ import { mdiImage } from '@mdi/js';
 import { Canvas, Textbox } from '../../core/canvas';
 import { resolveTextLayout } from '../../core/canvas/textLayout';
 import { MAX_CANVAS_AREA_PX, MAX_CANVAS_EDGE_PX } from '../../constants/canvasLimits';
+import { resolveCssVarColor } from '../../theme/theme';
 
 const { Content } = Layout;
 const { Title, Text } = Typography;
+
+const toRgba = (hexColor: string, alpha: number) => {
+  const raw = hexColor.replace('#', '').trim();
+  const normalized = raw.length === 3 ? raw.split('').map((c) => c + c).join('') : raw;
+  if (!/^[0-9a-fA-F]{6}$/.test(normalized)) {
+    return `rgba(54, 76, 117, ${alpha})`;
+  }
+  const r = parseInt(normalized.slice(0, 2), 16);
+  const g = parseInt(normalized.slice(2, 4), 16);
+  const b = parseInt(normalized.slice(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
 
 interface MemeCanvasProps {
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
@@ -237,10 +250,11 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
         : editingObject.verticalAlign === 'bottom'
           ? Math.max(0, height - contentHeight)
           : 0;
-    const textColor = editingObject.fill || '#000000';
+    const textColor = editingObject.fill || resolveCssVarColor('--canvas-text-default', '#f9f9f8');
     const luminance = getLuminance(textColor);
     const contrastBg = luminance > 0.6 ? 'rgba(0, 0, 0, 0.28)' : 'rgba(255, 255, 255, 0.24)';
     const contrastShadow = luminance > 0.6 ? '0 1px 3px rgba(0,0,0,0.8)' : '0 1px 3px rgba(255,255,255,0.8)';
+    const overlayBorderColor = resolveCssVarColor('--canvas-control-stroke', '#364c75');
 
     return {
       position: 'absolute' as const,
@@ -253,7 +267,7 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
       textAlign: editingObject.textAlign || ('center' as const),
       lineHeight: editingObject.lineHeight || 1.2,
       background: contrastBg,
-      border: '1px dashed rgba(37, 99, 235, 0.8)',
+      border: `1px dashed ${toRgba(overlayBorderColor, 0.8)}`,
       outline: 'none',
       borderRadius: '6px',
       resize: 'none' as const,
@@ -270,7 +284,9 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
       fontWeight: editingObject.fontWeight || 'normal',
       fontStyle: editingObject.fontStyle || 'normal',
       textShadow: contrastShadow,
-      caretColor: luminance > 0.6 ? '#ffffff' : '#111827',
+      caretColor: luminance > 0.6
+        ? resolveCssVarColor('--canvas-caret-on-dark', '#f9f9f8')
+        : resolveCssVarColor('--canvas-caret-on-light', '#0d1b2a'),
       boxSizing: 'border-box' as const
     };
   };
@@ -340,7 +356,7 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
             >
               <Icon path={mdiImage} size={window.innerWidth < 768 ? 1.5 : 2} color={token.colorPrimary} />
             </div>
-            <Title level={window.innerWidth < 768 ? 4 : 3} className="mb-1 md:mb-2 text-gray-700">나만의 Memeplate를 만들어보세요</Title>
+            <Title level={window.innerWidth < 768 ? 4 : 3} className="mb-1 md:mb-2 text-slate-700">나만의 Memeplate를 만들어보세요</Title>
             <Text type="secondary" className="block mb-4 md:mb-8 text-sm md:text-lg">이미지 탭에서 이미지를 업로드하여 시작하세요</Text>
           </div>
         </div>

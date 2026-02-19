@@ -4,6 +4,12 @@ import { Circle } from './Circle';
 import { Textbox } from './Textbox';
 import { CanvasImage } from './Image';
 
+const getCssVarColor = (variableName: string, fallback: string) => {
+  if (typeof window === 'undefined') return fallback;
+  const value = window.getComputedStyle(document.documentElement).getPropertyValue(variableName).trim();
+  return value || fallback;
+};
+
 export class Canvas {
   private el: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
@@ -585,7 +591,9 @@ export class Canvas {
 
     this.ctx.save();
     try {
-      this.ctx.strokeStyle = '#2563eb';
+      const controlStroke = getCssVarColor('--canvas-control-stroke', '#364c75');
+      const controlFill = getCssVarColor('--canvas-control-fill', '#ffffff');
+      this.ctx.strokeStyle = controlStroke;
       this.ctx.lineWidth = 1 * scale; // Keep line weight consistent
       
       const viewWidth = width * scaleX;
@@ -601,8 +609,8 @@ export class Canvas {
       this.ctx.stroke();
       
       // 2. Draw handles
-      this.ctx.fillStyle = '#ffffff';
-      this.ctx.strokeStyle = '#2563eb';
+      this.ctx.fillStyle = controlFill;
+      this.ctx.strokeStyle = controlStroke;
       const halfW = viewWidth / 2 + offset;
       const halfH = viewHeight / 2 + offset;
       const hSize = 10 * scale; // Visual size of handles

@@ -2,8 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { Layout, Button, Drawer, Dropdown } from 'antd';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import Icon from '@mdi/react';
-import { mdiMenu, mdiChevronDown } from '@mdi/js';
+import { mdiMenu, mdiChevronDown, mdiWeatherNight, mdiWhiteBalanceSunny } from '@mdi/js';
 import { useAuthStore } from '../../stores/authStore';
+import { useThemeMode } from '../../theme/useThemeMode';
 
 const { Header } = Layout;
 
@@ -16,6 +17,7 @@ const MainHeader: React.FC = () => {
   const initialized = useAuthStore((state) => state.initialized);
   const syncSession = useAuthStore((state) => state.syncSession);
   const logout = useAuthStore((state) => state.logout);
+  const { mode, toggleMode } = useThemeMode();
 
   const navLinks = [
     { to: '/', label: '홈' },
@@ -43,6 +45,7 @@ const MainHeader: React.FC = () => {
   };
 
   const authDisplayName = authUser?.displayName || authUser?.email || '로그인 사용자';
+  const themeLabel = mode === 'light' ? '다크 모드' : '라이트 모드';
   const userMenuItems = [
     {
       key: 'mypage',
@@ -64,7 +67,7 @@ const MainHeader: React.FC = () => {
   return (
     <Header 
       className="border-b border-slate-200 z-30 relative"
-      style={{ height: 64, background: '#ffffff', padding: 0, lineHeight: 'normal' }}
+      style={{ height: 64, background: 'var(--app-surface-elevated)', padding: 0, lineHeight: 'normal' }}
     >
       <div className="flex h-full items-center justify-between px-4 md:px-6">
         <div className="flex items-center gap-2 md:gap-10">
@@ -98,7 +101,15 @@ const MainHeader: React.FC = () => {
           </nav>
         </div>
         
-        <div className="hidden md:flex items-center gap-3">
+        <div className="hidden md:flex items-center gap-2">
+          <Button
+            type="text"
+            onClick={toggleMode}
+            aria-label={themeLabel}
+            title={themeLabel}
+            className="inline-flex h-9 w-9 min-w-9 items-center justify-center p-0"
+            icon={<Icon path={mode === 'light' ? mdiWeatherNight : mdiWhiteBalanceSunny} size={0.9} />}
+          />
           {isAuthLoading ? null : authUser ? (
             <Dropdown menu={{ items: userMenuItems }} trigger={['click']} placement="bottomRight">
               <Button type="text" className="flex items-center gap-1 px-2">
@@ -128,6 +139,14 @@ const MainHeader: React.FC = () => {
         styles={{ body: { paddingTop: 16 } }}
       >
         <div className="flex flex-col gap-4 px-1">
+          <Button
+            type="default"
+            onClick={toggleMode}
+            className="h-11 rounded-xl font-semibold"
+            icon={<Icon path={mode === 'light' ? mdiWeatherNight : mdiWhiteBalanceSunny} size={0.85} />}
+          >
+            {themeLabel}
+          </Button>
           {navLinks.map(link => (
             <Link 
               key={link.to}

@@ -3,6 +3,13 @@
 ## 현재 진행 상황
 - [x] 프로젝트 초기화 (Vite + React 19 + TS)
 - [x] UI/UX 고도화 (Ant Design 6 + Tailwind CSS 4)
+- [x] **색상 테마 공통화 + 라이트/다크 모드 준비 (완료 - 이슈 #92)**
+  - [x] 사전 스코핑 및 영향 범위 분석 완료
+  - [x] GitHub Issue 등록 완료 (`#92`)
+  - [x] semantic token(light/dark) 설계/도입 (`index.css`)
+  - [x] AntD + Tailwind + Canvas 토큰 연동
+  - [x] 핵심 화면 회귀 검증(라이트/다크)
+  - [x] 스크린샷 기록 (`docs/ai-context/screenshots/2026-02-19_theme_*.png`)
 - [x] UI 구조 리팩토링 (완료)
 - [x] 모바일 사용성 개선 (Mobile UX)
 - [x] Fabric.js 제거 및 자체 엔진 전환 (완료)

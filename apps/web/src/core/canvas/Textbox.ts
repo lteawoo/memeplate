@@ -15,6 +15,7 @@ export interface TextOptions extends CanvasObjectOptions {
 const MIN_STROKE_PX = 0.35;
 const MAX_STROKE_PX = 8;
 const STROKE_SCALE_PER_FONT_SIZE = 0.03;
+const DEFAULT_TEXT_FILL = '#000000';
 
 const getAdaptiveStrokeWidth = (strokeIntensity: number, fontSize: number) => {
   if (!isFinite(strokeIntensity) || strokeIntensity <= 0 || !isFinite(fontSize) || fontSize <= 0) return 0;
@@ -43,7 +44,7 @@ export class Textbox extends CanvasObject {
     this.textAlign = options.textAlign || 'center';
     this.verticalAlign = options.verticalAlign || 'top';
     this.lineHeight = options.lineHeight || 1.2;
-    this.fill = options.fill || '#000000';
+    this.fill = options.fill || DEFAULT_TEXT_FILL;
     
     this.width = options.width || 300;
     this.height = options.height || 150; 
@@ -67,7 +68,7 @@ export class Textbox extends CanvasObject {
       });
 
       ctx.font = getFontDeclaration(layout.fontSize, this.fontStyle, this.fontWeight, this.fontFamily);
-      ctx.fillStyle = this.fill || '#000000';
+      ctx.fillStyle = this.fill || DEFAULT_TEXT_FILL;
       ctx.textAlign = this.textAlign || 'center';
       ctx.textBaseline = 'top';
 

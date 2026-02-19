@@ -9,15 +9,16 @@ import TemplateShareDetailPage from './pages/TemplateShareDetailPage';
 import ImageShareDetailPage from './pages/ImageShareDetailPage';
 import MyTemplatesPage from './pages/MyTemplatesPage';
 import MyPage from './pages/MyPage';
+import { getAntThemeTokens } from './theme/theme';
+import { useThemeMode } from './theme/useThemeMode';
 
 const App: React.FC = () => {
+  const { mode } = useThemeMode();
+
   return (
     <ConfigProvider
       theme={{
-        token: {
-          colorPrimary: '#2563eb', // Blue-600 (Tailwind)
-          borderRadius: 12,
-        },
+        token: getAntThemeTokens(mode)
       }}
     >
       <BrowserRouter>

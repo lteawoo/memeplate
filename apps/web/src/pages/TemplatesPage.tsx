@@ -50,13 +50,13 @@ const TemplatesPage: React.FC = () => {
             style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))' }}
           >
             {SKELETON_ITEMS.map((key) => (
-              <div key={key} className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-                <div className="h-52 border-b border-slate-100 bg-slate-100 p-3">
+              <div key={key} className="overflow-hidden rounded-xl bg-white">
+                <div className="h-52 bg-slate-100 p-2">
                   <div className="h-full w-full animate-pulse rounded-lg bg-gradient-to-br from-slate-100 to-slate-200" />
                 </div>
-                <div className="space-y-3 p-4">
+                <div className="space-y-2 p-3">
                   <Skeleton.Input active size="small" block />
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
                     <Skeleton.Input active size="small" className="!w-full !min-w-0 !flex-1" />
                     <Skeleton.Input active size="small" className="!w-full !min-w-0 !flex-1" />
                   </div>
@@ -79,13 +79,13 @@ const TemplatesPage: React.FC = () => {
             style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))' }}
           >
             {templates.map((template) => (
-              <TemplateThumbnailCard
-                key={template.id}
-                template={template}
-                hoverable
-                onClick={() => navigate(`/templates/s/${template.shareSlug}`)}
-              >
-                <div className="space-y-2">
+            <TemplateThumbnailCard
+              key={template.id}
+              template={template}
+              hoverable
+              onClick={() => navigate(`/templates/s/${template.shareSlug}`)}
+            >
+                <div className="space-y-1">
                   <div className="line-clamp-1 text-sm font-semibold text-slate-900">{template.title}</div>
                   <div className="flex items-center justify-between gap-2 text-xs text-slate-500">
                     <span className="truncate">{template.ownerDisplayName || '-'}</span>
