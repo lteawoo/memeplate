@@ -28,6 +28,7 @@ interface MemeCanvasProps {
   canvasInstance?: Canvas | null;
   workspaceSize?: { width: number; height: number };
   isBackgroundLoading?: boolean;
+  onUploadImage?: (file: File) => void;
 }
 
 const MemeCanvas: React.FC<MemeCanvasProps> = ({
@@ -40,15 +41,18 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
   canvasInstance,
   workspaceSize,
   isBackgroundLoading = false,
+  onUploadImage,
 }) => {
   const [editingText, setEditingText] = React.useState('');
   const [editingOriginalText, setEditingOriginalText] = React.useState('');
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
+  const uploadInputRef = React.useRef<HTMLInputElement>(null);
   const editCompletingRef = React.useRef(false);
   const canvasViewportRef = React.useRef<HTMLDivElement>(null);
   const [viewportSize, setViewportSize] = React.useState({ width: 0, height: 0 });
   const [canvasCssSize, setCanvasCssSize] = React.useState({ width: 0, height: 0 });
   const [canvasCssOffset, setCanvasCssOffset] = React.useState({ left: 0, top: 0 });
+  const [isDragOverUpload, setIsDragOverUpload] = React.useState(false);
 
   const editingObject = React.useMemo(() => {
     if (!editingTextId || !canvasInstance) return null;
@@ -290,6 +294,16 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
     };
   };
 
+  const handleUploadFile = React.useCallback((file?: File | null) => {
+    if (!file || isBackgroundLoading) return;
+    onUploadImage?.(file);
+  }, [isBackgroundLoading, onUploadImage]);
+
+  const openUploadDialog = React.useCallback(() => {
+    if (isBackgroundLoading) return;
+    uploadInputRef.current?.click();
+  }, [isBackgroundLoading]);
+
   return (
     <div
       className="relative flex min-h-0 min-w-0 flex-1 flex-col items-center justify-center overflow-hidden bg-editor-canvas-bg p-4 md:p-6"
@@ -304,7 +318,7 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
       >
         <canvas
           ref={canvasRef}
-          className="border border-slate-200 bg-white shadow-sm"
+          className="bg-card shadow-sm"
           style={{
             touchAction: 'none',
             width: displayWidth ? `${displayWidth}px` : undefined,
@@ -342,29 +356,81 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
 
       {!hasBackground && (
         <div
-          className="group flex h-64 w-full max-w-2xl flex-col items-center justify-center rounded-3xl border-4 border-dashed transition-all duration-300 hover:border-blue-400 hover:bg-blue-50/30 md:h-96"
-          style={{ borderColor: resolveCssVarColor('--app-border', '#acbacb') }}
+          role="button"
+          tabIndex={isBackgroundLoading ? -1 : 0}
+          aria-disabled={isBackgroundLoading}
+          onClick={(event) => {
+            event.stopPropagation();
+            openUploadDialog();
+          }}
+          onKeyDown={(event) => {
+            if (event.key !== 'Enter' && event.key !== ' ') return;
+            event.preventDefault();
+            openUploadDialog();
+          }}
+          onDragOver={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            if (!isBackgroundLoading) {
+              setIsDragOverUpload(true);
+            }
+          }}
+          onDragLeave={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            setIsDragOverUpload(false);
+          }}
+          onDrop={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            setIsDragOverUpload(false);
+            if (isBackgroundLoading) return;
+            const file = event.dataTransfer.files?.[0];
+            handleUploadFile(file);
+          }}
+          className={`group flex h-64 w-full max-w-2xl flex-col items-center justify-center rounded-3xl border-4 border-dashed transition-all duration-300 md:h-96 ${
+            isBackgroundLoading
+              ? 'cursor-wait opacity-75'
+              : 'cursor-pointer'
+          } ${isDragOverUpload ? 'bg-primary/15' : 'hover:bg-primary/10'}`}
+          style={{
+            borderColor: isDragOverUpload
+              ? resolveCssVarColor('--ring', '#778da9')
+              : resolveCssVarColor('--app-border', '#acbacb')
+          }}
         >
+          <input
+            ref={uploadInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            disabled={isBackgroundLoading}
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              handleUploadFile(file);
+              event.currentTarget.value = '';
+            }}
+          />
           <div className="p-4 text-center transition-transform duration-300 group-hover:scale-105 md:p-8">
             <div
               className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full shadow-sm md:mb-6 md:h-24 md:w-24"
-              style={{ backgroundColor: resolveCssVarColor('--tw-slate-100', '#f2f3f1') }}
+              style={{ backgroundColor: resolveCssVarColor('--muted', '#f2f3f1') }}
             >
               <Icon
                 path={mdiImage}
                 size={window.innerWidth < 768 ? 1.5 : 2}
-                color={resolveCssVarColor('--tw-blue-600', '#364c75')}
+                color={resolveCssVarColor('--primary', '#364c75')}
               />
             </div>
-            <h3 className="mb-1 text-xl font-bold text-slate-700 md:mb-2 md:text-2xl">나만의 Memeplate를 만들어보세요</h3>
-            <p className="m-0 mb-4 text-sm text-slate-500 md:mb-8 md:text-lg">이미지 탭에서 이미지를 업로드하여 시작하세요</p>
+            <p className="m-0 text-lg font-bold text-foreground md:text-2xl">업로드하려면 클릭</p>
+            <p className="m-0 mt-2 text-sm font-semibold text-muted-foreground md:text-lg">또는 여기에 파일 끌어다놓기</p>
           </div>
         </div>
       )}
 
       {isBackgroundLoading && (
-        <div className="absolute inset-0 z-20 flex items-center justify-center bg-slate-100/80 backdrop-blur-[1px]">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-slate-500" />
+        <div className="absolute inset-0 z-20 flex items-center justify-center bg-muted/80 backdrop-blur-[1px]">
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-border border-t-foreground/60" />
         </div>
       )}
     </div>

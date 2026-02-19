@@ -80,7 +80,7 @@ const MyPage: React.FC = () => {
     >
       {isLoading ? (
         <div className="py-20 text-center">
-          <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-slate-500" />
+          <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-border border-t-foreground/60" />
         </div>
       ) : error ? (
         <Alert variant="destructive">
@@ -91,7 +91,7 @@ const MyPage: React.FC = () => {
           </AlertDescription>
         </Alert>
       ) : (
-        <Card className="border-slate-200 bg-white shadow-none">
+        <Card className="border-border bg-card shadow-none">
           <CardContent className="flex flex-col gap-4 p-6">
             <form className="flex flex-col gap-4" onSubmit={onSaveProfile}>
               <div className="space-y-2">
@@ -117,8 +117,8 @@ const MyPage: React.FC = () => {
               </Alert>
             ) : null}
             <div>
-              <p className="text-sm text-slate-500">이메일</p>
-              <div className="text-base font-semibold text-slate-800">{user?.email || '-'}</div>
+              <p className="text-sm text-muted-foreground">이메일</p>
+              <div className="text-base font-semibold text-foreground">{user?.email || '-'}</div>
             </div>
           </CardContent>
         </Card>

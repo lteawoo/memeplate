@@ -74,26 +74,26 @@ const ImageShareDetailPage: React.FC = () => {
   }, [shareSlug, image]);
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-app-surface">
       <MainHeader />
       <PageContainer className="py-10">
         {isLoading ? (
-          <div className="rounded-2xl border border-slate-200 bg-white p-6">
+          <div className="rounded-2xl border border-border bg-card p-6">
             <div className="mb-6 space-y-2">
-              <div className="h-6 w-full animate-pulse rounded bg-slate-200" />
-              <div className="h-4 w-44 animate-pulse rounded bg-slate-200" />
+              <div className="h-6 w-full animate-pulse rounded bg-border" />
+              <div className="h-4 w-44 animate-pulse rounded bg-border" />
             </div>
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
-              <div className="h-[480px] rounded-xl border border-slate-200 bg-slate-100">
-                <div className="h-full w-full animate-pulse rounded-xl bg-gradient-to-br from-slate-100 to-slate-200" />
+              <div className="h-[480px] rounded-xl border border-border bg-muted">
+                <div className="h-full w-full animate-pulse rounded-xl bg-gradient-to-br from-muted to-border" />
               </div>
-              <div className="rounded-xl border border-slate-200 bg-white p-4">
-                <div className="mb-4 h-5 w-24 animate-pulse rounded bg-slate-200" />
+              <div className="rounded-xl border border-border bg-card p-4">
+                <div className="mb-4 h-5 w-24 animate-pulse rounded bg-border" />
                 <div className="space-y-3">
                   {Array.from({ length: 7 }, (_, idx) => (
                     <div key={idx} className="flex items-center justify-between gap-3">
-                      <div className="h-4 w-16 animate-pulse rounded bg-slate-200" />
-                      <div className="h-4 w-28 animate-pulse rounded bg-slate-200" />
+                      <div className="h-4 w-16 animate-pulse rounded bg-border" />
+                      <div className="h-4 w-28 animate-pulse rounded bg-border" />
                     </div>
                   ))}
                 </div>
@@ -106,19 +106,19 @@ const ImageShareDetailPage: React.FC = () => {
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         ) : image ? (
-          <div className="rounded-2xl border border-slate-200 bg-white p-6">
+          <div className="rounded-2xl border border-border bg-card p-6">
             <div className="mb-6">
-              <h2 className="mb-2 text-3xl font-bold text-slate-900">{image.title}</h2>
-              <p className="text-sm text-slate-500">공유 이미지를 확인할 수 있습니다.</p>
+              <h2 className="mb-2 text-3xl font-bold text-foreground">{image.title}</h2>
+              <p className="text-sm text-muted-foreground">공유 이미지를 확인할 수 있습니다.</p>
               {image.description ? (
-                <div className="mt-2 whitespace-pre-wrap text-sm text-slate-600">{image.description}</div>
+                <div className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground">{image.description}</div>
               ) : null}
             </div>
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
-              <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+              <div className="overflow-hidden rounded-xl border border-border bg-muted">
                 <div className="relative flex items-center justify-center p-4">
                   {!isMainImageLoaded ? (
-                    <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-slate-100 to-slate-200" />
+                    <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-muted to-border" />
                   ) : null}
                   <img
                     src={image.imageUrl}
@@ -132,38 +132,38 @@ const ImageShareDetailPage: React.FC = () => {
                   />
                 </div>
               </div>
-              <div className="rounded-xl border border-slate-200 bg-white p-4">
-                <h3 className="mb-4 text-base font-semibold text-slate-900">상세 정보</h3>
+              <div className="rounded-xl border border-border bg-card p-4">
+                <h3 className="mb-4 text-base font-semibold text-foreground">상세 정보</h3>
                 <div className="space-y-3 text-sm">
                   <div className="flex items-start justify-between gap-3">
-                    <span className="text-slate-500">만든 사람</span>
-                    <span className="text-right font-medium text-slate-800">{image.ownerDisplayName || image.ownerId || '-'}</span>
+                    <span className="text-muted-foreground">만든 사람</span>
+                    <span className="text-right font-medium text-foreground">{image.ownerDisplayName || image.ownerId || '-'}</span>
                   </div>
                   <div className="flex items-start justify-between gap-3">
-                    <span className="text-slate-500">생성일</span>
-                    <span className="text-right font-medium text-slate-800">{image.createdAt ? new Date(image.createdAt).toLocaleString() : '-'}</span>
+                    <span className="text-muted-foreground">생성일</span>
+                    <span className="text-right font-medium text-foreground">{image.createdAt ? new Date(image.createdAt).toLocaleString() : '-'}</span>
                   </div>
                   <div className="flex items-start justify-between gap-3">
-                    <span className="text-slate-500">이미지 포맷</span>
-                    <span className="text-right font-medium text-slate-800">{image.imageMime || '-'}</span>
+                    <span className="text-muted-foreground">이미지 포맷</span>
+                    <span className="text-right font-medium text-foreground">{image.imageMime || '-'}</span>
                   </div>
                   <div className="flex items-start justify-between gap-3">
-                    <span className="text-slate-500">해상도</span>
-                    <span className="text-right font-medium text-slate-800">
+                    <span className="text-muted-foreground">해상도</span>
+                    <span className="text-right font-medium text-foreground">
                       {image.imageWidth && image.imageHeight ? `${image.imageWidth} x ${image.imageHeight}` : '-'}
                     </span>
                   </div>
                   <div className="flex items-start justify-between gap-3">
-                    <span className="text-slate-500">파일 사이즈</span>
-                    <span className="text-right font-medium text-slate-800">{formatBytes(image.imageBytes ?? 0)}</span>
+                    <span className="text-muted-foreground">파일 사이즈</span>
+                    <span className="text-right font-medium text-foreground">{formatBytes(image.imageBytes ?? 0)}</span>
                   </div>
                   <div className="flex items-start justify-between gap-3">
-                    <span className="text-slate-500">조회수</span>
-                    <span className="text-right font-medium text-slate-800">{(image.viewCount ?? 0).toLocaleString()}</span>
+                    <span className="text-muted-foreground">조회수</span>
+                    <span className="text-right font-medium text-foreground">{(image.viewCount ?? 0).toLocaleString()}</span>
                   </div>
                   <div className="flex items-start justify-between gap-3">
-                    <span className="text-slate-500">좋아요</span>
-                    <span className="text-right font-medium text-slate-800">{(image.likeCount ?? 0).toLocaleString()}</span>
+                    <span className="text-muted-foreground">좋아요</span>
+                    <span className="text-right font-medium text-foreground">{(image.likeCount ?? 0).toLocaleString()}</span>
                   </div>
                 </div>
               </div>

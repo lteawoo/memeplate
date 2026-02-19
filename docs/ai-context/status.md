@@ -1,19 +1,132 @@
 # 프로젝트 상태 (Status)
 
 ## 현재 진행 상황
-- [ ] **전역 스타일 시스템 재정비 1차 (진행 중 - 이슈 #96, 2026-02-19)**
+- [x] **전역 프리미티브 스타일 통일 1차 (완료 - 2026-02-19)**
+  - [x] `button` 기본 규칙 통일(기본 border transparent, hover/focus에서 border 노출, radius/높이 스케일 정렬)
+  - [x] `input`/`textarea` 기본 규칙 통일(기본 border transparent, hover/focus에서만 경계 노출, shadow 제거)
+  - [x] `card` 기본 규칙 통일(기본 border transparent + shadow 제거)
+  - [x] `dropdown-menu`/`dialog`/`sheet`를 overlay 컴포넌트 규칙(rounded-xl/2xl + border + shadow)으로 정렬
+  - [x] `pnpm --filter memeplate-web lint`, `pnpm --filter memeplate-web build` 통과
+  - [x] 스크린샷 검증(다크)
+    - [x] `docs/ai-context/screenshots/2026-02-19_primitives_unified_home_dark_v1.png`
+    - [x] `docs/ai-context/screenshots/2026-02-19_primitives_unified_editor_dark_v1.png`
+    - [x] `docs/ai-context/screenshots/2026-02-19_primitives_unified_templates_dark_v1.png`
+- [x] **홈/에디터/밈플릿 목록 루트 배경 토큰 통일 (완료 - 2026-02-19)**
+  - [x] `HomePage` 루트 배경을 `bg-app-bg -> bg-app-surface`로 변경
+  - [x] `TemplatesPage` 루트 배경을 `bg-slate-100 -> bg-app-surface`로 변경
+  - [x] `EditorPage` 로딩/에러 상태 배경을 `bg-white -> bg-app-surface`로 변경
+  - [x] `pnpm --filter memeplate-web lint`, `pnpm --filter memeplate-web build` 통과
+  - [x] 스크린샷 검증(다크)
+    - [x] `docs/ai-context/screenshots/2026-02-19_bg_unified_home_dark_v1.png`
+    - [x] `docs/ai-context/screenshots/2026-02-19_bg_unified_editor_dark_v1.png`
+    - [x] `docs/ai-context/screenshots/2026-02-19_bg_unified_templates_dark_v1.png`
+- [x] **다크모드 에디터 배경 톤 정렬 (완료 - 2026-02-19)**
+  - [x] 다크 토큰에서 `--editor-canvas-bg`를 `--app-surface`와 동일하게 통일
+  - [x] 에디터 캔버스 영역과 주변 배경 톤 차이 제거
+  - [x] `pnpm --filter memeplate-web lint`, `pnpm --filter memeplate-web build` 통과
+  - [x] 스크린샷 검증
+    - [x] `docs/ai-context/screenshots/2026-02-19_editor_dark_bg_unified_v1.png`
+- [x] **에디터 캔버스 외곽선 제거 (완료 - 2026-02-19)**
+  - [x] 캔버스 요소의 border 클래스 제거
+  - [x] `pnpm --filter memeplate-web lint`, `pnpm --filter memeplate-web build` 통과
+  - [x] 스크린샷 검증
+    - [x] `docs/ai-context/screenshots/2026-02-19_editor_canvas_border_removed_v1.png`
+- [x] **모바일 에디터 패널 스크롤형 레이아웃 복귀 (완료 - 2026-02-19)**
+  - [x] 모바일 하단 고정 `Bottom Sheet(40%/80%)` 제거
+  - [x] 모바일 패널을 캔버스 하단 인플로우 영역으로 재배치(페이지 스크롤 방식)
+  - [x] 데스크탑 `좌 레일 + 중앙 캔버스 + 우 패널` 3분할 유지
+  - [x] `pnpm --filter memeplate-web lint`, `pnpm --filter memeplate-web build` 통과
+  - [x] 스크린샷 검증
+    - [x] `docs/ai-context/screenshots/2026-02-19_editor_mobile_scroll_layout_v2.png`
+- [x] **에디터 이미지 업로드 캔버스 이관 + 이미지 탭 제거 (완료 - 2026-02-19)**
+  - [x] 데스크탑/모바일 도구 탭에서 `이미지` 제거(`편집`, `공유` 2개만 유지)
+  - [x] 캔버스 빈 상태를 업로드 드롭존으로 전환(클릭 업로드 + 파일 드래그앤드롭)
+  - [x] 업로드 안내 문구를 `업로드하려면 클릭`, `또는 여기에 파일 끌어다놓기`로 변경
+  - [x] `MemePropertyPanel`의 `background` 패널(업로드/URL 로드) 제거
+  - [x] `useMemeEditor`에서 `background` 활성도구 전환 경로 제거(배경 적용 후 `edit`로 이동)
+  - [x] `pnpm --filter memeplate-web lint`, `pnpm --filter memeplate-web build` 통과
+  - [x] 스크린샷 검증
+    - [x] `docs/ai-context/screenshots/2026-02-19_editor_canvas_upload_dropzone_desktop_v1.png`
+    - [x] `docs/ai-context/screenshots/2026-02-19_editor_canvas_upload_dropzone_mobile_v1.png`
+- [x] **에디터 Studio Split 레이아웃 1차 (완료 - 2026-02-19)**
+  - [x] 데스크탑을 `좌 툴레일 + 중앙 캔버스 + 우 컨텍스트 패널` 3분할 구조로 재배치
+  - [x] 모바일을 하단 `Bottom Sheet(40%/80%)` 기반 편집 패널 구조로 전환
+  - [x] 모바일 Bottom Sheet 내부에서 속성 패널 스크롤이 동작하도록 `MemePropertyPanel` 컨테이너 스크롤 구조 정리
+  - [x] `pnpm --filter memeplate-web lint`, `pnpm --filter memeplate-web build` 통과
+  - [x] 스크린샷 검증
+    - [x] `docs/ai-context/screenshots/2026-02-19_editor_studio_split_desktop_dark_v1.png`
+    - [x] `docs/ai-context/screenshots/2026-02-19_editor_studio_split_desktop_light_v1.png`
+    - [x] `docs/ai-context/screenshots/2026-02-19_editor_studio_split_mobile_dark_v1.png`
+    - [x] `docs/ai-context/screenshots/2026-02-19_editor_studio_split_mobile_dark_80_v1.png`
+- [x] **헤더 배경/보더 제거 (완료 - 2026-02-19)**
+  - [x] `MainHeader` 루트의 상단 배경/하단 보더 제거
+  - [x] `pnpm --filter memeplate-web lint` 통과
+  - [x] 스크린샷 검증
+    - [x] `docs/ai-context/screenshots/2026-02-19_header_border_bg_removed_light_v1.png`
+    - [x] `docs/ai-context/screenshots/2026-02-19_header_border_bg_removed_dark_v1.png`
+- [x] **밈플릿 목록 스켈레톤 톤 정렬 (완료 - 2026-02-19)**
+  - [x] `/templates` 로딩 스켈레톤을 카드 hover-only 시각 톤에 맞춰 배경/보더 강도를 완화
+  - [x] `pnpm --filter memeplate-web lint` 통과
+  - [x] 스크린샷 검증
+    - [x] `docs/ai-context/screenshots/2026-02-19_templates_skeleton_aligned_loading_v1.png`
+    - [x] `docs/ai-context/screenshots/2026-02-19_templates_skeleton_aligned_dark_loading_v1.png`
+- [x] **밈플릿 목록 상단 정보 제거 (완료 - 2026-02-19)**
+  - [x] `/templates`의 상단 `타이틀 + 부제 + 새로 만들기` 블록 제거
+  - [x] `pnpm --filter memeplate-web lint` 통과
+  - [x] 스크린샷 검증
+    - [x] `docs/ai-context/screenshots/2026-02-19_templates_header_removed_v1.png`
+- [x] **밈플릿 목록 라이트/다크 카드 hover-only 처리 (완료 - 2026-02-19)**
+  - [x] `/templates` 목록 카드에 `hoverSurfaceOnly` 옵션 추가
+  - [x] 라이트/다크 공통으로 카드 기본 배경/내부 썸네일 배경을 투명으로 전환
+  - [x] hover/focus 시에만 카드 및 썸네일 배경이 표시되도록 CSS 규칙 추가
+  - [x] hover 시 이미지 주변(side area) 배경이 다시 올라오지 않도록 내부 surface 배경 복원 규칙 제거
+  - [x] hover 시 카드 외곽선(border) 노출 제거
+  - [x] `pnpm --filter memeplate-web lint` 통과
+  - [x] 스크린샷 검증
+    - [x] `docs/ai-context/screenshots/2026-02-19_templates_dark_hover_only_before_hover_v2.png`
+    - [x] `docs/ai-context/screenshots/2026-02-19_templates_dark_hover_only_hovered_v1.png`
+    - [x] `docs/ai-context/screenshots/2026-02-19_templates_light_hover_only_before_hover_v1.png`
+    - [x] `docs/ai-context/screenshots/2026-02-19_templates_light_hover_only_hovered_v1.png`
+    - [x] `docs/ai-context/screenshots/2026-02-19_templates_light_hover_no_image_side_bg_v2.png`
+    - [x] `docs/ai-context/screenshots/2026-02-19_templates_hover_no_border_v1.png`
+- [x] **공유 섹션 다운로드 UX 정리 (완료 - 2026-02-19)**
+  - [x] 포맷 선택 UI를 고정 세그먼트에서 `다운로드 버튼 클릭형 드롭다운`으로 전환
+  - [x] `다운로드`/`클립보드 복사` 버튼을 동일 행 2열로 재배치
+  - [x] 확장자 현재값 배지 제거(드롭다운에서 선택 후 즉시 다운로드만 수행)
+  - [x] `pnpm --filter memeplate-web lint` 통과
+  - [x] 스크린샷 검증
+    - [x] `docs/ai-context/screenshots/2026-02-19_share_section_mobile_dropdown_row_v1.png`
+    - [x] `docs/ai-context/screenshots/2026-02-19_share_section_mobile_dropdown_open_v1.png`
+    - [x] `docs/ai-context/screenshots/2026-02-19_share_section_desktop_dropdown_row_v1.png`
+    - [x] `docs/ai-context/screenshots/2026-02-19_share_section_mobile_dropdown_ext_side_v1.png`
+    - [x] `docs/ai-context/screenshots/2026-02-19_share_section_mobile_dropdown_no_badge_v1.png`
+- [x] **전역 스타일 시스템 재정비 1차 (완료 - 이슈 #96, 2026-02-19)**
   - [x] `theme.ts`의 Ant 잔존 토큰 타입/함수 제거 (`AntThemeToken`, `ANT_TOKENS`, `getAntThemeTokens`)
   - [x] `tailwind.config.js`의 preflight 비활성화 제거(구 Ant 충돌 회피 설정 정리)
   - [x] `index.css`를 shadcn/radix 기준으로 정렬 (`color-scheme`, `@layer base`, radius 토큰 노출)
   - [x] 레이아웃/에디터의 `style={{ var(--...) }}` 인라인 스타일을 semantic 클래스(`bg-app-*`, `bg-editor-*`, `border-editor-*`)로 치환
   - [x] shadcn `Alert` primitive의 `dark:` variant 제거(`data-theme` + CSS 변수 체계와 충돌 방지)
+  - [x] 핵심 동선(`MainHeader`, `HomePage`, `LoginPage`, `MemeEditor`, `MemePropertyPanel`, `MemeCanvas`, `MemeColorPicker`, `EditorGuideCard`, `TemplatesPage`, `ThumbnailCard`, `TemplateThumbnailCard`)의 `slate/blue` 직접 클래스 의존을 shadcn semantic 클래스(`foreground/muted/border/primary`)로 치환
+  - [x] 핵심 동선 파일 대상 `rg "(bg|text|border|ring|from|to|via)-slate-|(-|:)blue-|on-accent"` 결과 0건
   - [x] `pnpm --filter memeplate-web lint`, `pnpm --filter memeplate-web build` 통과
   - [x] 스크린샷 검증
     - [x] `docs/ai-context/screenshots/2026-02-19_style_reorg_home_desktop_v2.png`
     - [x] `docs/ai-context/screenshots/2026-02-19_style_reorg_editor_desktop_v2.png`
     - [x] `docs/ai-context/screenshots/2026-02-19_style_reorg_templates_desktop_v2.png`
     - [x] `docs/ai-context/screenshots/2026-02-19_style_reorg_home_mobile_v2.png`
-  - [ ] 페이지/에디터의 `slate/blue` 직접 클래스 의존 축소(semantic alias 2차 정리)
+    - [x] `docs/ai-context/screenshots/2026-02-19_style_phase2_home_desktop_v1.png`
+    - [x] `docs/ai-context/screenshots/2026-02-19_style_phase2_editor_desktop_v1.png`
+    - [x] `docs/ai-context/screenshots/2026-02-19_style_phase2_templates_desktop_v1.png`
+    - [x] `docs/ai-context/screenshots/2026-02-19_style_phase2_home_mobile_v1.png`
+    - [x] `docs/ai-context/screenshots/2026-02-19_style_phase2_editor_mobile_v1.png`
+    - [x] `docs/ai-context/screenshots/2026-02-19_style_phase2_templates_mobile_v1.png`
+  - [x] 상세/마이 페이지(`TemplateShareDetailPage`, `ImageShareDetailPage`, `MyTemplatesPage`, `MyPage`, `MySectionLayout`) `slate/blue` 직접 클래스 의존을 semantic 클래스(`foreground/muted/border/primary`)로 치환
+  - [x] `apps/web/src`(단, `index.css` 변수명 정의 제외) 대상 `rg "(bg|text|border|ring|from|to|via)-slate-|(-|:)blue-|on-accent"` 결과 0건
+  - [x] 스크린샷 검증(공개 접근 가능 페이지)
+    - [x] `docs/ai-context/screenshots/2026-02-19_style_phase2b_templates_page_v1.png`
+    - [x] `docs/ai-context/screenshots/2026-02-19_style_phase2b_template_detail_v1.png`
+    - [x] `docs/ai-context/screenshots/2026-02-19_style_phase2b_image_detail_v1.png`
+  - [x] `/my`, `/my/templates`는 비로그인 환경에서 홈으로 리다이렉트되어 시각 검증 불가(코드 치환 + lint/build로 회귀 검증)
 - [x] **Ant Design 완전 제거 + shadcn/ui 전환 2차 (완료 - 이슈 #95, 2026-02-19)**
   - [x] 에디터 코어(`MemeEditor`, `EditorLayout`, `MemeCanvas`) AntD 의존 제거
   - [x] 에디터 패널(`MemePropertyPanel`, `MemeColorPicker`)의 `Upload/Segmented/Dropdown/Popover/Slider/InputNumber/Modal`을 shadcn+기본 input으로 치환

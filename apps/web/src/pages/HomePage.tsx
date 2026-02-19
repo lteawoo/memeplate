@@ -9,14 +9,14 @@ const HomePage: React.FC = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-app-bg">
+    <div className="min-h-screen bg-app-surface">
       <MainHeader />
       <main className="flex flex-col items-center justify-center p-6">
         <div className="max-w-2xl text-center">
-          <h1 className="mb-6 text-6xl font-black tracking-tighter text-slate-900">
+          <h1 className="mb-6 text-6xl font-black tracking-tighter text-foreground">
             Hello World!
           </h1>
-          <h2 className="mb-8 text-2xl font-medium text-slate-500">
+          <h2 className="mb-8 text-2xl font-medium text-muted-foreground">
             쉽고 빠르게 나만의 Memeplate를 만들어보세요.
           </h2>
 

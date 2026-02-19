@@ -131,7 +131,7 @@
   --app-text-secondary: var(--dusk-blue-800);
   --app-text-muted: var(--dusk-blue-700);
   --app-on-accent: var(--alabaster-grey-900);
-  --editor-canvas-bg: var(--ink-black-200);
+  --editor-canvas-bg: var(--app-surface);
   --editor-sidebar-bg: var(--prussian-blue-400);
   --editor-sidebar-subtle-bg: var(--prussian-blue-300);
   --editor-divider: var(--dusk-blue-300);
@@ -244,6 +244,36 @@
 
 .upload-guide {
   display: block;
+}
+
+.hover-surface-only-card {
+  transition-property: background-color, border-color, box-shadow;
+  transition-duration: 180ms;
+}
+
+.hover-surface-only-card {
+  background-color: transparent;
+  border-color: transparent;
+}
+
+.hover-surface-only-card .thumb-card-surface,
+.hover-surface-only-card .thumb-card-media-surface {
+  background-color: transparent;
+}
+
+.hover-surface-only-card:hover,
+.hover-surface-only-card:focus-visible {
+  background-color: var(--app-surface-elevated);
+}
+
+.hover-surface-only-card:hover .thumb-card-surface,
+.hover-surface-only-card:focus-visible .thumb-card-surface {
+  background-color: transparent;
+}
+
+.hover-surface-only-card:hover .thumb-card-media-surface,
+.hover-surface-only-card:focus-visible .thumb-card-media-surface {
+  background-color: transparent;
 }
 
 @layer base {

@@ -33,10 +33,10 @@ const SidebarItem: React.FC<SidebarItemProps> = ({ icon, label, isActive, onClic
       transition-all duration-300 rounded-xl relative
       border-none outline-none cursor-pointer active:scale-95 shrink-0
       ${disabled 
-          ? 'bg-transparent text-slate-500 cursor-not-allowed opacity-70 ring-1 ring-transparent' 
+          ? 'bg-transparent text-muted-foreground cursor-not-allowed opacity-70 ring-1 ring-transparent' 
           : isActive 
-              ? 'bg-slate-50 text-slate-900 shadow-sm ring-1 ring-blue-400/40' 
-              : 'bg-transparent text-slate-600 ring-1 ring-transparent hover:bg-slate-50 hover:text-slate-800 hover:ring-slate-200/80'}
+              ? 'bg-muted text-foreground shadow-sm ring-1 ring-ring/40' 
+              : 'bg-transparent text-muted-foreground ring-1 ring-transparent hover:bg-muted hover:text-foreground hover:ring-border/80'}
     `}
   >
     <Icon 
@@ -46,7 +46,7 @@ const SidebarItem: React.FC<SidebarItemProps> = ({ icon, label, isActive, onClic
     />
     <span className={`
       text-[9px] md:text-[10px] font-black uppercase tracking-tighter transition-colors duration-300
-      ${isActive ? 'text-slate-900' : 'text-slate-600'}
+      ${isActive ? 'text-foreground' : 'text-muted-foreground'}
     `}>
       {label}
     </span>
@@ -59,9 +59,9 @@ const MemeToolbar: React.FC<MemeToolbarProps> = ({
   hasBackground
 }) => {
   return (
-    <div className="w-full h-20 border-b border-slate-200 bg-slate-50 flex flex-row items-center justify-center py-1 gap-1 px-3 shrink-0 z-20">
+    <div className="w-full h-20 border-b border-border bg-muted flex flex-row items-center justify-center py-1 gap-1 px-3 shrink-0 z-20">
       {/* Main Tools Group - Simplified to 3 core tools */}
-      <div className="flex flex-row w-full gap-1 bg-slate-100/80 border border-slate-200 p-1 rounded-xl shrink-0">
+      <div className="flex flex-row w-full gap-1 bg-muted/80 border border-border p-1 rounded-xl shrink-0">
         <SidebarItem 
           icon={mdiImage} 
           label="이미지" 

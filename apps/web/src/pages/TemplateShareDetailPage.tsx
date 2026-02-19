@@ -188,47 +188,47 @@ const TemplateShareDetailPage: React.FC = () => {
   }, [shareSlug, template]);
 
   return (
-    <div className="min-h-screen bg-slate-100">
+    <div className="min-h-screen bg-app-surface">
       <MainHeader />
       <PageContainer className="py-10">
         {isLoading ? (
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-[340px_minmax(0,1fr)]">
-            <div className="rounded-2xl border border-slate-200 bg-white p-6">
+            <div className="rounded-2xl border border-border bg-card p-6">
               <div className="mb-4 space-y-2">
-                <div className="h-5 w-full animate-pulse rounded bg-slate-200" />
-                <div className="h-4 w-28 animate-pulse rounded bg-slate-200" />
+                <div className="h-5 w-full animate-pulse rounded bg-border" />
+                <div className="h-4 w-28 animate-pulse rounded bg-border" />
               </div>
-              <div className="h-56 rounded-xl border border-slate-200 bg-slate-100">
-                <div className="h-full w-full animate-pulse rounded-xl bg-gradient-to-br from-slate-100 to-slate-200" />
+              <div className="h-56 rounded-xl border border-border bg-muted">
+                <div className="h-full w-full animate-pulse rounded-xl bg-gradient-to-br from-muted to-border" />
               </div>
               <div className="mt-4 space-y-2">
                 {Array.from({ length: 6 }, (_, idx) => (
                   <div key={idx} className="flex items-center justify-between gap-3">
-                    <div className="h-4 w-16 animate-pulse rounded bg-slate-200" />
-                    <div className="h-4 w-28 animate-pulse rounded bg-slate-200" />
+                    <div className="h-4 w-16 animate-pulse rounded bg-border" />
+                    <div className="h-4 w-28 animate-pulse rounded bg-border" />
                   </div>
                 ))}
               </div>
             </div>
-            <div className="rounded-2xl border border-slate-200 bg-white p-6">
+            <div className="rounded-2xl border border-border bg-card p-6">
               <div className="mb-4 flex items-end justify-between gap-3">
                 <div className="space-y-2">
-                  <div className="h-5 w-44 animate-pulse rounded bg-slate-200" />
-                  <div className="h-4 w-24 animate-pulse rounded bg-slate-200" />
+                  <div className="h-5 w-44 animate-pulse rounded bg-border" />
+                  <div className="h-4 w-24 animate-pulse rounded bg-border" />
                 </div>
-                <div className="h-8 w-28 animate-pulse rounded bg-slate-200" />
+                <div className="h-8 w-28 animate-pulse rounded bg-border" />
               </div>
               <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' }}>
                 {RELATED_SKELETON_ITEMS.map((key) => (
-                  <div key={key} className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
-                    <div className="h-52 bg-slate-100 p-2">
-                      <div className="h-full w-full animate-pulse rounded-lg bg-gradient-to-br from-slate-100 to-slate-200" />
+                  <div key={key} className="overflow-hidden rounded-xl border border-border bg-muted">
+                    <div className="h-52 bg-muted p-2">
+                      <div className="h-full w-full animate-pulse rounded-lg bg-gradient-to-br from-muted to-border" />
                     </div>
                     <div className="space-y-2 p-3">
-                      <div className="h-4 w-full animate-pulse rounded bg-slate-200" />
+                      <div className="h-4 w-full animate-pulse rounded bg-border" />
                       <div className="flex items-center justify-between gap-3">
-                        <div className="h-4 w-20 animate-pulse rounded bg-slate-200" />
-                        <div className="h-4 w-16 animate-pulse rounded bg-slate-200" />
+                        <div className="h-4 w-20 animate-pulse rounded bg-border" />
+                        <div className="h-4 w-16 animate-pulse rounded bg-border" />
                       </div>
                     </div>
                   </div>
@@ -244,19 +244,19 @@ const TemplateShareDetailPage: React.FC = () => {
         ) : template ? (
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-[340px_minmax(0,1fr)]">
             <div className="lg:sticky lg:top-20 lg:self-start">
-              <div className="rounded-2xl border border-slate-200 bg-white p-6">
+              <div className="rounded-2xl border border-border bg-card p-6">
                 <div className="mb-4">
-                  <h3 className="mb-1 text-2xl font-bold text-slate-900">{template.title}</h3>
-                  <span className="text-sm text-slate-500">원본 밈플릿</span>
+                  <h3 className="mb-1 text-2xl font-bold text-foreground">{template.title}</h3>
+                  <span className="text-sm text-muted-foreground">원본 밈플릿</span>
                   {template.description ? (
-                    <div className="mt-2 whitespace-pre-wrap text-sm text-slate-600">{template.description}</div>
+                    <div className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground">{template.description}</div>
                   ) : null}
                 </div>
-                <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+                <div className="overflow-hidden rounded-xl border border-border bg-muted">
                   {template.thumbnailUrl ? (
                     <div className="relative flex items-center justify-center p-4">
                       {!isMainImageLoaded ? (
-                        <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-slate-100 to-slate-200" />
+                        <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-muted to-border" />
                       ) : null}
                       <img
                         src={template.thumbnailUrl}
@@ -270,33 +270,33 @@ const TemplateShareDetailPage: React.FC = () => {
                       />
                     </div>
                   ) : (
-                    <div className="flex h-56 items-center justify-center text-slate-500">미리보기 없음</div>
+                    <div className="flex h-56 items-center justify-center text-muted-foreground">미리보기 없음</div>
                   )}
                 </div>
                 <div className="mt-4 space-y-2 text-sm">
                   <div className="flex items-start justify-between gap-3">
-                    <span className="text-slate-500">만든 사람</span>
-                    <span className="text-right font-medium text-slate-800">{template.ownerDisplayName || template.ownerId || '-'}</span>
+                    <span className="text-muted-foreground">만든 사람</span>
+                    <span className="text-right font-medium text-foreground">{template.ownerDisplayName || template.ownerId || '-'}</span>
                   </div>
                   <div className="flex items-start justify-between gap-3">
-                    <span className="text-slate-500">생성일</span>
-                    <span className="text-right font-medium text-slate-800">{template.createdAt ? new Date(template.createdAt).toLocaleDateString() : '-'}</span>
+                    <span className="text-muted-foreground">생성일</span>
+                    <span className="text-right font-medium text-foreground">{template.createdAt ? new Date(template.createdAt).toLocaleDateString() : '-'}</span>
                   </div>
                   <div className="flex items-start justify-between gap-3">
-                    <span className="text-slate-500">이미지 포맷</span>
-                    <span className="text-right font-medium text-slate-800">{imageMeta.format}</span>
+                    <span className="text-muted-foreground">이미지 포맷</span>
+                    <span className="text-right font-medium text-foreground">{imageMeta.format}</span>
                   </div>
                   <div className="flex items-start justify-between gap-3">
-                    <span className="text-slate-500">해상도</span>
-                    <span className="text-right font-medium text-slate-800">{imageMeta.resolution}</span>
+                    <span className="text-muted-foreground">해상도</span>
+                    <span className="text-right font-medium text-foreground">{imageMeta.resolution}</span>
                   </div>
                   <div className="flex items-start justify-between gap-3">
-                    <span className="text-slate-500">파일 사이즈</span>
-                    <span className="text-right font-medium text-slate-800">{imageMeta.fileSize}</span>
+                    <span className="text-muted-foreground">파일 사이즈</span>
+                    <span className="text-right font-medium text-foreground">{imageMeta.fileSize}</span>
                   </div>
                   <div className="flex items-start justify-between gap-3">
-                    <span className="text-slate-500">조회수</span>
-                    <span className="text-right font-medium text-slate-800">{(template.viewCount ?? 0).toLocaleString()}</span>
+                    <span className="text-muted-foreground">조회수</span>
+                    <span className="text-right font-medium text-foreground">{(template.viewCount ?? 0).toLocaleString()}</span>
                   </div>
                 </div>
                 <div className="mt-5 flex flex-col gap-2">
@@ -306,24 +306,24 @@ const TemplateShareDetailPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="rounded-2xl border border-slate-200 bg-white p-6">
+            <div className="rounded-2xl border border-border bg-card p-6">
               <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
                 <div>
-                  <h4 className="mb-1 text-xl font-bold text-slate-900">리믹스 목록</h4>
-                  <span className="text-sm text-slate-500">총 {relatedImages.length.toLocaleString()}개</span>
+                  <h4 className="mb-1 text-xl font-bold text-foreground">리믹스 목록</h4>
+                  <span className="text-sm text-muted-foreground">총 {relatedImages.length.toLocaleString()}개</span>
                 </div>
-                <div className="flex items-center rounded-xl border border-slate-200 bg-slate-50 p-1">
+                <div className="flex items-center rounded-xl border border-border bg-muted p-1">
                   <button
                     type="button"
                     onClick={() => setRelatedSort('latest')}
-                    className={`h-8 rounded-lg px-3 text-xs font-bold ${relatedSort === 'latest' ? 'bg-blue-700 text-on-accent' : 'text-slate-600 hover:bg-slate-100'}`}
+                    className={`h-8 rounded-lg px-3 text-xs font-bold ${relatedSort === 'latest' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent hover:text-foreground'}`}
                   >
                     최신순
                   </button>
                   <button
                     type="button"
                     onClick={() => setRelatedSort('popular')}
-                    className={`h-8 rounded-lg px-3 text-xs font-bold ${relatedSort === 'popular' ? 'bg-blue-700 text-on-accent' : 'text-slate-600 hover:bg-slate-100'}`}
+                    className={`h-8 rounded-lg px-3 text-xs font-bold ${relatedSort === 'popular' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent hover:text-foreground'}`}
                   >
                     인기순
                   </button>
@@ -333,15 +333,15 @@ const TemplateShareDetailPage: React.FC = () => {
               {isRelatedLoading ? (
                 <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' }}>
                   {RELATED_SKELETON_ITEMS.map((key) => (
-                    <div key={key} className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
-                      <div className="h-52 bg-slate-100 p-2">
-                        <div className="h-full w-full animate-pulse rounded-lg bg-gradient-to-br from-slate-100 to-slate-200" />
+                    <div key={key} className="overflow-hidden rounded-xl border border-border bg-muted">
+                      <div className="h-52 bg-muted p-2">
+                        <div className="h-full w-full animate-pulse rounded-lg bg-gradient-to-br from-muted to-border" />
                       </div>
                       <div className="space-y-2 p-3">
-                        <div className="h-4 w-full animate-pulse rounded bg-slate-200" />
+                        <div className="h-4 w-full animate-pulse rounded bg-border" />
                         <div className="flex items-center justify-between gap-3">
-                          <div className="h-4 w-20 animate-pulse rounded bg-slate-200" />
-                          <div className="h-4 w-16 animate-pulse rounded bg-slate-200" />
+                          <div className="h-4 w-20 animate-pulse rounded bg-border" />
+                          <div className="h-4 w-16 animate-pulse rounded bg-border" />
                         </div>
                       </div>
                     </div>
@@ -353,7 +353,7 @@ const TemplateShareDetailPage: React.FC = () => {
                   <AlertDescription>{relatedError}</AlertDescription>
                 </Alert>
               ) : relatedImages.length === 0 ? (
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-10 text-center text-sm text-slate-500">
+                <div className="rounded-xl border border-border bg-muted p-10 text-center text-sm text-muted-foreground">
                   아직 등록된 리믹스가 없습니다.
                 </div>
               ) : (
@@ -367,8 +367,8 @@ const TemplateShareDetailPage: React.FC = () => {
                       onClick={() => navigate(`/images/s/${image.shareSlug}`)}
                     >
                       <div className="space-y-1">
-                        <div className="line-clamp-1 text-sm font-semibold text-slate-900">{image.title}</div>
-                        <div className="flex items-center justify-between gap-2 text-xs text-slate-500">
+                        <div className="line-clamp-1 text-sm font-semibold text-foreground">{image.title}</div>
+                        <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
                           <span className="truncate">{image.ownerDisplayName || '-'}</span>
                           <span className="shrink-0">조회 {(image.viewCount ?? 0).toLocaleString()}</span>
                         </div>
