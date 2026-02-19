@@ -8,7 +8,7 @@ import { MAX_CANVAS_AREA_PX, MAX_CANVAS_EDGE_PX } from '../../constants/canvasLi
 import { resolveCssVarColor } from '../../theme/theme';
 
 const { Content } = Layout;
-const { Title, Text } = Typography;
+const { Title } = Typography;
 
 const toRgba = (hexColor: string, alpha: number) => {
   const raw = hexColor.replace('#', '').trim();
@@ -293,9 +293,9 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
 
   return (
     <Content 
-      className="flex-1 min-h-0 min-w-0 relative flex flex-col items-center justify-center bg-slate-100 p-4 md:p-6 overflow-hidden" 
+      className="flex-1 min-h-0 min-w-0 relative flex flex-col items-center justify-center p-4 md:p-6 overflow-hidden" 
       ref={containerRef}
-      style={{ touchAction: 'none' }}
+      style={{ touchAction: 'none', backgroundColor: 'var(--editor-canvas-bg)' }}
     >
       {/* Canvas Container - Always in DOM but doesn't affect layout if no background */}
       <div 
@@ -357,13 +357,13 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
               <Icon path={mdiImage} size={window.innerWidth < 768 ? 1.5 : 2} color={token.colorPrimary} />
             </div>
             <Title level={window.innerWidth < 768 ? 4 : 3} className="mb-1 md:mb-2 text-slate-700">나만의 Memeplate를 만들어보세요</Title>
-            <Text type="secondary" className="block mb-4 md:mb-8 text-sm md:text-lg">이미지 탭에서 이미지를 업로드하여 시작하세요</Text>
+            <p className="m-0 mb-4 md:mb-8 text-sm md:text-lg text-slate-500">이미지 탭에서 이미지를 업로드하여 시작하세요</p>
           </div>
         </div>
       )}
 
       {isBackgroundLoading && (
-        <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/70 backdrop-blur-[1px]">
+        <div className="absolute inset-0 z-20 flex items-center justify-center bg-slate-100/80 backdrop-blur-[1px]">
           <Spin size="large" />
         </div>
       )}

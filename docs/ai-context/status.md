@@ -27,6 +27,26 @@
   - [x] 레이어/세부설정 보조 라벨(`text-slate-400`)을 `text-slate-500`로 상향
   - [x] 편집 패널의 `텍스트/도형` 및 아이콘 버튼에 명시적 배경/보더 적용(`!bg/!border`)
   - [x] 다크 에디터 대비 재계측(low contrast < 3.2 구간 0건) + 스크린샷 검증 완료
+- [x] **밈플릿 목록/상세 다크 가시성 보강 1차 (완료 - 2026-02-19)**
+  - [x] `Typography.Text type=\"secondary\"` 사용 구간을 토큰 클래스(`text-slate-500`)로 치환
+  - [x] Ant Typography 우선순위 이슈로 보조 문구를 일반 `span/p`로 전환해 색상 적용 보장
+  - [x] 카드/레이아웃 보조 텍스트(`text-slate-400`)를 `text-slate-500`로 상향
+  - [x] 다크 모드 `templates`, `template detail` 대비 재계측(low contrast < 3.2 구간 0건) 완료
+  - [x] 스크린샷 기록 (`2026-02-19_dark_templates_visibility_v4.png`, `2026-02-19_dark_template_detail_visibility_v4.png`)
+- [x] **리믹스 진입 에디터 다크 가시성 보강 2차 (완료 - 2026-02-19)**
+  - [x] `--editor-canvas-bg`, `--editor-sidebar-bg`, `--editor-divider` 토큰 분리로 패널/캔버스 경계 대비 강화
+  - [x] 레이어 정렬/설정/삭제 아이콘 버튼 크기 및 보더 상향으로 조작점 인지성 개선
+  - [x] 툴바 비활성/활성 버튼 표면 대비를 강화해 아이콘 가독성 개선
+  - [x] 다크 `/create?shareSlug=...` 대비 재계측(low contrast < 3.2 구간 0건) 및 전/후 스크린샷 기록
+- [x] **다크모드 전역 색상 규칙 정합화 1차 (완료 - 2026-02-19)**
+  - [x] `ant-card` 배경/hover 배경을 하드코딩 `#fff`에서 `--app-surface-elevated`로 통일
+  - [x] 템플릿 목록/상세/에디터에서 `bg-white` 계열 클래스 제거 및 `slate` 토큰 계층으로 통일
+  - [x] 에디터 빈 상태(도구 선택/개체 없음/업로드 안내) 아이콘+문구 스타일 언어 통일
+  - [x] 레이어 섹션 외곽선 정책 정정(섹션 컨테이너 보더 유지, empty 가이드 내부 보더 제거)
+  - [x] 업로드 드롭존 보더/라운드/배경을 empty guide와 동일 토큰 규칙으로 정렬
+  - [x] `EditorGuideCard` 공통 컴포넌트 도입으로 3개 가이드 렌더(도구선택/업로드/개체없음) 단일화
+  - [x] 업로드 드롭존 이중 보더 제거(`upload-wrapper` 보더 제거 + 내부 `ant-upload-drag` 단일 보더 적용)
+  - [x] 다크 스크린샷 검증 (`2026-02-19_dark_editor_global_rule_unified_v1.png`, `2026-02-19_dark_editor_empty_layer_guide_v1.png`)
 - [x] UI 구조 리팩토링 (완료)
 - [x] 모바일 사용성 개선 (Mobile UX)
 - [x] Fabric.js 제거 및 자체 엔진 전환 (완료)

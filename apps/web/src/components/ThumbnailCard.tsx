@@ -68,7 +68,7 @@ const ThumbnailCard: React.FC<ThumbnailCardProps> = ({
               />
             </div>
           ) : (
-            <div className="flex h-full items-center justify-center rounded-lg border border-dashed border-slate-200 text-slate-400">
+            <div className="flex h-full items-center justify-center rounded-lg border border-dashed border-slate-200 text-slate-500">
               {fallbackText}
             </div>
           )}

@@ -7,7 +7,7 @@ import TemplateThumbnailCard from '../components/TemplateThumbnailCard';
 import type { TemplateRecord, TemplatesResponse, TemplateVisibility } from '../types/template';
 import { apiFetch } from '../lib/apiFetch';
 
-const { Title, Text } = Typography;
+const { Title } = Typography;
 
 type ImageMeta = {
   format: string;
@@ -172,9 +172,9 @@ const MyTemplatesPage: React.FC = () => {
               <div className="flex flex-col gap-3">
                 <div>
                   <Title level={5} className="!mb-1">{template.title}</Title>
-                  <Text type="secondary" className="text-xs">
+                  <p className="m-0 text-xs text-slate-500">
                     {template.updatedAt ? `업데이트: ${new Date(template.updatedAt).toLocaleString()}` : ''}
-                  </Text>
+                  </p>
                 </div>
 
                 <Segmented
@@ -256,7 +256,7 @@ const MyTemplatesPage: React.FC = () => {
                   />
                 </div>
               ) : (
-                <div className="h-52 flex items-center justify-center text-slate-400">미리보기 없음</div>
+                <div className="h-52 flex items-center justify-center text-slate-500">미리보기 없음</div>
               )}
             </div>
             {detailMetaLoading ? (

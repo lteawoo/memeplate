@@ -85,7 +85,7 @@ const MemeEditor: React.FC<MemeEditorProps> = ({ initialTemplate, initialTemplat
     isTemplateSaveDisabled,
     changeZIndex
   };
-  const historyButtonClassName = '!bg-slate-50 !text-slate-700 !border-slate-200 hover:!bg-slate-100 hover:!text-slate-900 disabled:!bg-slate-50/60 disabled:!text-slate-500 disabled:!border-slate-200/70';
+  const historyButtonClassName = '!bg-slate-50 !text-slate-700 !border-slate-200 hover:!bg-slate-100 hover:!text-slate-900 disabled:!bg-slate-100 disabled:!text-slate-500 disabled:!border-slate-200';
 
   return (
     <Layout
@@ -98,7 +98,10 @@ const MemeEditor: React.FC<MemeEditorProps> = ({ initialTemplate, initialTemplat
       <div className="flex-1 flex flex-col md:flex-row relative md:overflow-hidden">
         <EditorLayout
           sidebar={
-            <div className="hidden md:flex flex-col h-full min-h-0 w-[400px] bg-slate-50 border-r border-slate-200 shrink-0 relative z-20">
+            <div
+              className="hidden md:flex flex-col h-full min-h-0 w-[400px] border-r shrink-0 relative z-20"
+              style={{ backgroundColor: 'var(--editor-sidebar-bg)', borderColor: 'var(--editor-divider)' }}
+            >
               <MemeToolbar 
                 activeTool={activeTool} 
                 setActiveTool={setActiveTool}
@@ -159,8 +162,11 @@ const MemeEditor: React.FC<MemeEditorProps> = ({ initialTemplate, initialTemplat
             </div>
 
             {/* Mobile Only: Toolbar & Property Panel (Stacked below canvas) */}
-            <div className="md:hidden shrink-0 flex flex-col bg-slate-50 border-t border-slate-200">
-                <div className="bg-white border-b border-slate-100 sticky top-0 z-10">
+            <div
+              className="md:hidden shrink-0 flex flex-col border-t"
+              style={{ backgroundColor: 'var(--editor-sidebar-bg)', borderColor: 'var(--editor-divider)' }}
+            >
+                <div className="border-b border-slate-100 sticky top-0 z-10" style={{ backgroundColor: 'var(--editor-sidebar-subtle-bg)' }}>
                     <MemeToolbar activeTool={activeTool} setActiveTool={setActiveTool} hasBackground={hasBackground} />
                 </div>
                 {hasBackground && (

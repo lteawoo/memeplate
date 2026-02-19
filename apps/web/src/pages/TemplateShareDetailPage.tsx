@@ -7,7 +7,7 @@ import type { TemplateResponse, TemplateRecord } from '../types/template';
 import type { MemeImageRecord, MemeImagesResponse } from '../types/image';
 import ThumbnailCard from '../components/ThumbnailCard';
 
-const { Title, Text } = Typography;
+const { Title } = Typography;
 const RELATED_SKELETON_ITEMS = Array.from({ length: 6 }, (_, idx) => idx);
 
 type ImageMeta = {
@@ -189,7 +189,7 @@ const TemplateShareDetailPage: React.FC = () => {
   }, [shareSlug, template]);
 
   return (
-    <Layout className="min-h-screen bg-white">
+    <Layout className="min-h-screen bg-slate-100">
       <MainHeader />
       <PageContainer className="py-10">
         {isLoading ? (
@@ -225,7 +225,7 @@ const TemplateShareDetailPage: React.FC = () => {
               </div>
               <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' }}>
                 {RELATED_SKELETON_ITEMS.map((key) => (
-                  <div key={key} className="overflow-hidden rounded-xl bg-white">
+                  <div key={key} className="overflow-hidden rounded-xl bg-slate-50 border border-slate-200">
                     <div className="h-52 bg-slate-100 p-2">
                       <div className="h-full w-full animate-pulse rounded-lg bg-gradient-to-br from-slate-100 to-slate-200" />
                     </div>
@@ -249,7 +249,7 @@ const TemplateShareDetailPage: React.FC = () => {
               <Card className="rounded-2xl">
               <div className="mb-4">
                 <Title level={3} className="!mb-1">{template.title}</Title>
-                <Text type="secondary">원본 밈플릿</Text>
+                <span className="text-sm text-slate-500">원본 밈플릿</span>
                 {template.description ? (
                   <div className="mt-2 whitespace-pre-wrap text-sm text-slate-600">
                     {template.description}
@@ -274,7 +274,7 @@ const TemplateShareDetailPage: React.FC = () => {
                       />
                     </div>
                   ) : (
-                    <div className="h-56 flex items-center justify-center text-slate-400">미리보기 없음</div>
+                    <div className="h-56 flex items-center justify-center text-slate-500">미리보기 없음</div>
                   )}
                 </div>
                 <div className="mt-4 space-y-2 text-sm">
@@ -319,7 +319,7 @@ const TemplateShareDetailPage: React.FC = () => {
               <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
                 <div>
                   <Title level={4} className="!mb-1">리믹스 목록</Title>
-                  <Text type="secondary">총 {relatedImages.length.toLocaleString()}개</Text>
+                  <span className="text-sm text-slate-500">총 {relatedImages.length.toLocaleString()}개</span>
                 </div>
                 <Segmented
                   size="small"
@@ -334,7 +334,7 @@ const TemplateShareDetailPage: React.FC = () => {
               {isRelatedLoading ? (
                 <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' }}>
                   {RELATED_SKELETON_ITEMS.map((key) => (
-                    <div key={key} className="overflow-hidden rounded-xl bg-white">
+                    <div key={key} className="overflow-hidden rounded-xl bg-slate-50 border border-slate-200">
                       <div className="h-52 bg-slate-100 p-2">
                         <div className="h-full w-full animate-pulse rounded-lg bg-gradient-to-br from-slate-100 to-slate-200" />
                       </div>

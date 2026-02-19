@@ -38,7 +38,7 @@ const MySectionLayout: React.FC<MySectionLayoutProps> = ({
           className="hidden md:block border-r border-slate-200 bg-white"
           style={{ background: 'var(--app-surface-elevated)' }}
         >
-          <div className="px-4 py-5 text-xs font-bold uppercase tracking-wider text-slate-400">My</div>
+          <div className="px-4 py-5 text-xs font-bold uppercase tracking-wider text-slate-500">My</div>
           <Menu
             mode="inline"
             selectedKeys={[selectedKey]}
