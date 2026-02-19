@@ -139,6 +139,7 @@
   - [x] 라이트/다크 수동 검증 + 스크린샷 비교
   - [x] Tailwind + shadcn/ui 전환 1차 (인프라 도입 + 공통 레이아웃/핵심 페이지 치환)
   - [x] Ant Design 완전 제거 2차 (`Templates`, `TemplateShareDetail`, `ImageShareDetail`, `MyTemplates`, `MemeEditor`, `MemePropertyPanel`, `MemeCanvas`, `useMemeEditor`)
+  - [x] 웹 타입체크 경로 보정 + TS 오류 정리 (`build: tsc -b`, `typecheck` 스크립트 추가, `preserveSymlinks` 제거, 캔버스/업로드/nullable 타입 오류 수정)
   - [ ] 전역 스타일 시스템 재정비 (#96)
   - [x] `theme.ts` Ant 잔존 토큰 제거(`AntThemeToken`, `ANT_TOKENS`, `getAntThemeTokens`)
   - [x] `tailwind.config.js` preflight 비활성화 제거

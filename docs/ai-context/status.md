@@ -1,6 +1,14 @@
 # 프로젝트 상태 (Status)
 
 ## 현재 진행 상황
+- [x] **웹 타입체크 경로 보정 + TS 오류 정리 (완료 - 2026-02-19)**
+  - [x] `apps/web/package.json`에 `typecheck` 스크립트 추가(`tsc -b --pretty false`)
+  - [x] 웹 `build` 스크립트를 `tsc -b && vite build`로 변경해 프로젝트 레퍼런스(`tsconfig.app/node`)를 실제 검사하도록 보정
+  - [x] `apps/web/tsconfig.app.json`의 `preserveSymlinks` 제거로 React/Radix 타입 해석 충돌(예: `children`, `className` 미인식) 해소
+  - [x] 캔버스 속성 키 타입 오류 정리 (`CanvasObject.set` 시그니처 일반화 + `useMemeEditor.updateProperty` 정합화)
+  - [x] 업로드 입력 타입 가드 보강(`resolveUploadInputFile`) 및 배경 이미지 소스 타입 가드(`CanvasImage`) 적용
+  - [x] 상세 메타 로딩 구간의 `thumbnailUrl` nullable 타입 오류 수정 (`MyTemplatesPage`, `TemplateShareDetailPage`)
+  - [x] `pnpm --filter memeplate-web typecheck`, `pnpm lint`, `pnpm build` 통과
 - [x] **전역 프리미티브 스타일 통일 1차 (완료 - 2026-02-19)**
   - [x] `button` 기본 규칙 통일(기본 border transparent, hover/focus에서 border 노출, radius/높이 스케일 정렬)
   - [x] `input`/`textarea` 기본 규칙 통일(기본 border transparent, hover/focus에서만 경계 노출, shadow 제거)

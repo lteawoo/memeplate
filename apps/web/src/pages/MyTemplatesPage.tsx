@@ -150,7 +150,8 @@ const MyTemplatesPage: React.FC = () => {
 
   React.useEffect(() => {
     const loadDetailMeta = async () => {
-      if (!detailTarget?.thumbnailUrl) {
+      const thumbnailUrl = detailTarget?.thumbnailUrl;
+      if (!thumbnailUrl) {
         setDetailMeta({ format: '-', resolution: '-', fileSize: '-' });
         return;
       }
@@ -162,20 +163,20 @@ const MyTemplatesPage: React.FC = () => {
             const image = new Image();
             image.onload = () => resolve({ width: image.naturalWidth, height: image.naturalHeight });
             image.onerror = reject;
-            image.src = detailTarget.thumbnailUrl;
+            image.src = thumbnailUrl;
           }),
-          fetch(detailTarget.thumbnailUrl),
+          fetch(thumbnailUrl),
         ]);
 
         const blob = await response.blob();
         setDetailMeta({
-          format: formatMimeToLabel(response.headers.get('content-type'), detailTarget.thumbnailUrl),
+          format: formatMimeToLabel(response.headers.get('content-type'), thumbnailUrl),
           resolution: `${imageInfo.width} x ${imageInfo.height}`,
           fileSize: formatBytes(blob.size),
         });
       } catch {
         setDetailMeta({
-          format: formatMimeToLabel(null, detailTarget.thumbnailUrl),
+          format: formatMimeToLabel(null, thumbnailUrl),
           resolution: '-',
           fileSize: '-',
         });

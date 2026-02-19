@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Canvas, CanvasObject, Rect, Circle, Textbox, CanvasImage } from '../core/canvas';
-import type { CanvasObjectOptions } from '../core/canvas';
 import type { ToolType } from '../components/editor/MemeToolbar';
 import { toast } from 'sonner';
 import type { TemplateRecord, TemplateVisibility } from '../types/template';
@@ -63,6 +62,25 @@ type UploadInput = File | Blob | {
   file?: File | Blob | {
     originFileObj?: File | Blob;
   };
+};
+
+const resolveUploadInputFile = (input: UploadInput): File | Blob | null => {
+  if (input instanceof File || input instanceof Blob) {
+    return input;
+  }
+
+  const nested = input.file;
+  if (!nested) return null;
+  if (nested instanceof File || nested instanceof Blob) {
+    return nested;
+  }
+
+  const origin = nested.originFileObj;
+  if (origin instanceof File || origin instanceof Blob) {
+    return origin;
+  }
+
+  return null;
 };
 
 const isObject = (value: unknown): value is Record<string, unknown> =>
@@ -165,8 +183,9 @@ const getBackgroundSourceFromCanvas = (canvas: Canvas) => {
   const objects = canvas.getObjects();
   const background = objects.find((obj) => obj.name === 'background' && obj.type === 'image');
   const fallbackImage = objects.find((obj) => obj.type === 'image');
-  const src = (background ?? fallbackImage)?.src;
-  return typeof src === 'string' ? src.trim() : '';
+  const target = background ?? fallbackImage;
+  if (!(target instanceof CanvasImage)) return '';
+  return target.src.trim();
 };
 
 const createBackgroundImageObject = (src: string, width: number, height: number): Record<string, unknown> => ({
@@ -611,12 +630,7 @@ export const useMemeEditor = (options?: UseMemeEditorOptions) => {
   };
 
   const handleImageUpload = (info: UploadInput) => {
-    const maybeFile = info.file ?? info;
-    const file = (
-      typeof maybeFile === 'object' &&
-      maybeFile !== null &&
-      'originFileObj' in maybeFile
-    ) ? maybeFile.originFileObj : maybeFile;
+    const file = resolveUploadInputFile(info);
 
     if (file instanceof File || file instanceof Blob) {
       const objectUrl = URL.createObjectURL(file);
@@ -642,7 +656,7 @@ export const useMemeEditor = (options?: UseMemeEditorOptions) => {
     canvasInstanceRef.current.setActiveObject(text); 
   };
 
-  const updateProperty = (key: keyof CanvasObjectOptions, value: string | number | boolean) => {
+  const updateProperty = (key: string, value: string | number | boolean) => {
     if (!canvasInstanceRef.current) return;
     const active = canvasInstanceRef.current.getActiveObject();
     if (active) {

@@ -99,7 +99,8 @@ const TemplateShareDetailPage: React.FC = () => {
 
   React.useEffect(() => {
     const loadImageMeta = async () => {
-      if (!template?.thumbnailUrl) {
+      const thumbnailUrl = template?.thumbnailUrl;
+      if (!thumbnailUrl) {
         setImageMeta({ format: '-', resolution: '-', fileSize: '-' });
         return;
       }
@@ -110,13 +111,13 @@ const TemplateShareDetailPage: React.FC = () => {
             const image = new Image();
             image.onload = () => resolve({ width: image.naturalWidth, height: image.naturalHeight });
             image.onerror = reject;
-            image.src = template.thumbnailUrl;
+            image.src = thumbnailUrl;
           }),
-          fetch(template.thumbnailUrl),
+          fetch(thumbnailUrl),
         ]);
 
         const blob = await response.blob();
-        const format = formatMimeToLabel(response.headers.get('content-type'), template.thumbnailUrl);
+        const format = formatMimeToLabel(response.headers.get('content-type'), thumbnailUrl);
         setImageMeta({
           format,
           resolution: `${imageInfo.width} x ${imageInfo.height}`,
@@ -124,7 +125,7 @@ const TemplateShareDetailPage: React.FC = () => {
         });
       } catch {
         setImageMeta({
-          format: formatMimeToLabel(null, template.thumbnailUrl),
+          format: formatMimeToLabel(null, thumbnailUrl),
           resolution: '-',
           fileSize: '-',
         });
