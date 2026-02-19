@@ -1,5 +1,28 @@
 # 결정 로그 (Decision Log)
 
+## [2026-02-19] 웹 타입체크 누락 보정(`tsc -b`) + `preserveSymlinks` 제거
+- **결정**:
+  1. `apps/web`의 타입검사 진입점을 `tsc` 단일 실행에서 프로젝트 레퍼런스 기반 `tsc -b`로 변경함.
+  2. `apps/web/package.json`에 `typecheck` 스크립트를 추가해 루트 `pnpm typecheck`에서 웹 타입검사가 항상 실행되도록 고정함.
+  3. `apps/web/tsconfig.app.json`의 `preserveSymlinks`를 제거해 React/Radix 타입 해석 충돌을 해소함.
+- **이유**:
+  1. 기존 `apps/web/tsconfig.json`은 `files: [] + references` 구조라 `tsc` 단독 실행 시 `src` 타입체크가 누락되었음.
+  2. `preserveSymlinks: true` 상태에서 pnpm 심볼릭 링크 경로가 보존되며 React/Radix 타입이 비정상 해석되어 `DialogCloseProps` 등에서 `children`/`className` 오류가 연쇄 발생했음.
+- **구현 요약**:
+  - `apps/web/package.json`
+    - `build`: `tsc && vite build` -> `tsc -b && vite build`
+    - `typecheck`: `tsc -b --pretty false` 추가
+  - `apps/web/tsconfig.app.json`
+    - `preserveSymlinks` 제거
+  - 코드 정리:
+    - `apps/web/src/core/canvas/Object.ts`: `set(key, value)` 시그니처를 동적 키 지원 형태로 조정
+    - `apps/web/src/hooks/useMemeEditor.ts`: 업로드 입력 타입 가드/배경 이미지 타입 가드/`updateProperty` 타입 정합화
+    - `apps/web/src/pages/MyTemplatesPage.tsx`, `apps/web/src/pages/TemplateShareDetailPage.tsx`: `thumbnailUrl` nullable 처리 보강
+- **검증**:
+  - `pnpm --filter memeplate-web typecheck`
+  - `pnpm lint`
+  - `pnpm build`
+
 ## [2026-02-19] 전역 스타일 재정비 2차: 핵심 동선 `slate/blue` 직접 클래스 제거
 - **결정**:
   1. 헤더/홈/로그인/에디터/밈플릿 목록 핵심 동선의 `slate/blue` 직접 유틸을 shadcn semantic 클래스(`foreground`, `muted`, `border`, `primary`)로 치환함.

@@ -60,10 +60,8 @@ export abstract class CanvasObject {
   abstract containsPoint(x: number, y: number): boolean;
   abstract clone(): CanvasObject;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  set(key: keyof CanvasObjectOptions, value: any) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (this as any)[key] = value;
+  set(key: string, value: unknown) {
+    (this as Record<string, unknown>)[key] = value;
   }
 
   toObject(): CanvasObjectOptions {
