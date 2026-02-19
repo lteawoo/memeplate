@@ -1,5 +1,297 @@
 # 결정 로그 (Decision Log)
 
+## [2026-02-19] 전역 스타일 재정비 2차: 핵심 동선 `slate/blue` 직접 클래스 제거
+- **결정**:
+  1. 헤더/홈/로그인/에디터/밈플릿 목록 핵심 동선의 `slate/blue` 직접 유틸을 shadcn semantic 클래스(`foreground`, `muted`, `border`, `primary`)로 치환함.
+  2. 활성 상태 색상은 `blue-*` 대신 `primary` 계열을 사용해 라이트/다크 전환 시 톤 일관성을 확보함.
+- **이유**:
+  1. 동일한 색 역할이 파일마다 `slate/blue` 조합으로 분산되어 유지보수 시 수정 범위가 커졌음.
+  2. 다음 단계(상세/마이 페이지 정리) 이전에 실제 사용 빈도가 높은 동선부터 semantic 기반으로 고정할 필요가 있었음.
+- **구현 요약**:
+  - 헤더/진입: `apps/web/src/components/layout/MainHeader.tsx`, `apps/web/src/pages/HomePage.tsx`, `apps/web/src/pages/LoginPage.tsx`
+  - 에디터: `apps/web/src/components/MemeEditor.tsx`, `apps/web/src/components/editor/MemePropertyPanel.tsx`, `apps/web/src/components/editor/MemeCanvas.tsx`, `apps/web/src/components/editor/MemeColorPicker.tsx`, `apps/web/src/components/editor/EditorGuideCard.tsx`
+  - 목록 카드: `apps/web/src/pages/TemplatesPage.tsx`, `apps/web/src/components/ThumbnailCard.tsx`, `apps/web/src/components/TemplateThumbnailCard.tsx`
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 핵심 동선 파일 대상 `rg "(bg|text|border|ring|from|to|via)-slate-|(-|:)blue-|on-accent"` 결과 0건
+  - 스크린샷
+    - `docs/ai-context/screenshots/2026-02-19_style_phase2_home_desktop_v1.png`
+    - `docs/ai-context/screenshots/2026-02-19_style_phase2_editor_desktop_v1.png`
+    - `docs/ai-context/screenshots/2026-02-19_style_phase2_templates_desktop_v1.png`
+    - `docs/ai-context/screenshots/2026-02-19_style_phase2_home_mobile_v1.png`
+    - `docs/ai-context/screenshots/2026-02-19_style_phase2_editor_mobile_v1.png`
+    - `docs/ai-context/screenshots/2026-02-19_style_phase2_templates_mobile_v1.png`
+
+## [2026-02-19] 전역 스타일 재정비 2차-b: 상세/마이 페이지 `slate/blue` 직접 클래스 제거 완료
+- **결정**:
+  1. 상세/마이 영역(`TemplateShareDetail`, `ImageShareDetail`, `MyTemplates`, `MyPage`, `MySectionLayout`)도 동일하게 semantic 클래스(`foreground`, `muted`, `border`, `primary`)로 통일함.
+  2. 잔여 스피너/스켈레톤 색상도 `border`, `muted`, `foreground` 기반으로 정렬함.
+- **이유**:
+  1. 핵심 동선만 정리된 상태에서는 상세/마이 진입 시 시각 언어가 다시 분리되는 문제가 있었음.
+  2. 전역 스타일 시스템 재정비 이슈(#96)를 마무리하려면 페이지 레벨 잔여 하드코딩 제거가 필요했음.
+- **구현 요약**:
+  - 페이지: `apps/web/src/pages/TemplateShareDetailPage.tsx`, `apps/web/src/pages/ImageShareDetailPage.tsx`, `apps/web/src/pages/MyTemplatesPage.tsx`, `apps/web/src/pages/MyPage.tsx`, `apps/web/src/pages/EditorPage.tsx`
+  - 레이아웃/보조: `apps/web/src/components/layout/MySectionLayout.tsx`, `apps/web/src/components/editor/MemeToolbar.tsx`
+  - 루트 배경/카드 배경을 `bg-app-surface`, `bg-card`로 정렬하고 정렬/필터 버튼 활성 색상을 `bg-primary`로 통일
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - `apps/web/src`(단, `index.css` 변수명 정의 제외) 대상 `rg "(bg|text|border|ring|from|to|via)-slate-|(-|:)blue-|on-accent"` 결과 0건
+  - 스크린샷(공개 경로)
+    - `docs/ai-context/screenshots/2026-02-19_style_phase2b_templates_page_v1.png`
+    - `docs/ai-context/screenshots/2026-02-19_style_phase2b_template_detail_v1.png`
+    - `docs/ai-context/screenshots/2026-02-19_style_phase2b_image_detail_v1.png`
+  - `/my`, `/my/templates`는 비로그인 환경에서 홈 리다이렉트되어 시각 검증은 수행 불가
+
+## [2026-02-19] 전역 프리미티브 스타일 통일 1차 (`button/input/textarea/card/dropdown/dialog/sheet`)
+- **결정**:
+  1. 상호작용 컴포넌트의 기본 상태는 `border transparent + shadow 최소화`로 통일하고, hover/focus에서만 경계 강조를 노출함.
+  2. 오버레이 계층(`dropdown/dialog/sheet`)은 `rounded-xl/2xl + border + shadow`를 공통 언어로 유지함.
+- **이유**:
+  1. 페이지마다 보더/라운드/그림자 규칙이 달라 동일 제품 내 시각 언어가 분리되어 보였음.
+  2. 사용자 요청한 “조용한 기본 상태 + 상호작용 시 강조” UX 방향을 전역 primitive 레이어에서 먼저 강제하기 위함.
+- **구현 요약**:
+  - `apps/web/src/components/ui/button.tsx`
+    - base: `rounded-xl`, `border-transparent`, hover/focus border 강조
+    - size/variant 스케일 재정렬(기본 높이 `h-10`)
+  - `apps/web/src/components/ui/input.tsx`
+    - 기본 `bg-card + border-transparent`, hover/focus border 노출, shadow 제거
+  - `apps/web/src/components/ui/textarea.tsx`
+    - input과 동일 규칙 적용(최소 높이 `72px`)
+  - `apps/web/src/components/ui/card.tsx`
+    - 기본 border/shadow 완화(`border-transparent`, `shadow-none`)
+  - `apps/web/src/components/ui/dropdown-menu.tsx`
+    - content/item/sub-trigger radius/border/focus 규칙 통일
+  - `apps/web/src/components/ui/dialog.tsx`
+    - overlay/close/content 규칙 정렬(`rounded-2xl`, `border-border/80`)
+  - `apps/web/src/components/ui/sheet.tsx`
+    - side별 border/radius 규칙 정렬 + close 버튼 상호작용 규칙 통일
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 스크린샷(다크)
+    - `docs/ai-context/screenshots/2026-02-19_primitives_unified_home_dark_v1.png`
+    - `docs/ai-context/screenshots/2026-02-19_primitives_unified_editor_dark_v1.png`
+    - `docs/ai-context/screenshots/2026-02-19_primitives_unified_templates_dark_v1.png`
+
+## [2026-02-19] 홈/에디터/밈플릿 목록 루트 배경 토큰 통일
+- **결정**:
+  1. 주요 진입 페이지(홈, 에디터, 밈플릿 목록)의 루트 배경 토큰을 `bg-app-surface`로 통일함.
+  2. 에디터 로딩/에러 fallback 화면도 동일 토큰(`bg-app-surface`)을 사용하도록 정렬함.
+- **이유**:
+  1. 페이지별 루트 배경 토큰(`bg-app-bg`, `bg-app-surface`, `bg-slate-100`)이 혼재되어 라이트/다크 전환 시 톤 불일치가 발생했음.
+  2. 사용자가 인지하는 상위 정보 구조(헤더+본문)의 시각 일관성을 확보하기 위함.
+- **구현 요약**:
+  - `apps/web/src/pages/HomePage.tsx`
+    - 루트 배경 `bg-app-bg -> bg-app-surface`
+  - `apps/web/src/pages/TemplatesPage.tsx`
+    - 루트 배경 `bg-slate-100 -> bg-app-surface`
+  - `apps/web/src/pages/EditorPage.tsx`
+    - 로딩/에러 상태 배경 `bg-white -> bg-app-surface`
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 스크린샷(다크)
+    - `docs/ai-context/screenshots/2026-02-19_bg_unified_home_dark_v1.png`
+    - `docs/ai-context/screenshots/2026-02-19_bg_unified_editor_dark_v1.png`
+    - `docs/ai-context/screenshots/2026-02-19_bg_unified_templates_dark_v1.png`
+
+## [2026-02-19] 다크모드 에디터 배경 토큰 통일 (`editor-canvas-bg` -> `app-surface`)
+- **결정**:
+  1. 다크모드에서 `--editor-canvas-bg`를 별도 값(`--ink-black-200`)으로 두지 않고 `--app-surface`와 동일하게 맞춤.
+- **이유**:
+  1. 사용자 피드백대로 에디터 캔버스 배경과 주변 배경이 서로 다른 톤으로 보여 이질감이 발생함.
+  2. 에디터 내부 배경 계층을 단순화해 시각적 일관성을 높이기 위함.
+- **구현 요약**:
+  - `apps/web/src/index.css`
+    - `:root[data-theme='dark']`에서 `--editor-canvas-bg: var(--ink-black-200)`를 `--editor-canvas-bg: var(--app-surface)`로 변경
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 스크린샷
+    - `docs/ai-context/screenshots/2026-02-19_editor_dark_bg_unified_v1.png`
+
+## [2026-02-19] 에디터 캔버스 외곽선(border) 제거
+- **결정**:
+  1. 에디터 캔버스 `<canvas>`의 외곽선(border)을 제거함.
+- **이유**:
+  1. 사용자 요청대로 캔버스 프레임 라인을 없애고 더 플랫한 화면 톤을 유지하기 위함.
+- **구현 요약**:
+  - `apps/web/src/components/editor/MemeCanvas.tsx`
+    - `<canvas>` 클래스에서 `border border-slate-200` 제거
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 스크린샷
+    - `docs/ai-context/screenshots/2026-02-19_editor_canvas_border_removed_v1.png`
+
+## [2026-02-19] 모바일 에디터 패널 레이아웃을 하단 고정 시트에서 스크롤형으로 복귀
+- **결정**:
+  1. 모바일의 하단 고정 `Bottom Sheet(40%/80%)` 패널을 제거함.
+  2. 모바일 편집 패널은 캔버스 하단 인플로우로 배치해 페이지 스크롤 기반으로 동작하도록 변경함.
+  3. 데스크탑 studio split(좌 툴레일/중앙 캔버스/우 패널)은 유지함.
+- **이유**:
+  1. 사용자 요청한 기존 모바일 스크롤 편집 흐름으로 회귀하기 위함.
+  2. 고정 하단 시트 대비 모바일 탐색/편집 흐름의 연속성을 높이기 위함.
+- **구현 요약**:
+  - `apps/web/src/components/MemeEditor.tsx`
+    - 모바일 전용 `fixed` bottom sheet 블록 제거
+    - 모바일에서 `툴 버튼 + undo/redo + 속성 패널`을 캔버스 하단 인플로우로 재배치
+    - 에디터 메인 컨테이너를 `mobile: flex-col`, `desktop: flex-row`로 분기
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 모바일 페이지 스크롤 가능 확인(`documentElement.scrollHeight > innerHeight`)
+  - 스크린샷
+    - `docs/ai-context/screenshots/2026-02-19_editor_mobile_scroll_layout_v2.png`
+
+## [2026-02-19] 에디터 이미지 탭 제거 + 캔버스 업로드 드롭존 이관
+- **결정**:
+  1. 에디터 도구 그룹에서 `이미지` 탭을 제거하고 `편집`, `공유` 2개 탭만 유지함.
+  2. 이미지 업로드는 우측 속성 패널이 아닌 캔버스 빈 상태에서 직접 처리하도록 변경함.
+  3. 캔버스 업로드 진입 문구는 `업로드하려면 클릭`, `또는 여기에 파일 끌어다놓기`로 고정함.
+- **이유**:
+  1. 업로드 시작점이 탭 내부에 숨겨져 있어 첫 진입 사용성이 떨어졌음.
+  2. 사용자 요청대로 전형적인 에디터 UX(캔버스 중심 업로드)를 적용해 초기 작업 플로우를 단순화하기 위함.
+- **구현 요약**:
+  - `apps/web/src/components/MemeEditor.tsx`
+    - `STUDIO_TOOLS`에서 `background` 제거
+    - 모바일 도구 그리드를 `3열 -> 2열`로 변경
+    - `MemeCanvas`에 `onUploadImage` 전달
+  - `apps/web/src/components/editor/MemeCanvas.tsx`
+    - 빈 상태 업로드 드롭존에 클릭 업로드 + Drag & Drop 핸들러 추가
+    - 업로드 안내 문구 변경
+  - `apps/web/src/components/editor/MemePropertyPanel.tsx`
+    - `background` 패널(업로드/URL 로드) 제거 및 관련 props 정리
+  - `apps/web/src/hooks/useMemeEditor.ts`
+    - 배경 로드가 없을 때 초기 `activeTool`을 `null`로 유지
+    - 배경 적용 완료 후 `activeTool`을 `edit`로 설정
+    - `bgUrl` 상태/외부 노출 제거
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 스크린샷
+    - `docs/ai-context/screenshots/2026-02-19_editor_canvas_upload_dropzone_desktop_v1.png`
+    - `docs/ai-context/screenshots/2026-02-19_editor_canvas_upload_dropzone_mobile_v1.png`
+
+## [2026-02-19] 에디터 Studio Split 레이아웃 1차 적용
+- **결정**:
+  1. 에디터 데스크탑 레이아웃을 `좌 툴레일 + 중앙 캔버스 + 우 컨텍스트 패널`의 3분할 구조로 전환함.
+  2. 모바일 레이아웃은 캔버스 우선 유지 + 하단 `Bottom Sheet(40%/80%)` 패널 방식으로 전환함.
+  3. Undo/Redo는 데스크탑에서는 좌 레일 하단, 모바일에서는 하단 시트 헤더 우측에 배치함.
+- **이유**:
+  1. 사용자 요청한 studio형 편집 UX를 반영해 캔버스 중심 작업 흐름을 강화하기 위함.
+  2. 모바일에서 기존 세로 스택 패널은 캔버스를 과도하게 밀어내어 작업 집중도가 낮았음.
+- **구현 요약**:
+  - `apps/web/src/components/MemeEditor.tsx`
+    - `EditorLayout`/`MemeToolbar` 조합 기반 구조를 제거하고 3분할 레이아웃 직접 구성
+    - 좌측 툴레일(이미지/편집/공유), 우측 컨텍스트 패널 헤더(`Context Panel`) 추가
+    - 모바일 하단 시트(`40%`, `80%` 토글) + 툴 탭 + 속성 패널 구조로 재배치
+  - `apps/web/src/components/editor/MemePropertyPanel.tsx`
+    - 모바일/데스크탑 공통 `flex-1 overflow-y-auto` 스크롤 컨테이너로 정리
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 스크린샷
+    - `docs/ai-context/screenshots/2026-02-19_editor_studio_split_desktop_dark_v1.png`
+    - `docs/ai-context/screenshots/2026-02-19_editor_studio_split_desktop_light_v1.png`
+    - `docs/ai-context/screenshots/2026-02-19_editor_studio_split_mobile_dark_v1.png`
+    - `docs/ai-context/screenshots/2026-02-19_editor_studio_split_mobile_dark_80_v1.png`
+
+## [2026-02-19] 메인 헤더 배경/보더 제거
+- **결정**:
+  1. 메인 헤더 루트(`MainHeader`)의 배경색과 하단 보더를 제거해 페이지 배경과 자연스럽게 붙는 상단 바로 정리함.
+- **이유**:
+  1. 사용자 요청대로 최근 미디어 서비스 스타일처럼 상단 구조를 가볍게 만들어 콘텐츠 집중도를 높이기 위함.
+- **구현 요약**:
+  - `apps/web/src/components/layout/MainHeader.tsx`
+    - 헤더 루트 클래스에서 `bg-app-surface-elevated`, `border-b border-slate-200` 제거
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - 스크린샷
+    - `docs/ai-context/screenshots/2026-02-19_header_border_bg_removed_light_v1.png`
+    - `docs/ai-context/screenshots/2026-02-19_header_border_bg_removed_dark_v1.png`
+
+## [2026-02-19] 밈플릿 목록 스켈레톤 시각 톤 정렬
+- **결정**:
+  1. `/templates` 로딩 스켈레톤의 카드 외곽/배경 톤을 현재 목록 카드 규칙(배경 최소화)에 맞춰 단순화함.
+- **이유**:
+  1. 목록 카드 본문은 hover-only 기반인데 로딩 스켈레톤만 채움이 강하면 화면 전환 시 톤이 튀는 문제가 있었음.
+- **구현 요약**:
+  - `apps/web/src/pages/TemplatesPage.tsx`
+    - 스켈레톤 카드 컨테이너를 `border-transparent + bg-transparent`로 변경
+    - 이미지 영역을 gradient 블록에서 단일 pulse surface(`border-slate-200 + bg-slate-100`)로 단순화
+    - 텍스트 skeleton bar 강도를 `slate-200/70~80`로 하향
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - 스크린샷
+    - `docs/ai-context/screenshots/2026-02-19_templates_skeleton_aligned_loading_v1.png`
+    - `docs/ai-context/screenshots/2026-02-19_templates_skeleton_aligned_dark_loading_v1.png`
+
+## [2026-02-19] 밈플릿 목록 상단 정보 블록 제거
+- **결정**:
+  1. `/templates` 상단의 `밈플릿 목록` 타이틀, 설명 부제, `새로 만들기` 버튼을 제거함.
+- **이유**:
+  1. 사용자 요청에 따라 목록 본문(카드)에 시선을 집중시키고 상단 정보 밀도를 낮추기 위함.
+- **구현 요약**:
+  - `apps/web/src/pages/TemplatesPage.tsx`
+    - 상단 헤더 블록(`h2`, 부제 `p`, `새로 만들기` 버튼) 제거
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - 스크린샷
+    - `docs/ai-context/screenshots/2026-02-19_templates_header_removed_v1.png`
+
+## [2026-02-19] 밈플릿 목록 라이트/다크 카드 hover-only 시각 규칙 적용
+- **결정**:
+  1. `/templates`의 카드 기본 채움은 라이트/다크 공통으로 제거하고, hover/focus 시에만 배경을 노출함.
+  2. 적용 범위는 공개 밈플릿 목록(`TemplatesPage`)으로 한정하고, 다른 카드 화면에는 기본 동작을 유지함.
+- **이유**:
+  1. 목록에서 카드 배경이 상시 노출될 때 카드 간 분리감이 과해 화면 밀도가 무거워 보였음.
+  2. 사용자 요청대로 hover 시점에만 표면이 올라오게 해 탐색 시 집중도를 높이기 위함.
+- **구현 요약**:
+  - `apps/web/src/components/ThumbnailCard.tsx`
+    - `hoverSurfaceOnly` prop 추가/적용
+    - hover-only 대상 내부 surface 제어용 클래스(`thumb-card-surface`, `thumb-card-media-surface`) 추가
+  - `apps/web/src/components/TemplateThumbnailCard.tsx`
+    - `hoverSurfaceOnly` prop 전달 경로 추가
+  - `apps/web/src/pages/TemplatesPage.tsx`
+    - 목록 카드에 `hoverSurfaceOnly` 적용
+  - `apps/web/src/index.css`
+    - `.hover-surface-only-card` 공통 테마 규칙 추가
+    - 기본 배경 투명, hover/focus 시 카드 외곽선은 노출하지 않고 배경만 복원(이미지 주변 내부 surface는 투명 유지)
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - 스크린샷
+    - `docs/ai-context/screenshots/2026-02-19_templates_dark_hover_only_before_hover_v2.png`
+    - `docs/ai-context/screenshots/2026-02-19_templates_dark_hover_only_hovered_v1.png`
+    - `docs/ai-context/screenshots/2026-02-19_templates_light_hover_only_before_hover_v1.png`
+    - `docs/ai-context/screenshots/2026-02-19_templates_light_hover_only_hovered_v1.png`
+    - `docs/ai-context/screenshots/2026-02-19_templates_light_hover_no_image_side_bg_v2.png`
+    - `docs/ai-context/screenshots/2026-02-19_templates_hover_no_border_v1.png`
+
+## [2026-02-19] 공유 섹션 다운로드 UX 단순화: 드롭다운 선택 + 액션 2열 배치
+- **결정**:
+  1. 확장자 선택 컴포넌트를 상시 노출 `Segmented`에서 `다운로드 버튼 클릭 시 열리는 Dropdown`으로 전환함.
+  2. `다운로드`와 `클립보드 복사`를 동일 행 2열 레이아웃으로 배치해 공유 액션 영역의 밀도를 높임.
+- **이유**:
+  1. 공유 탭에서 포맷 세그먼트가 상시 공간을 점유해 핵심 액션 대비 시각적 비중이 과도했음.
+  2. 사용자 요청대로 확장자 선택은 다운로드 시점에만 노출하는 흐름이 더 자연스러움.
+- **구현 요약**:
+  - `apps/web/src/components/editor/MemePropertyPanel.tsx`
+    - 공유 탭의 포맷 `SegmentedButtons` 제거
+    - `DropdownMenuTrigger(Button)` + `DropdownMenuItem(PNG/JPG/WEBP/PDF)`로 전환
+    - 선택 포맷 상태값(`downloadFormat`) 및 배지 표시 제거, 항목 클릭 시 즉시 다운로드로 단순화
+    - `다운로드`/`클립보드 복사`를 `grid-cols-2` 한 줄 배치로 변경
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - 스크린샷
+    - `docs/ai-context/screenshots/2026-02-19_share_section_mobile_dropdown_row_v1.png`
+    - `docs/ai-context/screenshots/2026-02-19_share_section_mobile_dropdown_open_v1.png`
+    - `docs/ai-context/screenshots/2026-02-19_share_section_desktop_dropdown_row_v1.png`
+    - `docs/ai-context/screenshots/2026-02-19_share_section_mobile_dropdown_ext_side_v1.png`
+    - `docs/ai-context/screenshots/2026-02-19_share_section_mobile_dropdown_no_badge_v1.png`
+
 ## [2026-02-19] 전역 스타일 시스템 재정비 1차 (#96): shadcn/radix 기준 베이스 정렬
 - **결정**:
   1. Ant Design 제거 이후에도 남아 있던 테마 잔존 코드를 제거하고, `theme.ts`의 역할을 `theme mode + css var resolver`로 단순화함.

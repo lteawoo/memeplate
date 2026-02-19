@@ -5,6 +5,7 @@ import ThumbnailCard from './ThumbnailCard';
 interface TemplateThumbnailCardProps {
   template: TemplateRecord;
   hoverable?: boolean;
+  hoverSurfaceOnly?: boolean;
   actions?: React.ReactNode[];
   showMeta?: boolean;
   children?: React.ReactNode;
@@ -14,6 +15,7 @@ interface TemplateThumbnailCardProps {
 const TemplateThumbnailCard: React.FC<TemplateThumbnailCardProps> = ({
   template,
   hoverable = false,
+  hoverSurfaceOnly = false,
   actions,
   showMeta = false,
   children,
@@ -24,14 +26,15 @@ const TemplateThumbnailCard: React.FC<TemplateThumbnailCardProps> = ({
       imageUrl={template.thumbnailUrl}
       title={template.title}
       hoverable={hoverable}
+      hoverSurfaceOnly={hoverSurfaceOnly}
       actions={actions}
       onClick={onClick}
     >
       {showMeta ? (
         <div className="space-y-1">
-          <div className="line-clamp-1 text-sm font-semibold text-slate-900">{template.title}</div>
+          <div className="line-clamp-1 text-sm font-semibold text-foreground">{template.title}</div>
           {template.updatedAt ? (
-            <p className="text-xs text-slate-500">업데이트: {new Date(template.updatedAt).toLocaleString()}</p>
+            <p className="text-xs text-muted-foreground">업데이트: {new Date(template.updatedAt).toLocaleString()}</p>
           ) : null}
         </div>
       ) : null}

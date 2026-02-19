@@ -12,7 +12,7 @@ const LoginPage: React.FC = () => {
     <div className="h-screen bg-app-bg">
       <main className="flex h-full items-center justify-center px-6">
         <div className="w-full max-w-sm text-center">
-          <h1 className="mb-8 text-5xl font-black tracking-tighter text-slate-900 md:text-6xl">
+          <h1 className="mb-8 text-5xl font-black tracking-tighter text-foreground md:text-6xl">
             Memeplate
           </h1>
           <Button

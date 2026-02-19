@@ -34,7 +34,7 @@ interface SegmentedButtonsProps {
 }
 
 const SegmentedButtons: React.FC<SegmentedButtonsProps> = ({ value, options, onChange, disabled }) => (
-  <div className="grid w-full grid-cols-2 gap-1 rounded-xl border border-slate-200 bg-slate-50 p-1">
+  <div className="grid w-full grid-cols-2 gap-1 rounded-xl border border-border bg-muted p-1">
     {options.map((option) => {
       const active = option.value === value;
       return (
@@ -44,7 +44,7 @@ const SegmentedButtons: React.FC<SegmentedButtonsProps> = ({ value, options, onC
           disabled={disabled}
           onClick={() => onChange(option.value)}
           className={`h-9 rounded-lg px-3 text-xs font-bold transition-colors ${
-            active ? 'bg-blue-700 text-on-accent' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+            active ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent hover:text-foreground'
           } disabled:cursor-not-allowed disabled:opacity-60`}
         >
           {option.label}
@@ -195,7 +195,7 @@ const MyTemplatesPage: React.FC = () => {
     >
       {isLoading ? (
         <div className="py-20 text-center">
-          <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-slate-500" />
+          <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-border border-t-foreground/60" />
         </div>
       ) : error ? (
         <Alert variant="destructive">
@@ -203,7 +203,7 @@ const MyTemplatesPage: React.FC = () => {
           <AlertDescription>{error instanceof Error ? error.message : '내 밈플릿 목록을 불러오지 못했습니다.'}</AlertDescription>
         </Alert>
       ) : templates.length === 0 ? (
-        <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-500">저장된 밈플릿이 없습니다.</div>
+        <div className="rounded-2xl border border-border bg-card p-10 text-center text-sm text-muted-foreground">저장된 밈플릿이 없습니다.</div>
       ) : (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
           {templates.map((template) => (
@@ -213,8 +213,8 @@ const MyTemplatesPage: React.FC = () => {
             >
               <div className="flex flex-col gap-3">
                 <div>
-                  <h4 className="mb-1 text-base font-bold text-slate-900">{template.title}</h4>
-                  <p className="m-0 text-xs text-slate-500">{template.updatedAt ? `업데이트: ${new Date(template.updatedAt).toLocaleString()}` : ''}</p>
+                  <h4 className="mb-1 text-base font-bold text-foreground">{template.title}</h4>
+                  <p className="m-0 text-xs text-muted-foreground">{template.updatedAt ? `업데이트: ${new Date(template.updatedAt).toLocaleString()}` : ''}</p>
                 </div>
 
                 <SegmentedButtons
@@ -287,7 +287,7 @@ const MyTemplatesPage: React.FC = () => {
           </SheetHeader>
           {detailTarget ? (
             <div className="space-y-4 px-1 pb-6 pt-3">
-              <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+              <div className="overflow-hidden rounded-xl border border-border bg-muted">
                 {detailTarget.thumbnailUrl ? (
                   <div className="flex items-center justify-center p-3">
                     <img
@@ -298,34 +298,34 @@ const MyTemplatesPage: React.FC = () => {
                     />
                   </div>
                 ) : (
-                  <div className="flex h-52 items-center justify-center text-slate-500">미리보기 없음</div>
+                  <div className="flex h-52 items-center justify-center text-muted-foreground">미리보기 없음</div>
                 )}
               </div>
               {detailMetaLoading ? (
                 <div className="py-6 text-center">
-                  <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-slate-500" />
+                  <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-border border-t-foreground/60" />
                 </div>
               ) : (
                 <div className="space-y-3 text-sm">
                   <div className="flex items-start justify-between gap-3">
-                    <span className="text-slate-500">만든 사람</span>
-                    <span className="text-right font-medium text-slate-800">{detailTarget.ownerDisplayName || detailTarget.ownerId || '-'}</span>
+                    <span className="text-muted-foreground">만든 사람</span>
+                    <span className="text-right font-medium text-foreground">{detailTarget.ownerDisplayName || detailTarget.ownerId || '-'}</span>
                   </div>
                   <div className="flex items-start justify-between gap-3">
-                    <span className="text-slate-500">생성일</span>
-                    <span className="text-right font-medium text-slate-800">{detailTarget.createdAt ? new Date(detailTarget.createdAt).toLocaleString() : '-'}</span>
+                    <span className="text-muted-foreground">생성일</span>
+                    <span className="text-right font-medium text-foreground">{detailTarget.createdAt ? new Date(detailTarget.createdAt).toLocaleString() : '-'}</span>
                   </div>
                   <div className="flex items-start justify-between gap-3">
-                    <span className="text-slate-500">이미지 포맷</span>
-                    <span className="text-right font-medium text-slate-800">{detailMeta.format}</span>
+                    <span className="text-muted-foreground">이미지 포맷</span>
+                    <span className="text-right font-medium text-foreground">{detailMeta.format}</span>
                   </div>
                   <div className="flex items-start justify-between gap-3">
-                    <span className="text-slate-500">해상도</span>
-                    <span className="text-right font-medium text-slate-800">{detailMeta.resolution}</span>
+                    <span className="text-muted-foreground">해상도</span>
+                    <span className="text-right font-medium text-foreground">{detailMeta.resolution}</span>
                   </div>
                   <div className="flex items-start justify-between gap-3">
-                    <span className="text-slate-500">파일 사이즈</span>
-                    <span className="text-right font-medium text-slate-800">{detailMeta.fileSize}</span>
+                    <span className="text-muted-foreground">파일 사이즈</span>
+                    <span className="text-right font-medium text-foreground">{detailMeta.fileSize}</span>
                   </div>
                 </div>
               )}

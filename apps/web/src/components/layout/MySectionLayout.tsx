@@ -32,9 +32,9 @@ const MySectionLayout: React.FC<MySectionLayoutProps> = ({
       <MainHeader />
       <div className="flex w-full bg-app-surface-elevated">
         <aside
-          className="hidden w-[220px] border-r border-slate-200 bg-app-surface-elevated md:block"
+          className="hidden w-[220px] border-r border-border bg-app-surface-elevated md:block"
         >
-          <div className="px-4 py-5 text-xs font-bold uppercase tracking-wider text-slate-500">My</div>
+          <div className="px-4 py-5 text-xs font-bold uppercase tracking-wider text-muted-foreground">My</div>
           <nav className="flex flex-col gap-1 px-2 pb-4">
             {menuItems.map((item) => (
               <Button
@@ -53,8 +53,8 @@ const MySectionLayout: React.FC<MySectionLayoutProps> = ({
           <div className="py-8">
             <div className="mb-6 flex items-end justify-between gap-3 px-6 md:px-8">
               <div>
-                <h1 className="mb-1 text-3xl font-bold text-slate-900">{title}</h1>
-                {description ? <p className="m-0 text-sm text-slate-500">{description}</p> : null}
+                <h1 className="mb-1 text-3xl font-bold text-foreground">{title}</h1>
+                {description ? <p className="m-0 text-sm text-muted-foreground">{description}</p> : null}
               </div>
               {action}
             </div>

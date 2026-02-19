@@ -1,9 +1,9 @@
 import React from 'react';
 import Icon from '@mdi/react';
 
-const GUIDE_CARD_BASE_CLASSNAME = 'rounded-3xl border border-dashed border-slate-200 bg-slate-50/60 text-center';
-const GUIDE_ICON_CLASSNAME = 'mx-auto flex items-center justify-center text-blue-500';
-const GUIDE_TEXT_CLASSNAME = 'text-sm font-semibold text-slate-500';
+const GUIDE_CARD_BASE_CLASSNAME = 'rounded-3xl border border-dashed border-border bg-muted/60 text-center';
+const GUIDE_ICON_CLASSNAME = 'mx-auto flex items-center justify-center text-primary';
+const GUIDE_TEXT_CLASSNAME = 'text-sm font-semibold text-muted-foreground';
 
 interface EditorGuideCardProps {
   iconPath: string;

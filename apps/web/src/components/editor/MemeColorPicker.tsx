@@ -40,9 +40,9 @@ const MemeColorPicker: React.FC<MemeColorPickerProps> = ({
   return (
     <div>
       <div className="mb-2 flex items-center justify-between">
-        <span className="text-xs font-bold uppercase tracking-wider text-slate-500">{label}</span>
+        <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{label}</span>
       </div>
-      <div className={`flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 ${height}`}>
+      <div className={`flex items-center gap-3 rounded-xl border border-border bg-muted px-3 ${height}`}>
         <input
           type="color"
           value={isValidHex(value) ? value : '#ffffff'}
@@ -63,7 +63,7 @@ const MemeColorPicker: React.FC<MemeColorPickerProps> = ({
               setTextValue(value);
             }
           }}
-          className="h-8 border-slate-200 bg-white text-xs font-semibold text-slate-700"
+          className="h-8 border-border bg-card text-xs font-semibold text-foreground"
           placeholder="#FFFFFF"
           maxLength={7}
         />

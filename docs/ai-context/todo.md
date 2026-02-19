@@ -111,6 +111,18 @@
   - [x] 전역 최대폭 1440px 정책 해제 + body 회색 배경 제거
   - [x] 페이지 컨테이너 레이아웃 공통화 1차 (`PageContainer` 도입)
   - [x] 공유 섹션 주요 버튼 높이 통일 (`h-11`)
+  - [x] 공유 섹션 다운로드 UX 단순화 (`다운로드 클릭형 포맷 드롭다운` + `다운로드/클립보드` 한 줄 배치)
+  - [x] 에디터 이미지 업로드를 캔버스 빈 상태 드롭존으로 이관 + `이미지` 탭 제거
+  - [x] 모바일 에디터 패널을 하단 고정 시트에서 인플로우 스크롤 레이아웃으로 복귀
+  - [x] 에디터 캔버스 외곽선(border) 제거
+  - [x] 다크모드 에디터 배경 토큰 통일(`--editor-canvas-bg` = `--app-surface`)
+  - [x] 홈/에디터/밈플릿 목록 루트 배경 토큰 통일(`bg-app-surface`)
+  - [x] 전역 프리미티브 스타일 통일 1차(`button/input/textarea/card/dropdown/dialog/sheet`)
+  - [x] `/templates` 라이트/다크 카드 hover-only 처리(기본 배경 투명 + hover 시 카드 외곽선 제거, 이미지 주변 배경 유지 제거)
+  - [x] `/templates` 상단 정보 블록 제거(타이틀/부제/새로 만들기 버튼)
+  - [x] `/templates` 로딩 스켈레톤 톤 정렬(배경/보더 강도 완화 + 단순 pulse surface)
+  - [x] 메인 헤더 배경/보더 제거(페이지 배경과 일체형 상단 바)
+  - [x] 에디터 Studio Split 1차(데스크탑 3분할 + 모바일 Bottom Sheet 40/80 + 패널 스크롤 정리)
   - [x] 모바일 헤더 햄버거 위치/정렬 보정 + 사이드패널 카드형 UI 개선
   - [x] 색상 토큰 공통화 및 라이트/다크 모드 기반 테마 시스템 도입 (`#92`)
   - [x] `index.css` semantic token(light/dark) 정의 및 전역 적용
@@ -133,7 +145,9 @@
   - [x] `index.css` shadcn base 정합화(`@layer base`, `color-scheme`, radius 토큰)
   - [x] 레이아웃/에디터의 `style={{ var(--...) }}` 인라인 스타일 제거 및 semantic 클래스 치환
   - [x] `ui/alert.tsx`의 `dark:` variant 제거
-  - [ ] 페이지/에디터 `slate/blue` 직접 클래스 semantic alias 2차 치환
+  - [x] 핵심 동선(`MainHeader`, `HomePage`, `LoginPage`, `MemeEditor`, `MemePropertyPanel`, `MemeCanvas`, `MemeColorPicker`, `EditorGuideCard`, `TemplatesPage`, `ThumbnailCard`, `TemplateThumbnailCard`) `slate/blue` 직접 클래스 제거
+  - [x] 상세/마이 페이지(`TemplateShareDetailPage`, `ImageShareDetailPage`, `MyTemplatesPage`, `MyPage`, `MySectionLayout`) `slate/blue` 직접 클래스 semantic alias 2차 치환
+  - [x] `apps/web/src`(단, `index.css` 변수명 제외) 클래스 스캔 기준 `slate/blue/on-accent` 직접 클래스 0건 확인
   - [ ] shadcn primitive variant 규칙 재점검(`button/input/card/dropdown/sheet`)
   - [ ] 웹 워커(Web Worker) 기반 내보내기 처리
   - [ ] Undo/Redo 로직 정밀화

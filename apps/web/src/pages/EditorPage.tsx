@@ -61,15 +61,15 @@ const EditorPage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="h-screen w-full flex items-center justify-center bg-white">
-        <div className="h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-slate-500" />
+      <div className="h-screen w-full flex items-center justify-center bg-app-surface">
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-border border-t-foreground/60" />
       </div>
     );
   }
 
   if (loadError) {
     return (
-      <div className="h-screen w-full p-8 bg-white">
+      <div className="h-screen w-full p-8 bg-app-surface">
         <Alert variant="destructive">
           <AlertTitle>불러오기 실패</AlertTitle>
           <AlertDescription>{loadError}</AlertDescription>

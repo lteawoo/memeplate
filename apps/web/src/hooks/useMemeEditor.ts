@@ -206,7 +206,6 @@ export const useMemeEditor = (options?: UseMemeEditorOptions) => {
 
   // Property State
   const [color, setColor] = useState('#ffffff');
-  const [bgUrl, setBgUrl] = useState('');
   const [hasBackground, setHasBackground] = useState(false);
   const [workspaceSize, setWorkspaceSize] = useState({ width: 0, height: 0 });
   const workspaceSizeRef = useRef({ width: 0, height: 0 });
@@ -487,7 +486,7 @@ export const useMemeEditor = (options?: UseMemeEditorOptions) => {
       setLayers(loadedObjects);
       canvas.discardActiveObject();
       canvas.requestRender();
-      setActiveTool(hasBg ? 'edit' : 'background');
+      setActiveTool(hasBg ? 'edit' : null);
 
       const initialJson = JSON.stringify(canvas.toJSON(false));
       const initialItem: HistoryItem = { json: initialJson, selectedId: null };
@@ -562,8 +561,7 @@ export const useMemeEditor = (options?: UseMemeEditorOptions) => {
       canvas.sendObjectToBack(img);
       canvas.renderAll();
       setHasBackground(true);
-      setBgUrl(url);
-      setActiveTool('background');
+      setActiveTool('edit');
       if (normalizedSize.scaled) {
         toast.info(`큰 원본이라 편집 안정성을 위해 ${normalizedSize.width}x${normalizedSize.height}로 조정했습니다.`);
       }
@@ -970,15 +968,12 @@ export const useMemeEditor = (options?: UseMemeEditorOptions) => {
     activeObject,
     layers,
     color,
-    bgUrl,
-    setBgUrl,
     hasBackground,
     workspaceSize,
     historyIndex,
     history,
     undo,
     redo,
-    setBackgroundImage,
     selectLayer,
     handleImageUpload,
     addText,
