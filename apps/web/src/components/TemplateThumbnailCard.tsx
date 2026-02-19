@@ -1,5 +1,4 @@
 import React from 'react';
-import { Card } from 'antd';
 import type { TemplateRecord } from '../types/template';
 import ThumbnailCard from './ThumbnailCard';
 
@@ -29,10 +28,12 @@ const TemplateThumbnailCard: React.FC<TemplateThumbnailCardProps> = ({
       onClick={onClick}
     >
       {showMeta ? (
-        <Card.Meta
-          title={template.title}
-          description={template.updatedAt ? `업데이트: ${new Date(template.updatedAt).toLocaleString()}` : ''}
-        />
+        <div className="space-y-1">
+          <div className="line-clamp-1 text-sm font-semibold text-slate-900">{template.title}</div>
+          {template.updatedAt ? (
+            <p className="text-xs text-slate-500">업데이트: {new Date(template.updatedAt).toLocaleString()}</p>
+          ) : null}
+        </div>
       ) : null}
       {children}
     </ThumbnailCard>

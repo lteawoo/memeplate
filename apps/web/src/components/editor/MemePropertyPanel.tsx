@@ -1,21 +1,10 @@
 import React from 'react';
-import { 
-  Button, 
-  Input, 
-  Upload, 
-  Typography, 
-  Segmented,
-  Dropdown,
-  Modal,
-  type MenuProps
-} from 'antd';
-import type { UploadChangeParam, UploadFile } from 'antd/es/upload';
 import Icon from '@mdi/react';
-import { 
-  mdiCloudUpload, 
-  mdiLinkVariant, 
-  mdiDelete, 
-  mdiDownload, 
+import {
+  mdiCloudUpload,
+  mdiLinkVariant,
+  mdiDelete,
+  mdiDownload,
   mdiContentCopy,
   mdiContentSave,
   mdiShape,
@@ -34,35 +23,96 @@ import {
   mdiFormatVerticalAlignCenter,
   mdiFormatAlignBottom,
   mdiOpacity,
-  mdiShareVariant
+  mdiShareVariant,
 } from '@mdi/js';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { Slider } from '@/components/ui/slider';
 import type { ToolType } from './MemeToolbar';
 import { Rect, Circle, Textbox, type CanvasObject } from '../../core/canvas';
 import MemeColorPicker from './MemeColorPicker';
 import EditorGuideCard from './EditorGuideCard';
-import { Popover, Slider, InputNumber } from 'antd';
-
-const { Text } = Typography;
+import { cn } from '@/lib/utils';
 
 type FormatType = 'png' | 'jpg' | 'webp' | 'pdf';
+
+type SegmentedOption = {
+  label: React.ReactNode;
+  value: string;
+};
+
+interface SegmentedButtonsProps {
+  value: string;
+  options: SegmentedOption[];
+  onChange: (value: string) => void;
+  className?: string;
+}
+
+const SegmentedButtons: React.FC<SegmentedButtonsProps> = ({ value, options, onChange, className }) => {
+  return (
+    <div className={cn('grid w-full gap-1 rounded-xl border border-slate-200 bg-slate-50 p-1', className)}>
+      {options.map((option) => {
+        const active = option.value === value;
+        return (
+          <button
+            key={option.value}
+            type="button"
+            onClick={() => onChange(option.value)}
+            className={cn(
+              'inline-flex h-9 items-center justify-center rounded-lg px-3 text-xs font-bold transition-colors',
+              active
+                ? 'bg-blue-700 text-on-accent'
+                : 'bg-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-900',
+            )}
+          >
+            {option.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+};
 
 interface MemePropertyPanelProps {
   activeTool: ToolType | null;
   hasBackground: boolean;
   bgUrl: string;
   setBgUrl: (url: string) => void;
-  handleImageUpload: (info: UploadChangeParam<UploadFile>) => void;
+  handleImageUpload: (info: unknown) => void;
   setBackgroundImage: (url: string) => void;
   addText: () => void;
   color: string;
-  updateProperty: (key: string, value: string | number) => void;
+  updateProperty: (key: string, value: string | number | boolean) => void;
   activeObject: CanvasObject | null;
   deleteActiveObject: () => void;
   addShape: (type: 'rect' | 'circle') => void;
   downloadImage: (format: FormatType) => void;
   copyToClipboard: () => void;
   publishImage: (title: string, description: string) => Promise<{ id: string; shareSlug: string } | null>;
-  saveTemplate: (title: string, description: string, visibility: 'private' | 'public') => Promise<{ id: string; title: string; description?: string; visibility: 'private' | 'public'; shareSlug: string } | null>;
+  saveTemplate: (
+    title: string,
+    description: string,
+    visibility: 'private' | 'public',
+  ) => Promise<{ id: string; title: string; description?: string; visibility: 'private' | 'public'; shareSlug: string } | null>;
   copyTemplateShareLink: () => Promise<void>;
   savedTemplate: { id: string; title: string; description?: string; visibility: 'private' | 'public'; shareSlug: string } | null;
   isTemplateSaving: boolean;
@@ -100,7 +150,7 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
     isTemplateSaveDisabled,
     layers,
     selectLayer,
-    changeZIndex
+    changeZIndex,
   } = props;
 
   const [downloadFormat, setDownloadFormat] = React.useState<FormatType>('png');
@@ -111,6 +161,7 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
   const [remixDescription, setRemixDescription] = React.useState('');
   const [isTemplateModalOpen, setIsTemplateModalOpen] = React.useState(false);
   const [isRemixModalOpen, setIsRemixModalOpen] = React.useState(false);
+
   const textLayerOrder = React.useMemo(() => {
     const textLayerIds = layers
       .filter((layer): layer is Textbox => layer instanceof Textbox)
@@ -139,20 +190,6 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
     }
   };
 
-  const shapeItems: MenuProps['items'] = [
-    {
-      key: 'rect',
-      label: '사각형',
-      icon: <Icon path={mdiSquare} size={0.8} />,
-      onClick: () => addShape('rect'),
-    },
-    {
-      key: 'circle',
-      label: '원형',
-      icon: <Icon path={mdiCircle} size={0.8} />,
-      onClick: () => addShape('circle'),
-    },
-  ];
   const renderPanelContent = () => {
     if (!activeTool) {
       return (
@@ -163,63 +200,65 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
         />
       );
     }
-    
-    switch(activeTool) {
+
+    switch (activeTool) {
       case 'background':
-        // ... (background logic)
         return (
-          <div className="flex flex-col gap-6 md:gap-8 w-full">
+          <div className="flex w-full flex-col gap-6 md:gap-8">
             <div>
-              <Text strong className="block mb-3 md:mb-4 text-slate-700 text-sm md:text-base">이미지 업로드</Text>
-              <Upload.Dragger
-                accept="image/*"
-                showUploadList={false}
-                disabled={isBackgroundApplying}
-                beforeUpload={(file) => {
-                  if (isBackgroundApplying) {
-                    return false;
-                  }
-                  handleImageUpload({ file: file as unknown as UploadFile, fileList: [] });
-                  return false; // Prevent default upload behavior
-                }}
-                className="upload-guide"
-                style={{ padding: 0 }}
-              >
+              <p className="mb-3 block text-sm font-bold text-slate-700 md:mb-4 md:text-base">이미지 업로드</p>
+              <label className="upload-guide block cursor-pointer">
+                <input
+                  type="file"
+                  accept="image/*"
+                  disabled={isBackgroundApplying}
+                  className="hidden"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    if (!file) return;
+                    handleImageUpload(file);
+                    event.currentTarget.value = '';
+                  }}
+                />
                 <EditorGuideCard
                   iconPath={mdiCloudUpload}
                   iconSize={window.innerWidth < 768 ? 1.9 : 2.1}
                   description={isBackgroundApplying ? '이미지 처리 중...' : '클릭 또는 드래그하여 업로드'}
-                  className="py-6 !border-0 !bg-transparent rounded-none"
+                  className="rounded-3xl py-6"
                 />
-              </Upload.Dragger>
+              </label>
             </div>
-            
+
             <div className="flex items-center gap-3 md:gap-4">
-               <div className="h-px bg-slate-200 flex-1"></div>
-               <span className="text-[10px] md:text-xs text-slate-500 font-bold uppercase tracking-wider">또는</span>
-               <div className="h-px bg-slate-200 flex-1"></div>
+              <div className="h-px flex-1 bg-slate-200" />
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 md:text-xs">또는</span>
+              <div className="h-px flex-1 bg-slate-200" />
             </div>
-            
+
             <div>
-              <Text strong className="block mb-3 md:mb-4 text-slate-700 text-sm md:text-base">외부 URL 로드</Text>
+              <p className="mb-3 block text-sm font-bold text-slate-700 md:mb-4 md:text-base">외부 URL 로드</p>
               <div className="flex flex-col gap-2">
-                <Input 
-                  prefix={<Icon path={mdiLinkVariant} size={0.7} className="text-slate-500" />}
-                  placeholder="https://example.com/image.jpg" 
-                  value={bgUrl}
-                  onChange={(e) => setBgUrl(e.target.value)}
-                  onPressEnter={() => bgUrl && setBackgroundImage(bgUrl)}
-                  className="h-10 md:h-12 rounded-xl text-sm md:text-base"
-                />
-                <Button 
+                <div className="relative">
+                  <Icon path={mdiLinkVariant} size={0.7} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                  <Input
+                    placeholder="https://example.com/image.jpg"
+                    value={bgUrl}
+                    onChange={(e) => setBgUrl(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && bgUrl) {
+                        setBackgroundImage(bgUrl);
+                      }
+                    }}
+                    className="h-10 rounded-xl border-slate-200 bg-white pl-8 text-sm md:h-12 md:text-base"
+                  />
+                </div>
+                <Button
+                  type="button"
                   onClick={() => bgUrl && setBackgroundImage(bgUrl)}
-                  className="h-10 md:h-12 rounded-xl font-bold text-sm md:text-base mt-1 md:mt-2"
-                  type="primary"
-                  loading={isBackgroundApplying}
+                  className="mt-1 h-10 rounded-xl text-sm font-bold md:mt-2 md:h-12 md:text-base"
                   disabled={isBackgroundApplying}
-                  block
                 >
-                  배경 적용
+                  {isBackgroundApplying ? '적용 중...' : '배경 적용'}
                 </Button>
               </div>
             </div>
@@ -228,280 +267,346 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
 
       case 'edit':
         return (
-          <div className="flex flex-col gap-4 w-full">
-            {/* 1. Compact Action Bar */}
-            <div className="flex items-center gap-2 bg-slate-100/50 p-2 rounded-2xl mb-2 border border-slate-200">
-               <Button 
-                  type="text"
-                  icon={<Icon path={mdiFormatColorText} size={0.7} />} 
-                  onClick={() => addText()}
-                  className="flex-1 h-10 !text-slate-700 !bg-slate-50 !border !border-slate-200 hover:!bg-slate-100 hover:!border-slate-300 hover:shadow-sm font-bold text-xs rounded-xl transition-all"
-               >
-                  텍스트
-               </Button>
-               <div className="w-px h-4 bg-slate-200" />
-               <Dropdown menu={{ items: shapeItems }} trigger={['click']} placement="bottom">
-                 <Button 
-                    type="text"
-                    icon={<Icon path={mdiShape} size={0.7} />} 
-                    className="flex-1 h-10 !text-slate-700 !bg-slate-50 !border !border-slate-200 hover:!bg-slate-100 hover:!border-slate-300 hover:shadow-sm font-bold text-xs rounded-xl transition-all"
-                 >
-                    도형
-                 </Button>
-               </Dropdown>
+          <div className="flex w-full flex-col gap-4">
+            <div className="mb-2 flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-100/50 p-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => addText()}
+                className="h-10 flex-1 rounded-xl border-slate-200 bg-slate-50 text-xs font-bold text-slate-700 hover:bg-slate-100"
+              >
+                <Icon path={mdiFormatColorText} size={0.7} /> 텍스트
+              </Button>
+              <div className="h-4 w-px bg-slate-200" />
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-10 flex-1 rounded-xl border-slate-200 bg-slate-50 text-xs font-bold text-slate-700 hover:bg-slate-100"
+                  >
+                    <Icon path={mdiShape} size={0.7} /> 도형
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-32">
+                  <DropdownMenuItem onClick={() => addShape('rect')}>
+                    <Icon path={mdiSquare} size={0.8} /> 사각형
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => addShape('circle')}>
+                    <Icon path={mdiCircle} size={0.8} /> 원형
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
 
-            <div className="flex flex-col gap-0 border border-slate-200 rounded-lg overflow-hidden">
-              <div className="flex items-center justify-between px-3 py-2 bg-slate-50 border-b border-slate-200">
+            <div className="flex flex-col overflow-hidden rounded-lg border border-slate-200">
+              <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-3 py-2">
                 <span className="text-[10px] font-black uppercase tracking-widest text-slate-600">Layers ({layers.length})</span>
               </div>
-              
-              <div className="flex flex-col overflow-y-auto max-h-[65vh] custom-scrollbar">
+
+              <div className="custom-scrollbar flex max-h-[65vh] flex-col overflow-y-auto">
                 {[...layers].reverse().map((obj, idx) => {
                   const isSelected = activeObject?.id === obj.id;
                   const isText = obj instanceof Textbox;
                   const isRect = obj instanceof Rect;
                   const isCircle = obj instanceof Circle;
                   const textLayerNumber = textLayerOrder.get(obj.id) ?? 1;
-                  
+
                   return (
-                    <div 
-                      key={obj.id || idx} 
-                      className={`
-                        group flex flex-col p-2 transition-all border-b border-slate-100 last:border-b-0
-                        ${isSelected ? 'bg-blue-50/80 border-l-4 border-l-blue-600' : 'bg-slate-50/80 hover:bg-slate-50 border-l-4 border-l-transparent'}
-                      `}
+                    <div
+                      key={obj.id || idx}
+                      className={cn(
+                        'group flex flex-col border-b border-slate-100 p-2 transition-all last:border-b-0',
+                        isSelected
+                          ? 'border-l-4 border-l-blue-600 bg-blue-50/80'
+                          : 'border-l-4 border-l-transparent bg-slate-50/80 hover:bg-slate-50',
+                      )}
                       onClick={() => selectLayer(obj)}
                     >
                       <div className="flex items-center gap-2">
-                        <div className="flex flex-col rounded-md border border-slate-200 bg-slate-50 overflow-hidden shrink-0">
-                          <Button 
-                            type="text"
-                            size="small"
-                            icon={<Icon path={mdiChevronUp} size={0.58} />} 
-                            onClick={(e) => { e.stopPropagation(); selectLayer(obj); changeZIndex('forward'); }}
-                            className="w-7 h-5 flex items-center justify-center !text-slate-600 !bg-transparent hover:!text-blue-600 hover:!bg-slate-100 p-0"
-                          />
-                          <Button 
-                            type="text"
-                            size="small"
-                            icon={<Icon path={mdiChevronDown} size={0.58} />} 
-                            onClick={(e) => { e.stopPropagation(); selectLayer(obj); changeZIndex('backward'); }}
-                            className="w-7 h-5 flex items-center justify-center !text-slate-600 !bg-transparent hover:!text-blue-600 hover:!bg-slate-100 p-0"
-                          />
+                        <div className="flex shrink-0 flex-col overflow-hidden rounded-md border border-slate-200 bg-slate-50">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              selectLayer(obj);
+                              changeZIndex('forward');
+                            }}
+                            className="h-5 w-7 rounded-none p-0 text-slate-600 hover:bg-slate-100 hover:text-blue-600"
+                          >
+                            <Icon path={mdiChevronUp} size={0.58} />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              selectLayer(obj);
+                              changeZIndex('backward');
+                            }}
+                            className="h-5 w-7 rounded-none p-0 text-slate-600 hover:bg-slate-100 hover:text-blue-600"
+                          >
+                            <Icon path={mdiChevronDown} size={0.58} />
+                          </Button>
                         </div>
-                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border ${isSelected ? 'bg-blue-700 text-on-accent shadow-sm border-blue-600' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>
+
+                        <div
+                          className={cn(
+                            'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border',
+                            isSelected ? 'border-blue-600 bg-blue-700 text-on-accent shadow-sm' : 'border-slate-200 bg-slate-100 text-slate-600',
+                          )}
+                        >
                           <Icon path={isText ? mdiFormatColorText : mdiShape} size={0.58} />
                         </div>
-                        
-                        {isText ? (
-                          <span className={`text-[11px] font-bold truncate flex-1 pl-1 ${isSelected ? 'text-blue-900' : 'text-slate-600'}`}>
-                            텍스트 레이어
-                          </span>
-                        ) : (
-                          <span className={`text-[11px] font-bold truncate flex-1 pl-1 ${isSelected ? 'text-blue-900' : 'text-slate-600'}`}>
-                            {isRect ? '사각형' : isCircle ? '원형' : '도형'}
-                          </span>
-                        )}
 
-                        <div className="flex items-center gap-1 shrink-0">
-                          <MemeColorPicker 
-                            label="" 
-                            value={obj.fill as string} 
+                        <span className={cn('flex-1 truncate pl-1 text-[11px] font-bold', isSelected ? 'text-blue-900' : 'text-slate-600')}>
+                          {isText ? '텍스트 레이어' : isRect ? '사각형' : isCircle ? '원형' : '도형'}
+                        </span>
+
+                        <div className="flex shrink-0 items-center gap-1">
+                          <MemeColorPicker
+                            label=""
+                            value={obj.fill as string}
                             onChange={(val) => {
-                                obj.set('fill', val);
-                                updateProperty('fill', val);
-                                selectLayer(obj);
+                              obj.set('fill', val);
+                              updateProperty('fill', val);
+                              selectLayer(obj);
                             }}
                             compact
                           />
-                          {isText && (
-                              <MemeColorPicker 
-                              label="" 
-                              value={obj.stroke as string || '#000000'} 
+                          {isText ? (
+                            <MemeColorPicker
+                              label=""
+                              value={(obj.stroke as string) || '#000000'}
                               onChange={(val) => {
-                                  obj.set('stroke', val);
-                                  updateProperty('stroke', val);
-                                  selectLayer(obj);
+                                obj.set('stroke', val);
+                                updateProperty('stroke', val);
+                                selectLayer(obj);
                               }}
                               compact
                             />
-                          )}
-                          {isText && (
-                            <Popover
-                              placement="bottomRight"
-                              title={<span className="text-xs font-bold">텍스트 상세 설정</span>}
-                              trigger="click"
-                              content={
-                                <div className="flex flex-col gap-5 w-72 p-1">
-                                  {/* 1. Font Style & Weight */}
+                          ) : null}
+
+                          {isText ? (
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="icon"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    selectLayer(obj);
+                                  }}
+                                  className={cn(
+                                    'h-8 w-8 rounded-lg p-0',
+                                    isSelected
+                                      ? 'border-blue-200 bg-blue-50/70 text-blue-700 hover:bg-blue-100'
+                                      : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-slate-300 hover:bg-slate-100 hover:text-blue-600',
+                                  )}
+                                >
+                                  <Icon path={mdiTune} size={0.7} />
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent align="end" className="w-72 p-2">
+                                <div className="mb-2 text-xs font-bold">텍스트 상세 설정</div>
+                                <div className="flex flex-col gap-5">
                                   <div className="flex flex-col gap-2">
-                                    <Text className="text-[11px] text-slate-500 font-bold uppercase block">스타일</Text>
+                                    <span className="text-[11px] font-bold uppercase text-slate-500">스타일</span>
                                     <div className="flex gap-2">
-                                      <Button 
-                                        type={(obj as Textbox).fontWeight === 'bold' ? 'primary' : 'default'}
-                                        icon={<Icon path={mdiFormatBold} size={0.6} />}
+                                      <Button
+                                        type="button"
+                                        variant={(obj as Textbox).fontWeight === 'bold' ? 'default' : 'outline'}
                                         onClick={() => {
                                           const next = (obj as Textbox).fontWeight === 'bold' ? 'normal' : 'bold';
                                           (obj as Textbox).set('fontWeight', next);
                                           updateProperty('fontWeight', next);
                                         }}
-                                        className="flex-1 font-bold"
-                                      >Bold</Button>
-                                      <Button 
-                                        type={(obj as Textbox).fontStyle === 'italic' ? 'primary' : 'default'}
-                                        icon={<Icon path={mdiFormatItalic} size={0.6} />}
+                                        className="flex-1"
+                                      >
+                                        <Icon path={mdiFormatBold} size={0.6} /> Bold
+                                      </Button>
+                                      <Button
+                                        type="button"
+                                        variant={(obj as Textbox).fontStyle === 'italic' ? 'default' : 'outline'}
                                         onClick={() => {
                                           const next = (obj as Textbox).fontStyle === 'italic' ? 'normal' : 'italic';
                                           (obj as Textbox).set('fontStyle', next);
                                           updateProperty('fontStyle', next);
                                         }}
                                         className="flex-1 italic"
-                                      >Italic</Button>
+                                      >
+                                        <Icon path={mdiFormatItalic} size={0.6} /> Italic
+                                      </Button>
                                     </div>
                                   </div>
 
-                                  {/* 2. Horizontal Align */}
                                   <div>
-                                    <Text className="text-[11px] text-slate-500 font-bold uppercase block mb-2">가로 정렬</Text>
-                                    <Segmented
-                                      block
+                                    <span className="mb-2 block text-[11px] font-bold uppercase text-slate-500">가로 정렬</span>
+                                    <SegmentedButtons
                                       value={(obj as Textbox).textAlign}
                                       onChange={(val) => {
                                         (obj as Textbox).set('textAlign', val);
-                                        updateProperty('textAlign', val as string);
+                                        updateProperty('textAlign', val);
                                       }}
                                       options={[
-                                        { value: 'left', label: <div className="flex items-center justify-center h-8 w-full"><Icon path={mdiFormatAlignLeft} size={0.6} /></div> },
-                                        { value: 'center', label: <div className="flex items-center justify-center h-8 w-full"><Icon path={mdiFormatAlignCenter} size={0.6} /></div> },
-                                        { value: 'right', label: <div className="flex items-center justify-center h-8 w-full"><Icon path={mdiFormatAlignRight} size={0.6} /></div> },
+                                        { value: 'left', label: <Icon path={mdiFormatAlignLeft} size={0.65} /> },
+                                        { value: 'center', label: <Icon path={mdiFormatAlignCenter} size={0.65} /> },
+                                        { value: 'right', label: <Icon path={mdiFormatAlignRight} size={0.65} /> },
                                       ]}
+                                      className="grid-cols-3"
                                     />
                                   </div>
 
-                                  {/* 3. Vertical Align */}
                                   <div>
-                                    <Text className="text-[11px] text-slate-500 font-bold uppercase block mb-2">세로 정렬</Text>
-                                    <Segmented
-                                      block
+                                    <span className="mb-2 block text-[11px] font-bold uppercase text-slate-500">세로 정렬</span>
+                                    <SegmentedButtons
                                       value={(obj as Textbox).verticalAlign}
                                       onChange={(val) => {
                                         (obj as Textbox).set('verticalAlign', val);
-                                        updateProperty('verticalAlign', val as string);
+                                        updateProperty('verticalAlign', val);
                                       }}
                                       options={[
-                                        { value: 'top', label: <div className="flex items-center justify-center h-8 w-full"><Icon path={mdiFormatAlignTop} size={0.6} /></div> },
-                                        { value: 'middle', label: <div className="flex items-center justify-center h-8 w-full"><Icon path={mdiFormatVerticalAlignCenter} size={0.6} /></div> },
-                                        { value: 'bottom', label: <div className="flex items-center justify-center h-8 w-full"><Icon path={mdiFormatAlignBottom} size={0.6} /></div> },
+                                        { value: 'top', label: <Icon path={mdiFormatAlignTop} size={0.65} /> },
+                                        { value: 'middle', label: <Icon path={mdiFormatVerticalAlignCenter} size={0.65} /> },
+                                        { value: 'bottom', label: <Icon path={mdiFormatAlignBottom} size={0.65} /> },
                                       ]}
+                                      className="grid-cols-3"
                                     />
                                   </div>
 
-                                  {/* 4. Max Font Size */}
                                   <div>
-                                    <div className="flex justify-between items-center mb-1">
-                                      <Text className="text-[11px] text-slate-500 font-bold uppercase">최대 크기</Text>
-                                      <InputNumber
-                                        min={8} max={300} size="small" variant="borderless"
-                                        value={(obj as Textbox).fontSize}
-                                        onChange={(val) => val && updateProperty('fontSize', val)}
-                                        className="text-right font-bold w-16"
+                                    <div className="mb-1 flex items-center justify-between">
+                                      <span className="text-[11px] font-bold uppercase text-slate-500">최대 크기</span>
+                                      <Input
+                                        type="number"
+                                        min={8}
+                                        max={300}
+                                        value={String((obj as Textbox).fontSize)}
+                                        onChange={(e) => {
+                                          const next = Number(e.target.value);
+                                          if (Number.isFinite(next)) {
+                                            updateProperty('fontSize', next);
+                                          }
+                                        }}
+                                        className="h-7 w-16 border-slate-200 px-2 text-right text-xs font-bold"
                                       />
                                     </div>
                                     <Slider
-                                      min={8} max={300}
-                                      value={(obj as Textbox).fontSize}
-                                      onChange={(val) => updateProperty('fontSize', val)}
-                                      tooltip={{ open: false }}
+                                      min={8}
+                                      max={300}
+                                      value={[(obj as Textbox).fontSize]}
+                                      onValueChange={(vals) => {
+                                        const next = vals[0];
+                                        if (typeof next === 'number') {
+                                          updateProperty('fontSize', next);
+                                        }
+                                      }}
                                     />
                                   </div>
 
-                                  {/* 5. Stroke Width */}
                                   <div>
-                                    <div className="flex justify-between items-center mb-1">
-                                      <Text className="text-[11px] text-slate-500 font-bold uppercase">외곽선 강도</Text>
-                                      <InputNumber
-                                        min={0} max={10} step={0.1} size="small" variant="borderless"
-                                        value={(obj as Textbox).strokeWidth}
-                                        onChange={(val) => val !== null && updateProperty('strokeWidth', val)}
-                                        className="text-right font-bold w-16"
+                                    <div className="mb-1 flex items-center justify-between">
+                                      <span className="text-[11px] font-bold uppercase text-slate-500">외곽선 강도</span>
+                                      <Input
+                                        type="number"
+                                        min={0}
+                                        max={10}
+                                        step={0.1}
+                                        value={String((obj as Textbox).strokeWidth)}
+                                        onChange={(e) => {
+                                          const next = Number(e.target.value);
+                                          if (Number.isFinite(next)) {
+                                            updateProperty('strokeWidth', next);
+                                          }
+                                        }}
+                                        className="h-7 w-16 border-slate-200 px-2 text-right text-xs font-bold"
                                       />
                                     </div>
                                     <Slider
-                                      min={0} max={10} step={0.1}
-                                      value={(obj as Textbox).strokeWidth}
-                                      onChange={(val) => updateProperty('strokeWidth', val)}
-                                      tooltip={{ open: false }}
+                                      min={0}
+                                      max={10}
+                                      step={0.1}
+                                      value={[(obj as Textbox).strokeWidth]}
+                                      onValueChange={(vals) => {
+                                        const next = vals[0];
+                                        if (typeof next === 'number') {
+                                          updateProperty('strokeWidth', next);
+                                        }
+                                      }}
                                     />
                                   </div>
 
-                                  {/* 6. Opacity */}
                                   <div>
-                                    <div className="flex justify-between items-center mb-1">
-                                      <Text className="text-[11px] text-slate-500 font-bold uppercase px-0.5">
-                                        <Icon path={mdiOpacity} size={0.4} className="inline mr-1" /> 불투명도
-                                      </Text>
-                                      <Text className="text-[11px] font-bold text-blue-600">{Math.round((obj as Textbox).opacity * 100)}%</Text>
+                                    <div className="mb-1 flex items-center justify-between">
+                                      <span className="px-0.5 text-[11px] font-bold uppercase text-slate-500">
+                                        <Icon path={mdiOpacity} size={0.4} className="mr-1 inline" /> 불투명도
+                                      </span>
+                                      <span className="text-[11px] font-bold text-blue-600">{Math.round((obj as Textbox).opacity * 100)}%</span>
                                     </div>
                                     <Slider
-                                      min={0} max={1} step={0.01}
-                                      value={(obj as Textbox).opacity}
-                                      onChange={(val) => updateProperty('opacity', val)}
-                                      tooltip={{ open: false }}
+                                      min={0}
+                                      max={1}
+                                      step={0.01}
+                                      value={[(obj as Textbox).opacity]}
+                                      onValueChange={(vals) => {
+                                        const next = vals[0];
+                                        if (typeof next === 'number') {
+                                          updateProperty('opacity', next);
+                                        }
+                                      }}
                                     />
                                   </div>
                                 </div>
-                              }
-                            >
-                              <Button 
-                                type="text"
-                                size="small"
-                                icon={<Icon path={mdiTune} size={0.7} />} 
-                                onClick={(e) => { e.stopPropagation(); selectLayer(obj); }}
-                                className={`w-8 h-8 flex items-center justify-center rounded-lg p-0 border ${isSelected ? '!text-blue-700 !bg-blue-50/70 !border-blue-200 hover:!bg-blue-100' : '!text-slate-600 !bg-slate-50 !border-slate-200 hover:!text-blue-600 hover:!bg-slate-100 hover:!border-slate-300'}`}
-                              />
+                              </PopoverContent>
                             </Popover>
-                          )}
-                          <Button 
-                            type="text"
-                            size="small"
-                            icon={<Icon path={mdiDelete} size={0.7} />} 
+                          ) : null}
+
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
                             onClick={(e) => {
-                                e.stopPropagation();
-                                selectLayer(obj);
-                                deleteActiveObject();
+                              e.stopPropagation();
+                              selectLayer(obj);
+                              deleteActiveObject();
                             }}
-                            className="w-8 h-8 flex items-center justify-center !text-slate-600 !bg-slate-50 !border !border-slate-200 hover:!text-red-500 hover:!bg-red-50 hover:!border-red-200 rounded-lg p-0"
-                          />
+                            className="h-8 w-8 rounded-lg border-slate-200 bg-slate-50 p-0 text-slate-600 hover:border-red-200 hover:bg-red-50 hover:text-red-500"
+                          >
+                            <Icon path={mdiDelete} size={0.7} />
+                          </Button>
                         </div>
                       </div>
-                      {isText && (
+
+                      {isText ? (
                         <div className="mt-2 pl-[2.75rem]">
-                          <Input.TextArea
+                          <Textarea
                             value={(obj as Textbox).text}
                             onChange={(e) => {
-                                (obj as Textbox).set('text', e.target.value);
-                                updateProperty('text', e.target.value);
-                                selectLayer(obj);
+                              (obj as Textbox).set('text', e.target.value);
+                              updateProperty('text', e.target.value);
+                              selectLayer(obj);
                             }}
                             onKeyDown={(e) => e.stopPropagation()}
                             onClick={(e) => e.stopPropagation()}
-                            autoSize={{ minRows: 1, maxRows: 3 }}
-                            className="w-full border border-slate-200 bg-slate-50 hover:border-slate-300 focus:border-blue-400 transition-colors rounded-md text-xs font-semibold text-slate-700 placeholder:text-slate-500 px-2 py-1"
+                            className="min-h-[30px] w-full resize-none rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-semibold text-slate-700 placeholder:text-slate-500 hover:border-slate-300 focus-visible:ring-1 focus-visible:ring-blue-400"
                             placeholder={`텍스트-${textLayerNumber}`}
                           />
                         </div>
-                      )}
+                      ) : null}
                     </div>
                   );
                 })}
-                {layers.length === 0 && (
+                {layers.length === 0 ? (
                   <EditorGuideCard
                     iconPath={mdiShape}
                     description="편집할 개체를 추가하세요"
-                    className="py-12 !border-0 !bg-transparent rounded-none"
+                    className="rounded-none !border-0 !bg-transparent py-12"
                   />
-                )}
+                ) : null}
               </div>
             </div>
           </div>
@@ -509,77 +614,71 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
 
       case 'share':
         return (
-          <div className="flex flex-col gap-8 w-full">
-            {!isTemplateSaveDisabled && (
+          <div className="flex w-full flex-col gap-8">
+            {!isTemplateSaveDisabled ? (
               <div className="flex flex-col gap-2">
                 <Button
-                  type="primary"
-                  icon={<Icon path={mdiContentSave} size={0.9} />}
+                  type="button"
                   onClick={() => setIsTemplateModalOpen(true)}
                   className="h-11 rounded-xl font-bold"
                 >
+                  <Icon path={mdiContentSave} size={0.9} />
                   {savedTemplate ? '밈플릿 업데이트' : '밈플릿 게시'}
                 </Button>
-                {savedTemplate?.visibility === 'public' && (
+                {savedTemplate?.visibility === 'public' ? (
                   <Button
-                    icon={<Icon path={mdiLinkVariant} size={0.9} />}
+                    type="button"
+                    variant="outline"
                     onClick={() => void copyTemplateShareLink()}
                     className="h-11 rounded-xl font-semibold"
                   >
-                    공유 링크 복사
+                    <Icon path={mdiLinkVariant} size={0.9} /> 공유 링크 복사
                   </Button>
-                )}
+                ) : null}
               </div>
-            )}
-            
+            ) : null}
+
             <div className="flex flex-col gap-4">
-               {canPublishRemix ? (
-                 <div className="flex flex-col gap-2">
-                   <Button
-                     type="primary"
-                     icon={<Icon path={mdiShareVariant} size={0.9} />}
-                     onClick={() => setIsRemixModalOpen(true)}
-                     className="h-11 rounded-xl font-bold"
-                   >
-                     리믹스 게시
-                   </Button>
-                 </div>
-               ) : null}
+              {canPublishRemix ? (
+                <div className="flex flex-col gap-2">
+                  <Button
+                    type="button"
+                    onClick={() => setIsRemixModalOpen(true)}
+                    className="h-11 rounded-xl font-bold"
+                  >
+                    <Icon path={mdiShareVariant} size={0.9} /> 리믹스 게시
+                  </Button>
+                </div>
+              ) : null}
 
-               <div className="bg-slate-50 p-2 rounded-2xl border border-slate-100">
-                 <Segmented 
-                    options={[
-                        { label: 'PNG', value: 'png' },
-                        { label: 'JPG', value: 'jpg' },
-                        { label: 'WEBP', value: 'webp' },
-                        { label: 'PDF', value: 'pdf' },
-                    ]}
-                    value={downloadFormat}
-                    onChange={(val) => setDownloadFormat(val as FormatType)}
-                    block
-                    size="large"
-                    className="bg-transparent"
-                 />
-               </div>
+              <SegmentedButtons
+                value={downloadFormat}
+                onChange={(value) => setDownloadFormat(value as FormatType)}
+                className="grid-cols-2 md:grid-cols-4"
+                options={[
+                  { label: 'PNG', value: 'png' },
+                  { label: 'JPG', value: 'jpg' },
+                  { label: 'WEBP', value: 'webp' },
+                  { label: 'PDF', value: 'pdf' },
+                ]}
+              />
 
-               <Button 
-                  type="primary" 
-                  icon={<Icon path={mdiDownload} size={1} />} 
-                  onClick={() => downloadImage(downloadFormat)}
-                  block
-                  className="h-11 text-base font-bold rounded-xl border-none bg-blue-700 hover:bg-blue-700 text-on-accent"
-               >
-                  다운로드
-               </Button>
-                  
-               <Button 
-                  icon={<Icon path={mdiContentCopy} size={0.9} />} 
-                  onClick={copyToClipboard}
-                  block
-                  className="h-11 text-base font-bold rounded-xl bg-slate-50 border border-slate-200 text-slate-600 hover:text-slate-800 hover:border-slate-300"
-               >
-                  클립보드 복사
-               </Button>
+              <Button
+                type="button"
+                onClick={() => downloadImage(downloadFormat)}
+                className="h-11 rounded-xl border-none bg-blue-700 text-base font-bold text-on-accent hover:bg-blue-700"
+              >
+                <Icon path={mdiDownload} size={1} /> 다운로드
+              </Button>
+
+              <Button
+                type="button"
+                variant="outline"
+                onClick={copyToClipboard}
+                className="h-11 rounded-xl border border-slate-200 bg-slate-50 text-base font-bold text-slate-600 hover:border-slate-300 hover:text-slate-800"
+              >
+                <Icon path={mdiContentCopy} size={0.9} /> 클립보드 복사
+              </Button>
             </div>
           </div>
         );
@@ -588,78 +687,80 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
     }
   };
 
-    return (
-    <div
-      className="w-full flex flex-col md:min-h-0 md:flex-1 md:h-full md:overflow-hidden"
-      style={{ backgroundColor: 'var(--editor-sidebar-bg)' }}
-    >
-      {/* 1. Property Section (Scrollable) */}
-      <div className="px-4 py-4 md:flex-1 md:overflow-y-auto custom-scrollbar md:px-6 md:py-6">
+  return (
+    <div className="flex w-full flex-col bg-editor-sidebar-bg md:h-full md:min-h-0 md:flex-1 md:overflow-hidden">
+      <div className="custom-scrollbar px-4 py-4 md:flex-1 md:overflow-y-auto md:px-6 md:py-6">
         <div className="w-full max-w-full animate-in fade-in slide-in-from-top-4 duration-500">
           {renderPanelContent()}
         </div>
       </div>
 
-      <Modal
-        title={savedTemplate ? '밈플릿 업데이트' : '밈플릿 게시'}
-        open={isTemplateModalOpen}
-        onCancel={() => setIsTemplateModalOpen(false)}
-        onOk={() => void handleTemplatePublish()}
-        okText={savedTemplate ? '업데이트' : '게시'}
-        cancelText="취소"
-        confirmLoading={isTemplateSaving}
-      >
-        <div className="flex flex-col gap-3 pt-2">
-          <Input
-            value={templateTitle}
-            onChange={(e) => setTemplateTitle(e.target.value)}
-            maxLength={100}
-            placeholder="밈플릿 제목"
-          />
-          <Input.TextArea
-            value={templateDescription}
-            onChange={(e) => setTemplateDescription(e.target.value)}
-            maxLength={500}
-            autoSize={{ minRows: 2, maxRows: 4 }}
-            placeholder="밈플릿 설명 (선택)"
-          />
-          <Segmented
-            value={templateVisibility}
-            onChange={(value) => setTemplateVisibility(value as 'private' | 'public')}
-            options={[
-              { label: '비공개', value: 'private' },
-              { label: '공개', value: 'public' }
-            ]}
-            block
-          />
-        </div>
-      </Modal>
+      <Dialog open={isTemplateModalOpen} onOpenChange={setIsTemplateModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{savedTemplate ? '밈플릿 업데이트' : '밈플릿 게시'}</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-3 pt-2">
+            <Input
+              value={templateTitle}
+              onChange={(e) => setTemplateTitle(e.target.value)}
+              maxLength={100}
+              placeholder="밈플릿 제목"
+            />
+            <Textarea
+              value={templateDescription}
+              onChange={(e) => setTemplateDescription(e.target.value)}
+              maxLength={500}
+              rows={3}
+              placeholder="밈플릿 설명 (선택)"
+            />
+            <SegmentedButtons
+              value={templateVisibility}
+              onChange={(value) => setTemplateVisibility(value as 'private' | 'public')}
+              className="grid-cols-2"
+              options={[
+                { label: '비공개', value: 'private' },
+                { label: '공개', value: 'public' },
+              ]}
+            />
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setIsTemplateModalOpen(false)}>취소</Button>
+            <Button type="button" onClick={() => void handleTemplatePublish()} disabled={isTemplateSaving}>
+              {isTemplateSaving ? '처리 중...' : savedTemplate ? '업데이트' : '게시'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-      <Modal
-        title="리믹스 게시"
-        open={isRemixModalOpen}
-        onCancel={() => setIsRemixModalOpen(false)}
-        onOk={() => void handleRemixPublish()}
-        okText="게시"
-        cancelText="취소"
-        confirmLoading={isImagePublishing}
-      >
-        <div className="flex flex-col gap-3 pt-2">
-          <Input
-            value={remixTitle}
-            onChange={(e) => setRemixTitle(e.target.value)}
-            maxLength={100}
-            placeholder="리믹스 제목"
-          />
-          <Input.TextArea
-            value={remixDescription}
-            onChange={(e) => setRemixDescription(e.target.value)}
-            maxLength={500}
-            autoSize={{ minRows: 2, maxRows: 4 }}
-            placeholder="리믹스 설명 (선택)"
-          />
-        </div>
-      </Modal>
+      <Dialog open={isRemixModalOpen} onOpenChange={setIsRemixModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>리믹스 게시</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-3 pt-2">
+            <Input
+              value={remixTitle}
+              onChange={(e) => setRemixTitle(e.target.value)}
+              maxLength={100}
+              placeholder="리믹스 제목"
+            />
+            <Textarea
+              value={remixDescription}
+              onChange={(e) => setRemixDescription(e.target.value)}
+              maxLength={500}
+              rows={3}
+              placeholder="리믹스 설명 (선택)"
+            />
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setIsRemixModalOpen(false)}>취소</Button>
+            <Button type="button" onClick={() => void handleRemixPublish()} disabled={isImagePublishing}>
+              {isImagePublishing ? '처리 중...' : '게시'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

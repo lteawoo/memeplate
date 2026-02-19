@@ -1,7 +1,13 @@
 import React from 'react';
-import { Layout, message, Button, Tooltip } from 'antd';
 import Icon from '@mdi/react';
 import { mdiUndo, mdiRedo } from '@mdi/js';
+import { Button } from '@/components/ui/button';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 import MainHeader from './layout/MainHeader';
 import EditorLayout from './editor/EditorLayout';
@@ -17,9 +23,8 @@ interface MemeEditorProps {
 }
 
 const MemeEditor: React.FC<MemeEditorProps> = ({ initialTemplate, initialTemplateMode }) => {
-  const [messageApi, contextHolder] = message.useMessage();
   const canvasAreaRef = React.useRef<HTMLDivElement>(null);
-  
+
   const {
     canvasRef,
     containerRef,
@@ -57,17 +62,20 @@ const MemeEditor: React.FC<MemeEditorProps> = ({ initialTemplate, initialTemplat
     changeZIndex,
     canvasInstance,
     editingTextId,
-    completeTextEdit
-  } = useMemeEditor(messageApi, { initialTemplate, initialTemplateMode });
+    completeTextEdit,
+  } = useMemeEditor({ initialTemplate, initialTemplateMode });
 
   const panelProps = {
-    layers: layers.filter(l => l.name !== 'background'), 
+    layers: layers.filter((l) => l.name !== 'background'),
     selectLayer,
-    activeTool, hasBackground, bgUrl, setBgUrl,
+    activeTool,
+    hasBackground,
+    bgUrl,
+    setBgUrl,
     handleImageUpload,
     setBackgroundImage,
     addText,
-    color, 
+    color,
     updateProperty,
     activeObject,
     deleteActiveObject,
@@ -83,74 +91,80 @@ const MemeEditor: React.FC<MemeEditorProps> = ({ initialTemplate, initialTemplat
     isBackgroundApplying,
     canPublishRemix,
     isTemplateSaveDisabled,
-    changeZIndex
+    changeZIndex,
   };
-  const historyButtonClassName = '!bg-slate-50 !text-slate-700 !border-slate-200 hover:!bg-slate-100 hover:!text-slate-900 disabled:!bg-slate-100 disabled:!text-slate-500 disabled:!border-slate-200';
 
   return (
-    <Layout
-      className="min-h-screen md:h-screen flex flex-col bg-slate-100"
-      style={{ backgroundColor: 'var(--app-surface)' }}
-    >
-      {contextHolder}
-      <MainHeader />
-      
-      <div className="flex-1 flex flex-col md:flex-row relative md:overflow-hidden">
-        <EditorLayout
-          sidebar={
-            <div
-              className="hidden md:flex flex-col h-full min-h-0 w-[400px] border-r shrink-0 relative z-20"
-              style={{ backgroundColor: 'var(--editor-sidebar-bg)', borderColor: 'var(--editor-divider)' }}
-            >
-              <MemeToolbar 
-                activeTool={activeTool} 
-                setActiveTool={setActiveTool}
-                hasBackground={hasBackground}
-              />
-              {hasBackground && (
-                <div className="px-6 py-4 border-b border-slate-100">
-                  <div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-2 py-2">
-                    <Tooltip title="실행 취소 (Ctrl+Z)">
-                      <Button
-                        shape="circle"
-                        icon={<Icon path={mdiUndo} size={0.8} />}
-                        onClick={undo}
-                        disabled={historyIndex <= 0}
-                        className={historyButtonClassName}
-                      />
-                    </Tooltip>
-                    <Tooltip title="다시 실행 (Ctrl+Y)">
-                      <Button
-                        shape="circle"
-                        icon={<Icon path={mdiRedo} size={0.8} />}
-                        onClick={redo}
-                        disabled={historyIndex >= history.length - 1}
-                        className={historyButtonClassName}
-                      />
-                    </Tooltip>
+    <TooltipProvider>
+      <div className="flex min-h-screen flex-col bg-app-surface md:h-screen">
+        <MainHeader />
+
+        <div className="relative flex flex-1 flex-col md:flex-row md:overflow-hidden">
+          <EditorLayout
+            sidebar={(
+              <div
+                className="relative z-20 hidden h-full min-h-0 w-[400px] shrink-0 flex-col border-r border-editor-divider bg-editor-sidebar-bg md:flex"
+              >
+                <MemeToolbar
+                  activeTool={activeTool}
+                  setActiveTool={setActiveTool}
+                  hasBackground={hasBackground}
+                />
+                {hasBackground && (
+                  <div className="border-b border-slate-100 px-6 py-4">
+                    <div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-2 py-2">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            onClick={undo}
+                            disabled={historyIndex <= 0}
+                            className="h-9 w-9 rounded-full border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
+                          >
+                            <Icon path={mdiUndo} size={0.8} />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>실행 취소 (Ctrl+Z)</TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            onClick={redo}
+                            disabled={historyIndex >= history.length - 1}
+                            className="h-9 w-9 rounded-full border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
+                          >
+                            <Icon path={mdiRedo} size={0.8} />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>다시 실행 (Ctrl+Y)</TooltipContent>
+                      </Tooltip>
+                    </div>
                   </div>
+                )}
+                <div className="min-h-0 flex-1 overflow-hidden">
+                  <MemePropertyPanel {...panelProps} />
                 </div>
-              )}
-              <div className="flex-1 min-h-0 overflow-hidden">
-                <MemePropertyPanel {...panelProps} />
               </div>
-            </div>
-          }
-        >
-          <div className="flex-1 min-w-0 flex flex-col min-h-0">
-            {/* Canvas Area */}
-            <div 
-              className="flex-1 min-h-0 flex flex-col relative overflow-hidden"
-              ref={canvasAreaRef}
-              onClick={() => {
-                if (canvasInstance) { 
-                    canvasInstance.discardActiveObject(); 
-                }
-              }}
-            >
-                <MemeCanvas 
-                  canvasRef={canvasRef} 
-                  containerRef={containerRef} 
+            )}
+          >
+            <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+              <div
+                className="relative flex min-h-0 flex-1 flex-col overflow-hidden"
+                ref={canvasAreaRef}
+                onClick={() => {
+                  if (canvasInstance) {
+                    canvasInstance.discardActiveObject();
+                  }
+                }}
+              >
+                <MemeCanvas
+                  canvasRef={canvasRef}
+                  containerRef={containerRef}
                   viewportRef={canvasAreaRef}
                   hasBackground={hasBackground}
                   editingTextId={editingTextId}
@@ -159,50 +173,57 @@ const MemeEditor: React.FC<MemeEditorProps> = ({ initialTemplate, initialTemplat
                   workspaceSize={workspaceSize}
                   isBackgroundLoading={isBackgroundApplying}
                 />
-            </div>
+              </div>
 
-            {/* Mobile Only: Toolbar & Property Panel (Stacked below canvas) */}
-            <div
-              className="md:hidden shrink-0 flex flex-col border-t"
-              style={{ backgroundColor: 'var(--editor-sidebar-bg)', borderColor: 'var(--editor-divider)' }}
-            >
-                <div className="border-b border-slate-100 sticky top-0 z-10" style={{ backgroundColor: 'var(--editor-sidebar-subtle-bg)' }}>
-                    <MemeToolbar activeTool={activeTool} setActiveTool={setActiveTool} hasBackground={hasBackground} />
+              <div className="shrink-0 flex-col border-t border-editor-divider bg-editor-sidebar-bg md:hidden">
+                <div className="sticky top-0 z-10 border-b border-slate-100 bg-editor-sidebar-subtle-bg">
+                  <MemeToolbar activeTool={activeTool} setActiveTool={setActiveTool} hasBackground={hasBackground} />
                 </div>
                 {hasBackground && (
-                  <div className="px-4 py-3 border-b border-slate-100">
+                  <div className="border-b border-slate-100 px-4 py-3">
                     <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-2 py-2">
-                      <Tooltip title="실행 취소 (Ctrl+Z)">
-                        <Button
-                          shape="circle"
-                          icon={<Icon path={mdiUndo} size={0.8} />}
-                          onClick={undo}
-                          disabled={historyIndex <= 0}
-                          size="small"
-                          className={historyButtonClassName}
-                        />
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            onClick={undo}
+                            disabled={historyIndex <= 0}
+                            className="h-8 w-8 rounded-full border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
+                          >
+                            <Icon path={mdiUndo} size={0.8} />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>실행 취소 (Ctrl+Z)</TooltipContent>
                       </Tooltip>
-                      <Tooltip title="다시 실행 (Ctrl+Y)">
-                        <Button
-                          shape="circle"
-                          icon={<Icon path={mdiRedo} size={0.8} />}
-                          onClick={redo}
-                          disabled={historyIndex >= history.length - 1}
-                          size="small"
-                          className={historyButtonClassName}
-                        />
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            onClick={redo}
+                            disabled={historyIndex >= history.length - 1}
+                            className="h-8 w-8 rounded-full border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
+                          >
+                            <Icon path={mdiRedo} size={0.8} />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>다시 실행 (Ctrl+Y)</TooltipContent>
                       </Tooltip>
                     </div>
                   </div>
                 )}
                 <div className="p-4">
-                    <MemePropertyPanel {...panelProps} />
+                  <MemePropertyPanel {...panelProps} />
                 </div>
+              </div>
             </div>
-          </div>
-        </EditorLayout>
+          </EditorLayout>
+        </div>
       </div>
-    </Layout>
+    </TooltipProvider>
   );
 };
 

@@ -1,11 +1,10 @@
 import React from 'react';
-import { Alert, Button, Card, Layout, Skeleton, Typography } from 'antd';
 import { useNavigate, useParams } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import MainHeader from '../components/layout/MainHeader';
 import PageContainer from '../components/layout/PageContainer';
 import type { MemeImageRecord, MemeImageResponse } from '../types/image';
-
-const { Title, Text } = Typography;
 
 const formatBytes = (bytes: number) => {
   if (!Number.isFinite(bytes) || bytes <= 0) return '-';
@@ -75,49 +74,44 @@ const ImageShareDetailPage: React.FC = () => {
   }, [shareSlug, image]);
 
   return (
-    <Layout className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white">
       <MainHeader />
       <PageContainer className="py-10">
         {isLoading ? (
-          <Card className="rounded-2xl">
+          <div className="rounded-2xl border border-slate-200 bg-white p-6">
             <div className="mb-6 space-y-2">
-              <Skeleton.Input active size="small" block />
-              <Skeleton.Input active size="small" style={{ width: 180 }} />
+              <div className="h-6 w-full animate-pulse rounded bg-slate-200" />
+              <div className="h-4 w-44 animate-pulse rounded bg-slate-200" />
             </div>
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
               <div className="h-[480px] rounded-xl border border-slate-200 bg-slate-100">
                 <div className="h-full w-full animate-pulse rounded-xl bg-gradient-to-br from-slate-100 to-slate-200" />
               </div>
               <div className="rounded-xl border border-slate-200 bg-white p-4">
-                <div className="mb-4">
-                  <Skeleton.Input active size="small" style={{ width: 96 }} />
-                </div>
+                <div className="mb-4 h-5 w-24 animate-pulse rounded bg-slate-200" />
                 <div className="space-y-3">
                   {Array.from({ length: 7 }, (_, idx) => (
                     <div key={idx} className="flex items-center justify-between gap-3">
-                      <Skeleton.Input active size="small" style={{ width: 72 }} />
-                      <Skeleton.Input active size="small" style={{ width: 120 }} />
+                      <div className="h-4 w-16 animate-pulse rounded bg-slate-200" />
+                      <div className="h-4 w-28 animate-pulse rounded bg-slate-200" />
                     </div>
                   ))}
                 </div>
               </div>
             </div>
-            <div className="mt-6 flex flex-wrap gap-2">
-              <Skeleton.Button active style={{ width: 140 }} />
-              <Skeleton.Button active style={{ width: 140 }} />
-            </div>
-          </Card>
+          </div>
         ) : error ? (
-          <Alert type="error" message={error} />
+          <Alert variant="destructive">
+            <AlertTitle>이미지 로딩 실패</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
         ) : image ? (
-          <Card className="rounded-2xl">
+          <div className="rounded-2xl border border-slate-200 bg-white p-6">
             <div className="mb-6">
-              <Title level={2} className="!mb-2">{image.title}</Title>
-              <Text type="secondary">공유 이미지를 확인할 수 있습니다.</Text>
+              <h2 className="mb-2 text-3xl font-bold text-slate-900">{image.title}</h2>
+              <p className="text-sm text-slate-500">공유 이미지를 확인할 수 있습니다.</p>
               {image.description ? (
-                <div className="mt-2 whitespace-pre-wrap text-sm text-slate-600">
-                  {image.description}
-                </div>
+                <div className="mt-2 whitespace-pre-wrap text-sm text-slate-600">{image.description}</div>
               ) : null}
             </div>
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
@@ -143,15 +137,11 @@ const ImageShareDetailPage: React.FC = () => {
                 <div className="space-y-3 text-sm">
                   <div className="flex items-start justify-between gap-3">
                     <span className="text-slate-500">만든 사람</span>
-                    <span className="text-right font-medium text-slate-800">
-                      {image.ownerDisplayName || image.ownerId || '-'}
-                    </span>
+                    <span className="text-right font-medium text-slate-800">{image.ownerDisplayName || image.ownerId || '-'}</span>
                   </div>
                   <div className="flex items-start justify-between gap-3">
                     <span className="text-slate-500">생성일</span>
-                    <span className="text-right font-medium text-slate-800">
-                      {image.createdAt ? new Date(image.createdAt).toLocaleString() : '-'}
-                    </span>
+                    <span className="text-right font-medium text-slate-800">{image.createdAt ? new Date(image.createdAt).toLocaleString() : '-'}</span>
                   </div>
                   <div className="flex items-start justify-between gap-3">
                     <span className="text-slate-500">이미지 포맷</span>
@@ -169,27 +159,23 @@ const ImageShareDetailPage: React.FC = () => {
                   </div>
                   <div className="flex items-start justify-between gap-3">
                     <span className="text-slate-500">조회수</span>
-                    <span className="text-right font-medium text-slate-800">
-                      {(image.viewCount ?? 0).toLocaleString()}
-                    </span>
+                    <span className="text-right font-medium text-slate-800">{(image.viewCount ?? 0).toLocaleString()}</span>
                   </div>
                   <div className="flex items-start justify-between gap-3">
                     <span className="text-slate-500">좋아요</span>
-                    <span className="text-right font-medium text-slate-800">
-                      {(image.likeCount ?? 0).toLocaleString()}
-                    </span>
+                    <span className="text-right font-medium text-slate-800">{(image.likeCount ?? 0).toLocaleString()}</span>
                   </div>
                 </div>
               </div>
             </div>
             <div className="mt-6 flex flex-wrap gap-2">
-              <Button type="primary" onClick={() => navigate('/create')}>새 밈플릿 만들기</Button>
-              <Button onClick={() => navigate('/templates')}>밈플릿 목록으로</Button>
+              <Button type="button" onClick={() => navigate('/create')}>새 밈플릿 만들기</Button>
+              <Button type="button" variant="outline" onClick={() => navigate('/templates')}>밈플릿 목록으로</Button>
             </div>
-          </Card>
+          </div>
         ) : null}
       </PageContainer>
-    </Layout>
+    </div>
   );
 };
 

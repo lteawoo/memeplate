@@ -125,6 +125,16 @@
   - [x] 공통 레이아웃/헤더/카드 색상 유틸 치환(`slate/blue` 직접 의존 제거)
   - [x] 에디터/캔버스 하드코딩 색상(HEX) 토큰화
   - [x] 라이트/다크 수동 검증 + 스크린샷 비교
+  - [x] Tailwind + shadcn/ui 전환 1차 (인프라 도입 + 공통 레이아웃/핵심 페이지 치환)
+  - [x] Ant Design 완전 제거 2차 (`Templates`, `TemplateShareDetail`, `ImageShareDetail`, `MyTemplates`, `MemeEditor`, `MemePropertyPanel`, `MemeCanvas`, `useMemeEditor`)
+  - [ ] 전역 스타일 시스템 재정비 (#96)
+  - [x] `theme.ts` Ant 잔존 토큰 제거(`AntThemeToken`, `ANT_TOKENS`, `getAntThemeTokens`)
+  - [x] `tailwind.config.js` preflight 비활성화 제거
+  - [x] `index.css` shadcn base 정합화(`@layer base`, `color-scheme`, radius 토큰)
+  - [x] 레이아웃/에디터의 `style={{ var(--...) }}` 인라인 스타일 제거 및 semantic 클래스 치환
+  - [x] `ui/alert.tsx`의 `dark:` variant 제거
+  - [ ] 페이지/에디터 `slate/blue` 직접 클래스 semantic alias 2차 치환
+  - [ ] shadcn primitive variant 규칙 재점검(`button/input/card/dropdown/sheet`)
   - [ ] 웹 워커(Web Worker) 기반 내보내기 처리
   - [ ] Undo/Redo 로직 정밀화
 

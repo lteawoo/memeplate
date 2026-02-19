@@ -1,14 +1,10 @@
 import React from 'react';
-import { Layout, Typography, theme, Spin } from 'antd';
 import Icon from '@mdi/react';
 import { mdiImage } from '@mdi/js';
 import { Canvas, Textbox } from '../../core/canvas';
 import { resolveTextLayout } from '../../core/canvas/textLayout';
 import { MAX_CANVAS_AREA_PX, MAX_CANVAS_EDGE_PX } from '../../constants/canvasLimits';
 import { resolveCssVarColor } from '../../theme/theme';
-
-const { Content } = Layout;
-const { Title } = Typography;
 
 const toRgba = (hexColor: string, alpha: number) => {
   const raw = hexColor.replace('#', '').trim();
@@ -34,18 +30,17 @@ interface MemeCanvasProps {
   isBackgroundLoading?: boolean;
 }
 
-const MemeCanvas: React.FC<MemeCanvasProps> = ({ 
-  canvasRef, 
-  containerRef, 
+const MemeCanvas: React.FC<MemeCanvasProps> = ({
+  canvasRef,
+  containerRef,
   viewportRef,
   hasBackground,
   editingTextId,
   completeTextEdit,
   canvasInstance,
   workspaceSize,
-  isBackgroundLoading = false
+  isBackgroundLoading = false,
 }) => {
-  const { token } = theme.useToken();
   const [editingText, setEditingText] = React.useState('');
   const [editingOriginalText, setEditingOriginalText] = React.useState('');
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
@@ -76,23 +71,31 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
     const usableHeight = Math.max(1, viewportSize.height - canvasBorderSize.height);
     const viewportScale = Math.min(
       usableWidth / intrinsicWidth,
-      usableHeight / intrinsicHeight
+      usableHeight / intrinsicHeight,
     );
     return Math.min(1, viewportScale);
-  }, [intrinsicWidth, intrinsicHeight, viewportSize.width, viewportSize.height, canvasBorderSize.width, canvasBorderSize.height, isMobileViewport]);
+  }, [
+    intrinsicWidth,
+    intrinsicHeight,
+    viewportSize.width,
+    viewportSize.height,
+    canvasBorderSize.width,
+    canvasBorderSize.height,
+    isMobileViewport,
+  ]);
 
   const usableViewportWidth = Math.max(1, viewportSize.width - canvasBorderSize.width);
   const usableViewportHeight = Math.max(1, viewportSize.height - canvasBorderSize.height);
 
   const displayWidth = intrinsicWidth
     ? (isMobileViewport
-        ? Math.max(1, Math.floor(intrinsicWidth * displayScale))
-        : Math.min(usableViewportWidth, Math.max(1, Math.floor(intrinsicWidth * displayScale))))
+      ? Math.max(1, Math.floor(intrinsicWidth * displayScale))
+      : Math.min(usableViewportWidth, Math.max(1, Math.floor(intrinsicWidth * displayScale))))
     : 0;
   const displayHeight = intrinsicHeight
     ? (isMobileViewport
-        ? Math.max(1, Math.floor(intrinsicHeight * displayScale))
-        : Math.min(usableViewportHeight, Math.max(1, Math.floor(intrinsicHeight * displayScale))))
+      ? Math.max(1, Math.floor(intrinsicHeight * displayScale))
+      : Math.min(usableViewportHeight, Math.max(1, Math.floor(intrinsicHeight * displayScale))))
     : 0;
 
   React.useEffect(() => {
@@ -103,9 +106,9 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
     const intrinsicArea = Math.max(1, intrinsicWidth * intrinsicHeight);
     const edgeCap = intrinsicWidth && intrinsicHeight
       ? Math.min(
-          MAX_CANVAS_EDGE_PX / Math.max(1, intrinsicWidth),
-          MAX_CANVAS_EDGE_PX / Math.max(1, intrinsicHeight)
-        )
+        MAX_CANVAS_EDGE_PX / Math.max(1, intrinsicWidth),
+        MAX_CANVAS_EDGE_PX / Math.max(1, intrinsicHeight),
+      )
       : 1;
     const areaCap = Math.sqrt(MAX_CANVAS_AREA_PX / intrinsicArea);
     const safeScale = Math.max(0.1, Math.min(targetScale, edgeCap, areaCap));
@@ -126,9 +129,9 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
       const next = {
         width: Math.max(
           0,
-          Math.round((isMobileWindow ? windowViewportWidth : layoutContainer.clientWidth) - paddingX)
+          Math.round((isMobileWindow ? windowViewportWidth : layoutContainer.clientWidth) - paddingX),
         ),
-        height: Math.max(0, Math.round(layoutContainer.clientHeight - paddingY))
+        height: Math.max(0, Math.round(layoutContainer.clientHeight - paddingY)),
       };
       setViewportSize((prev) => {
         if (prev.width === next.width && prev.height === next.height) {
@@ -157,7 +160,7 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
     const borderY = (Number.parseFloat(style.borderTopWidth) || 0) + (Number.parseFloat(style.borderBottomWidth) || 0);
     setCanvasBorderSize({
       width: Math.round(borderX),
-      height: Math.round(borderY)
+      height: Math.round(borderY),
     });
   }, [canvasRef, hasBackground]);
 
@@ -170,11 +173,11 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
       const viewportRect = canvasViewportRef.current?.getBoundingClientRect();
       setCanvasCssSize({
         width: Math.max(0, rect.width),
-        height: Math.max(0, rect.height)
+        height: Math.max(0, rect.height),
       });
       setCanvasCssOffset({
         left: viewportRect ? rect.left - viewportRect.left : 0,
-        top: viewportRect ? rect.top - viewportRect.top : 0
+        top: viewportRect ? rect.top - viewportRect.top : 0,
       });
     };
 
@@ -190,7 +193,6 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
       setEditingText(editingObject.text);
       setEditingOriginalText(editingObject.text);
       editCompletingRef.current = false;
-      // Use setTimeout to ensure the textarea is rendered before focusing
       setTimeout(() => textareaRef.current?.focus(), 0);
     }
   }, [editingObject]);
@@ -218,17 +220,15 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
     if (!editingObject || !intrinsicWidth || !intrinsicHeight || !canvasCssSize.width || !canvasCssSize.height) {
       return { display: 'none' };
     }
-    
-    // Scale between logical and CSS pixels
+
     const scaleX = canvasCssSize.width / intrinsicWidth;
     const scaleY = canvasCssSize.height / intrinsicHeight;
     const width = editingObject.width * editingObject.scaleX * scaleX;
     const height = editingObject.height * editingObject.scaleY * scaleY;
-    
-    // Position (Canvas center-based logic to CSS top-left)
+
     const left = canvasCssOffset.left + editingObject.left * scaleX - width / 2;
     const top = canvasCssOffset.top + editingObject.top * scaleY - height / 2;
-    
+
     const measureCtx = document.createElement('canvas').getContext('2d');
     const layout = measureCtx ? resolveTextLayout(measureCtx, {
       text: editingText,
@@ -239,17 +239,16 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
       fontWeight: editingObject.fontWeight,
       fontStyle: editingObject.fontStyle,
       lineHeight: editingObject.lineHeight,
-      verticalAlign: editingObject.verticalAlign
+      verticalAlign: editingObject.verticalAlign,
     }) : null;
     const fittedLogicalFontSize = layout?.fontSize || editingObject.fontSize || 40;
     const displayFontSize = Math.max(8, fittedLogicalFontSize * editingObject.scaleY * scaleY);
     const contentHeight = (layout?.totalHeight || 0) * editingObject.scaleY * scaleY;
-    const verticalPadding =
-      editingObject.verticalAlign === 'middle'
-        ? Math.max(0, (height - contentHeight) / 2)
-        : editingObject.verticalAlign === 'bottom'
-          ? Math.max(0, height - contentHeight)
-          : 0;
+    const verticalPadding = editingObject.verticalAlign === 'middle'
+      ? Math.max(0, (height - contentHeight) / 2)
+      : editingObject.verticalAlign === 'bottom'
+        ? Math.max(0, height - contentHeight)
+        : 0;
     const textColor = editingObject.fill || resolveCssVarColor('--canvas-text-default', '#f9f9f8');
     const luminance = getLuminance(textColor);
     const contrastBg = luminance > 0.6 ? 'rgba(0, 0, 0, 0.28)' : 'rgba(255, 255, 255, 0.24)';
@@ -287,87 +286,88 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
       caretColor: luminance > 0.6
         ? resolveCssVarColor('--canvas-caret-on-dark', '#f9f9f8')
         : resolveCssVarColor('--canvas-caret-on-light', '#0d1b2a'),
-      boxSizing: 'border-box' as const
+      boxSizing: 'border-box' as const,
     };
   };
 
   return (
-    <Content 
-      className="flex-1 min-h-0 min-w-0 relative flex flex-col items-center justify-center p-4 md:p-6 overflow-hidden" 
+    <div
+      className="relative flex min-h-0 min-w-0 flex-1 flex-col items-center justify-center overflow-hidden bg-editor-canvas-bg p-4 md:p-6"
       ref={containerRef}
-      style={{ touchAction: 'none', backgroundColor: 'var(--editor-canvas-bg)' }}
+      style={{ touchAction: 'none' }}
     >
-      {/* Canvas Container - Always in DOM but doesn't affect layout if no background */}
-      <div 
+      <div
         ref={canvasViewportRef}
-        className={`relative flex items-center justify-center overflow-hidden ${hasBackground ? 'opacity-100 scale-100 w-full h-full' : 'opacity-0 scale-95 pointer-events-none absolute w-0 h-0'}`}
+        className={`relative flex items-center justify-center overflow-hidden ${hasBackground ? 'h-full w-full scale-100 opacity-100' : 'pointer-events-none absolute h-0 w-0 scale-95 opacity-0'}`}
         style={{ fontSize: 0 }}
         onClick={(e) => e.stopPropagation()}
       >
-         <canvas 
-            ref={canvasRef} 
-            className="border border-slate-200 shadow-sm bg-white"
-            style={{ 
-              touchAction: 'none',
-              width: displayWidth ? `${displayWidth}px` : undefined,
-              height: displayHeight ? `${displayHeight}px` : undefined
-            }}
-         />
+        <canvas
+          ref={canvasRef}
+          className="border border-slate-200 bg-white shadow-sm"
+          style={{
+            touchAction: 'none',
+            width: displayWidth ? `${displayWidth}px` : undefined,
+            height: displayHeight ? `${displayHeight}px` : undefined,
+          }}
+        />
 
-         {/* Text Editing Overlay */}
-         {editingObject && (
-           <textarea
-             ref={textareaRef}
-             style={getTextareaStyle()}
-             value={editingText}
-             onChange={(e) => {
-               setEditingText(e.target.value);
-               editingObject.set('text', e.target.value);
-               canvasInstance?.requestRender();
-             }}
-             onBlur={() => {
-               completeEditing(editingText);
-             }}
-             onKeyDown={(e) => {
-               if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-                 e.preventDefault();
-                 completeEditing(editingText);
-               }
-               if (e.key === 'Escape') {
-                 e.preventDefault();
-                 setEditingText(editingOriginalText);
-                 completeEditing(editingOriginalText);
-               }
-             }}
-           />
-         )}
+        {editingObject && (
+          <textarea
+            ref={textareaRef}
+            style={getTextareaStyle()}
+            value={editingText}
+            onChange={(e) => {
+              setEditingText(e.target.value);
+              editingObject.set('text', e.target.value);
+              canvasInstance?.requestRender();
+            }}
+            onBlur={() => {
+              completeEditing(editingText);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                e.preventDefault();
+                completeEditing(editingText);
+              }
+              if (e.key === 'Escape') {
+                e.preventDefault();
+                setEditingText(editingOriginalText);
+                completeEditing(editingOriginalText);
+              }
+            }}
+          />
+        )}
       </div>
 
-      {/* Empty State */}
       {!hasBackground && (
-        <div 
-          className="flex flex-col items-center justify-center w-full max-w-2xl h-64 md:h-96 border-4 border-dashed rounded-3xl transition-all duration-300 group hover:border-blue-400 hover:bg-blue-50/30"
-          style={{ borderColor: token.colorBorderSecondary }}
+        <div
+          className="group flex h-64 w-full max-w-2xl flex-col items-center justify-center rounded-3xl border-4 border-dashed transition-all duration-300 hover:border-blue-400 hover:bg-blue-50/30 md:h-96"
+          style={{ borderColor: resolveCssVarColor('--app-border', '#acbacb') }}
         >
-          <div className="text-center p-4 md:p-8 transition-transform duration-300 group-hover:scale-105">
-            <div 
-              className="w-16 h-16 md:w-24 md:h-24 rounded-full flex items-center justify-center mx-auto mb-4 md:mb-6 shadow-sm"
-              style={{ backgroundColor: token.colorFillSecondary }}
+          <div className="p-4 text-center transition-transform duration-300 group-hover:scale-105 md:p-8">
+            <div
+              className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full shadow-sm md:mb-6 md:h-24 md:w-24"
+              style={{ backgroundColor: resolveCssVarColor('--tw-slate-100', '#f2f3f1') }}
             >
-              <Icon path={mdiImage} size={window.innerWidth < 768 ? 1.5 : 2} color={token.colorPrimary} />
+              <Icon
+                path={mdiImage}
+                size={window.innerWidth < 768 ? 1.5 : 2}
+                color={resolveCssVarColor('--tw-blue-600', '#364c75')}
+              />
             </div>
-            <Title level={window.innerWidth < 768 ? 4 : 3} className="mb-1 md:mb-2 text-slate-700">나만의 Memeplate를 만들어보세요</Title>
-            <p className="m-0 mb-4 md:mb-8 text-sm md:text-lg text-slate-500">이미지 탭에서 이미지를 업로드하여 시작하세요</p>
+            <h3 className="mb-1 text-xl font-bold text-slate-700 md:mb-2 md:text-2xl">나만의 Memeplate를 만들어보세요</h3>
+            <p className="m-0 mb-4 text-sm text-slate-500 md:mb-8 md:text-lg">이미지 탭에서 이미지를 업로드하여 시작하세요</p>
           </div>
         </div>
       )}
 
       {isBackgroundLoading && (
         <div className="absolute inset-0 z-20 flex items-center justify-center bg-slate-100/80 backdrop-blur-[1px]">
-          <Spin size="large" />
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-slate-500" />
         </div>
       )}
-    </Content>
+    </div>
   );
 };
 

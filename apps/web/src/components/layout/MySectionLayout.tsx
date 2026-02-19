@@ -1,9 +1,7 @@
 import React from 'react';
-import { Layout, Menu } from 'antd';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
 import MainHeader from './MainHeader';
-
-const { Content, Sider } = Layout;
 
 interface MySectionLayoutProps {
   title: React.ReactNode;
@@ -30,25 +28,29 @@ const MySectionLayout: React.FC<MySectionLayoutProps> = ({
     : '/my';
 
   return (
-    <Layout className="min-h-screen bg-white">
+    <div className="min-h-screen bg-app-bg">
       <MainHeader />
-      <Layout className="w-full bg-white">
-        <Sider
-          width={220}
-          className="hidden md:block border-r border-slate-200 bg-white"
-          style={{ background: 'var(--app-surface-elevated)' }}
+      <div className="flex w-full bg-app-surface-elevated">
+        <aside
+          className="hidden w-[220px] border-r border-slate-200 bg-app-surface-elevated md:block"
         >
           <div className="px-4 py-5 text-xs font-bold uppercase tracking-wider text-slate-500">My</div>
-          <Menu
-            mode="inline"
-            selectedKeys={[selectedKey]}
-            items={menuItems}
-            onClick={({ key }) => navigate(key)}
-            className="border-r-0"
-          />
-        </Sider>
-        <Layout className="bg-white">
-          <Content className="py-8">
+          <nav className="flex flex-col gap-1 px-2 pb-4">
+            {menuItems.map((item) => (
+              <Button
+                key={item.key}
+                type="button"
+                variant={selectedKey === item.key ? 'secondary' : 'ghost'}
+                className="justify-start"
+                onClick={() => navigate(item.key)}
+              >
+                {item.label}
+              </Button>
+            ))}
+          </nav>
+        </aside>
+        <main className="w-full bg-app-surface-elevated">
+          <div className="py-8">
             <div className="mb-6 flex items-end justify-between gap-3 px-6 md:px-8">
               <div>
                 <h1 className="mb-1 text-3xl font-bold text-slate-900">{title}</h1>
@@ -59,10 +61,10 @@ const MySectionLayout: React.FC<MySectionLayoutProps> = ({
             <div className="px-6 md:px-8">
               {children}
             </div>
-          </Content>
-        </Layout>
-      </Layout>
-    </Layout>
+          </div>
+        </main>
+      </div>
+    </div>
   );
 };
 

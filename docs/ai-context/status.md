@@ -1,6 +1,45 @@
 # 프로젝트 상태 (Status)
 
 ## 현재 진행 상황
+- [ ] **전역 스타일 시스템 재정비 1차 (진행 중 - 이슈 #96, 2026-02-19)**
+  - [x] `theme.ts`의 Ant 잔존 토큰 타입/함수 제거 (`AntThemeToken`, `ANT_TOKENS`, `getAntThemeTokens`)
+  - [x] `tailwind.config.js`의 preflight 비활성화 제거(구 Ant 충돌 회피 설정 정리)
+  - [x] `index.css`를 shadcn/radix 기준으로 정렬 (`color-scheme`, `@layer base`, radius 토큰 노출)
+  - [x] 레이아웃/에디터의 `style={{ var(--...) }}` 인라인 스타일을 semantic 클래스(`bg-app-*`, `bg-editor-*`, `border-editor-*`)로 치환
+  - [x] shadcn `Alert` primitive의 `dark:` variant 제거(`data-theme` + CSS 변수 체계와 충돌 방지)
+  - [x] `pnpm --filter memeplate-web lint`, `pnpm --filter memeplate-web build` 통과
+  - [x] 스크린샷 검증
+    - [x] `docs/ai-context/screenshots/2026-02-19_style_reorg_home_desktop_v2.png`
+    - [x] `docs/ai-context/screenshots/2026-02-19_style_reorg_editor_desktop_v2.png`
+    - [x] `docs/ai-context/screenshots/2026-02-19_style_reorg_templates_desktop_v2.png`
+    - [x] `docs/ai-context/screenshots/2026-02-19_style_reorg_home_mobile_v2.png`
+  - [ ] 페이지/에디터의 `slate/blue` 직접 클래스 의존 축소(semantic alias 2차 정리)
+- [x] **Ant Design 완전 제거 + shadcn/ui 전환 2차 (완료 - 이슈 #95, 2026-02-19)**
+  - [x] 에디터 코어(`MemeEditor`, `EditorLayout`, `MemeCanvas`) AntD 의존 제거
+  - [x] 에디터 패널(`MemePropertyPanel`, `MemeColorPicker`)의 `Upload/Segmented/Dropdown/Popover/Slider/InputNumber/Modal`을 shadcn+기본 input으로 치환
+  - [x] 페이지 잔여 AntD 치환 (`TemplatesPage`, `TemplateShareDetailPage`, `ImageShareDetailPage`, `MyTemplatesPage`)
+  - [x] `useMemeEditor`의 `message` 의존 제거 및 `sonner toast` 전환
+  - [x] `index.css`의 `.ant-*` 규칙 제거
+  - [x] `apps/web/package.json`에서 `antd`, `@ant-design/icons` 제거
+  - [x] `rg \"antd|@ant-design|\\.ant-\" apps/web/src apps/web/package.json` 결과 0건
+  - [x] `pnpm --filter memeplate-web lint`, `pnpm --filter memeplate-web build` 통과
+  - [x] 스크린샷 검증
+    - [x] `docs/ai-context/screenshots/2026-02-19_shadcn_antd_free_home_v1.png`
+    - [x] `docs/ai-context/screenshots/2026-02-19_shadcn_antd_free_editor_v1.png`
+    - [x] `docs/ai-context/screenshots/2026-02-19_shadcn_antd_free_templates_v1.png`
+    - [x] `docs/ai-context/screenshots/2026-02-19_shadcn_antd_free_mobile_menu_v1.png`
+- [x] **Tailwind + shadcn/ui 전환 1차 (완료 - 2026-02-19)**
+  - [x] shadcn 초기화(`components.json`) 및 UI primitive 추가(`button`, `card`, `input`, `label`, `sheet`, `dropdown-menu`, `alert`, `skeleton`, `separator`)
+  - [x] Vite/TS `@/*` alias 정렬 (`apps/web/tsconfig.json`, `apps/web/vite.config.ts`)
+  - [x] `ConfigProvider` 제거 + `antd/dist/reset.css` 제거 (앱 루트에서 Ant 전역 의존 축소)
+  - [x] 공통 레이아웃 전환: `MainHeader`, `MySectionLayout`, `PageContainer`
+  - [x] 페이지 전환: `HomePage`, `LoginPage`, `EditorPage`, `MyPage`
+  - [x] shadcn semantic 변수(`--background`, `--primary` 등)를 기존 토큰에 매핑(`index.css`)
+  - [x] `pnpm --filter memeplate-web lint`, `pnpm --filter memeplate-web build` 통과
+  - [x] 스크린샷 검증
+    - [x] `docs/ai-context/screenshots/2026-02-19_shadcn_transition_home_v1.png`
+    - [x] `docs/ai-context/screenshots/2026-02-19_shadcn_transition_login_v1.png`
+    - [x] `docs/ai-context/screenshots/2026-02-19_shadcn_transition_mobile_drawer_v1.png`
 - [x] 프로젝트 초기화 (Vite + React 19 + TS)
 - [x] UI/UX 고도화 (Ant Design 6 + Tailwind CSS 4)
 - [x] **색상 테마 공통화 + 라이트/다크 모드 준비 (완료 - 이슈 #92)**

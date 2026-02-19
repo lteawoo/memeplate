@@ -1,5 +1,121 @@
 # 결정 로그 (Decision Log)
 
+## [2026-02-19] 전역 스타일 시스템 재정비 1차 (#96): shadcn/radix 기준 베이스 정렬
+- **결정**:
+  1. Ant Design 제거 이후에도 남아 있던 테마 잔존 코드를 제거하고, `theme.ts`의 역할을 `theme mode + css var resolver`로 단순화함.
+  2. Tailwind preflight를 다시 활성화해 shadcn primitive가 기대하는 기본 리셋 동작을 복구함.
+  3. 전역 CSS는 `data-theme` 기반 CSS 변수 체계를 유지하되, shadcn 기준 베이스 레이어(`@layer base`)와 radius 토큰을 명시해 확장 가능 구조로 정렬함.
+  4. shadcn primitive에서 `dark:` 유틸 사용을 제거하고 CSS 변수 기반 테마 전환 규칙으로 통일함.
+- **이유**:
+  1. Ant 전환 완료 이후 남은 잔존 코드는 테마 책임 경계를 흐리고 유지보수 비용을 높임.
+  2. preflight 비활성화는 Ant 공존 시점의 임시 우회였고, 현재는 shadcn/radix 단일 체계에서 불필요한 예외 규칙임.
+  3. 이후 컬러 축소/semantic class 치환 2차를 진행하려면 전역 베이스 규칙을 먼저 안정화해야 회귀를 줄일 수 있음.
+- **구현 요약**:
+  - `apps/web/src/theme/theme.ts`
+    - `AntThemeToken`, `ANT_TOKENS`, `getAntThemeTokens` 제거
+    - `ThemeMode` 저장/초기화 + `resolveCssVarColor`만 유지
+  - `apps/web/tailwind.config.js`
+    - `corePlugins.preflight: false` 제거
+  - `apps/web/src/index.css`
+    - `color-scheme` light/dark 선언
+    - `--radius` 및 `@theme inline` radius scale 노출
+    - `@layer base`에서 border/outline/body 기본 규칙을 semantic 변수로 정렬
+    - `--color-app-*`, `--color-editor-*` 토큰 노출로 semantic utility class 사용 기반 추가
+  - 레이아웃/에디터 인라인 스타일 제거
+    - `apps/web/src/pages/HomePage.tsx`
+    - `apps/web/src/pages/LoginPage.tsx`
+    - `apps/web/src/components/layout/MySectionLayout.tsx`
+    - `apps/web/src/components/layout/MainHeader.tsx`
+    - `apps/web/src/components/editor/EditorLayout.tsx`
+    - `apps/web/src/components/MemeEditor.tsx`
+    - `apps/web/src/components/editor/MemePropertyPanel.tsx`
+    - `apps/web/src/components/editor/MemeCanvas.tsx`
+  - `apps/web/src/components/ui/alert.tsx`
+    - `dark:border-destructive` 제거
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 스크린샷
+    - `docs/ai-context/screenshots/2026-02-19_style_reorg_home_desktop_v2.png`
+    - `docs/ai-context/screenshots/2026-02-19_style_reorg_editor_desktop_v2.png`
+    - `docs/ai-context/screenshots/2026-02-19_style_reorg_templates_desktop_v2.png`
+    - `docs/ai-context/screenshots/2026-02-19_style_reorg_home_mobile_v2.png`
+
+## [2026-02-19] Ant Design 완전 제거 + shadcn/ui 전환 2차 완료 (이슈 #95)
+- **결정**:
+  1. 프론트 UI 계층에서 Ant Design을 전면 제거하고 `Tailwind + shadcn/ui + Radix + custom` 조합으로 단일화함.
+  2. 기능 회귀 위험이 큰 에디터 영역을 우선 치환하되, `Canvas`/편집 로직은 유지하고 컴포넌트 레이어만 교체함.
+  3. 토스트는 Ant `message` 대신 `sonner`로 통합함.
+- **이유**:
+  1. 기존 Ant/shadcn 혼용 상태는 스타일 정책 이원화와 유지보수 비용 증가를 유발함.
+  2. 색상 정책 변경 전에 컴포넌트 체계를 단일화해야 후속 테마 작업의 회귀를 줄일 수 있음.
+- **구현 요약**:
+  - 에디터 전환
+    - `apps/web/src/components/MemeEditor.tsx`
+    - `apps/web/src/components/editor/EditorLayout.tsx`
+    - `apps/web/src/components/editor/MemeCanvas.tsx`
+    - `apps/web/src/components/editor/MemePropertyPanel.tsx`
+    - `apps/web/src/components/editor/MemeColorPicker.tsx`
+    - `apps/web/src/hooks/useMemeEditor.ts` (`message` -> `toast`)
+  - 페이지 전환
+    - `apps/web/src/pages/TemplatesPage.tsx`
+    - `apps/web/src/pages/TemplateShareDetailPage.tsx`
+    - `apps/web/src/pages/ImageShareDetailPage.tsx`
+    - `apps/web/src/pages/MyTemplatesPage.tsx`
+  - 공통 UI/의존성
+    - `apps/web/src/components/ui/{dialog,popover,slider,tooltip,sonner}.tsx` 추가
+    - `apps/web/src/main.tsx`에 `Toaster` 연결
+    - `apps/web/src/index.css`의 `.ant-*` 규칙 제거
+    - `apps/web/package.json`에서 `antd`, `@ant-design/icons`, `next-themes` 제거
+- **검증**:
+  - `rg "antd|@ant-design|\\.ant-" apps/web/src apps/web/package.json` 결과 0건
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 스크린샷
+    - `docs/ai-context/screenshots/2026-02-19_shadcn_antd_free_home_v1.png`
+    - `docs/ai-context/screenshots/2026-02-19_shadcn_antd_free_editor_v1.png`
+    - `docs/ai-context/screenshots/2026-02-19_shadcn_antd_free_templates_v1.png`
+    - `docs/ai-context/screenshots/2026-02-19_shadcn_antd_free_mobile_menu_v1.png`
+
+## [2026-02-19] Tailwind + shadcn/ui 전환 1차: 앱 루트/공통 레이아웃 선치환
+- **결정**:
+  1. 색상 축소 작업과 분리해, 우선 UI 프레임워크 전환을 1차로 진행하고 기존 토큰값은 유지함.
+  2. 전환 범위는 `앱 루트 + 공통 레이아웃 + 핵심 진입 페이지(Home/Login/My/Editor 로딩·에러)`로 제한해 빌드 안정성을 확보함.
+  3. Ant Design은 잔여 화면에서 당분간 공존시키되, `ConfigProvider`/전역 reset 의존은 제거해 shadcn 중심 구조로 기준점을 이동함.
+- **이유**:
+  1. 현재 코드베이스는 Ant 컴포넌트 사용 지점이 넓어 한 번에 전면 교체 시 회귀 위험이 큼.
+  2. 사용자 요청(전환 먼저, 색상은 후속)을 반영하려면 구조 전환과 팔레트 조정을 분리하는 것이 가장 안전함.
+  3. `MainHeader`/`MySectionLayout`/`PageContainer`를 먼저 치환하면 전역 UX 톤을 빠르게 shadcn 기준으로 맞출 수 있음.
+- **구현 요약**:
+  - `apps/web/components.json` 생성 및 shadcn 컴포넌트 추가
+    - `apps/web/src/components/ui/{button,card,input,textarea,label,sheet,dropdown-menu,alert,skeleton,separator}.tsx`
+    - `apps/web/src/lib/utils.ts` (`cn` 유틸)
+  - alias 정렬
+    - `apps/web/tsconfig.json`
+    - `apps/web/vite.config.ts`
+  - 앱 루트 전환
+    - `apps/web/src/App.tsx`: `ConfigProvider` 제거
+    - `apps/web/src/main.tsx`: `antd/dist/reset.css` 제거
+  - 공통 UI 전환
+    - `apps/web/src/components/layout/MainHeader.tsx`
+    - `apps/web/src/components/layout/MySectionLayout.tsx`
+    - `apps/web/src/components/layout/PageContainer.tsx`
+    - `apps/web/src/components/ThumbnailCard.tsx`
+  - 페이지 전환
+    - `apps/web/src/pages/HomePage.tsx`
+    - `apps/web/src/pages/LoginPage.tsx`
+    - `apps/web/src/pages/EditorPage.tsx`
+    - `apps/web/src/pages/MyPage.tsx`
+  - 테마 연결
+    - `apps/web/src/index.css`: shadcn semantic 변수(`--background`, `--primary`, `--border` 등)를 기존 앱 토큰에 매핑
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 스크린샷
+    - `docs/ai-context/screenshots/2026-02-19_shadcn_transition_home_v1.png`
+    - `docs/ai-context/screenshots/2026-02-19_shadcn_transition_login_v1.png`
+    - `docs/ai-context/screenshots/2026-02-19_shadcn_transition_mobile_drawer_v1.png`
+
 ## [2026-02-19] `EditorGuideCard` 공통 컴포넌트 도입: 에디터 가이드 UI 단일 렌더 경로화
 - **결정**:
   1. 에디터의 가이드성 UI(도구 선택 전, 업로드 드롭존 내부 안내, 레이어 empty)를 `EditorGuideCard` 단일 컴포넌트로 통합함.
