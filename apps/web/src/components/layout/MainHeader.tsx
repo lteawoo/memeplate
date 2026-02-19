@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { Layout, Typography, Button, Drawer, Dropdown } from 'antd';
+import { Layout, Button, Drawer, Dropdown } from 'antd';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import Icon from '@mdi/react';
 import { mdiMenu, mdiChevronDown } from '@mdi/js';
 import { useAuthStore } from '../../stores/authStore';
 
 const { Header } = Layout;
-const { Title } = Typography;
 
 const MainHeader: React.FC = () => {
   const location = useLocation();
@@ -64,93 +63,106 @@ const MainHeader: React.FC = () => {
 
   return (
     <Header 
-      className="flex items-center justify-between px-4 md:px-6 border-b border-slate-200 z-30 relative"
-      style={{ height: 64, background: '#ffffff', lineHeight: '64px', padding: '0 24px' }}
+      className="border-b border-slate-200 z-30 relative"
+      style={{ height: 64, background: '#ffffff', padding: 0, lineHeight: 'normal' }}
     >
-      <div className="flex items-center gap-10">
-        <Link to="/" className="flex items-center gap-4 no-underline">
-          <Title level={4} style={{ margin: 0, fontWeight: 900, letterSpacing: '-0.8px', color: '#0f172a' }}>
-            Memeplate
-          </Title>
-        </Link>
+      <div className="flex h-full items-center justify-between px-4 md:px-6">
+        <div className="flex items-center gap-2 md:gap-10">
+          <div className="flex h-8 items-center md:hidden">
+            <Button
+              type="text"
+              className="inline-flex h-8 w-8 min-w-8 items-center justify-center p-0 leading-none"
+              icon={<Icon path={mdiMenu} size={1.1} style={{ display: 'block' }} />}
+              onClick={() => setIsDrawerOpen(true)}
+              aria-label="메뉴 열기"
+              style={{ lineHeight: 1 }}
+            />
+          </div>
+          <Link to="/" className="inline-flex h-8 items-center gap-4 no-underline">
+            <span className="text-[24px] font-black leading-none tracking-[-0.8px] text-slate-900">
+              Memeplate
+            </span>
+          </Link>
 
-        {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center gap-6">
-          {navLinks.map(link => (
-            <Link 
-              key={link.to}
-              to={link.to} 
-              className={`text-sm font-bold no-underline transition-colors ${isLinkActive(link.to) ? 'text-blue-600' : 'text-slate-500 hover:text-slate-800'}`}
-            >
-              {link.label}
-            </Link>
-          ))}
-        </nav>
-      </div>
-      
-      <div className="hidden md:flex items-center gap-3">
-        {isAuthLoading ? null : authUser ? (
-          <Dropdown menu={{ items: userMenuItems }} trigger={['click']} placement="bottomRight">
-            <Button type="text" className="flex items-center gap-1 px-2">
-              <span className="max-w-[260px] truncate text-sm font-semibold text-slate-700" title={authDisplayName}>
-                {authDisplayName}
-              </span>
-              <Icon path={mdiChevronDown} size={0.7} />
-            </Button>
-          </Dropdown>
-        ) : (
-          <Button type="primary" onClick={handleLogin}>로그인</Button>
-        )}
-      </div>
+          {/* Desktop Navigation */}
+          <nav className="hidden md:flex items-center gap-6">
+            {navLinks.map(link => (
+              <Link 
+                key={link.to}
+                to={link.to} 
+                className={`text-sm font-bold no-underline transition-colors ${isLinkActive(link.to) ? 'text-blue-600' : 'text-slate-500 hover:text-slate-800'}`}
+              >
+                {link.label}
+              </Link>
+            ))}
+          </nav>
+        </div>
+        
+        <div className="hidden md:flex items-center gap-3">
+          {isAuthLoading ? null : authUser ? (
+            <Dropdown menu={{ items: userMenuItems }} trigger={['click']} placement="bottomRight">
+              <Button type="text" className="flex items-center gap-1 px-2">
+                <span className="max-w-[260px] truncate text-sm font-semibold text-slate-700" title={authDisplayName}>
+                  {authDisplayName}
+                </span>
+                <Icon path={mdiChevronDown} size={0.7} />
+              </Button>
+            </Dropdown>
+          ) : (
+            <Button type="primary" onClick={handleLogin}>로그인</Button>
+          )}
+        </div>
 
-      <div className="flex items-center gap-4 md:hidden">
-        {/* Mobile Hamburger Menu */}
-        <Button 
-          type="text" 
-          className="flex items-center justify-center p-0" 
-          icon={<Icon path={mdiMenu} size={1.2} />} 
-          onClick={() => setIsDrawerOpen(true)}
-        />
       </div>
 
       <Drawer
-        title="메뉴"
-        placement="right"
+        title={
+          <div className="flex items-center">
+            <span className="text-base font-extrabold tracking-tight text-slate-900">Memeplate 메뉴</span>
+          </div>
+        }
+        placement="left"
         onClose={() => setIsDrawerOpen(false)}
         open={isDrawerOpen}
-        styles={{ wrapper: { width: 280 } }}
+        width={300}
+        styles={{ body: { paddingTop: 16 } }}
       >
-        <div className="flex flex-col gap-6 pt-8 px-2">
+        <div className="flex flex-col gap-4 px-1">
           {navLinks.map(link => (
             <Link 
               key={link.to}
               to={link.to} 
               onClick={() => setIsDrawerOpen(false)}
-              className={`text-xl font-black no-underline transition-colors ${isLinkActive(link.to) ? 'text-blue-600' : 'text-slate-800 hover:text-blue-500'}`}
+              className={`flex items-center rounded-xl border px-4 py-3 text-sm font-bold no-underline transition-colors ${
+                isLinkActive(link.to)
+                  ? 'border-blue-200 bg-blue-50 text-blue-700'
+                  : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:text-slate-900'
+              }`}
             >
               {link.label}
             </Link>
           ))}
-          <div className="pt-6 border-t border-slate-200">
+          <div className="mt-2 rounded-xl border border-slate-200 bg-slate-50 p-4">
             {isAuthLoading ? null : authUser ? (
               <div className="flex flex-col gap-3">
-                <span className="text-sm font-semibold text-slate-600 break-all">{authDisplayName}</span>
-                <Button onClick={() => {
+                <span className="text-xs font-semibold text-slate-500">계정</span>
+                <span className="text-sm font-semibold text-slate-700 break-all">{authDisplayName}</span>
+                <Button block onClick={() => {
                   navigate('/my');
                   setIsDrawerOpen(false);
                 }}>
                   마이페이지
                 </Button>
-                <Button onClick={() => {
+                <Button block onClick={() => {
                   navigate('/my/templates');
                   setIsDrawerOpen(false);
                 }}>
                   내 밈플릿
                 </Button>
-                <Button onClick={() => { void handleLogout(); }}>로그아웃</Button>
+                <Button block onClick={() => { void handleLogout(); }}>로그아웃</Button>
               </div>
             ) : (
-              <Button type="primary" onClick={handleLogin}>로그인</Button>
+              <Button type="primary" block onClick={handleLogin}>로그인</Button>
             )}
           </div>
         </div>

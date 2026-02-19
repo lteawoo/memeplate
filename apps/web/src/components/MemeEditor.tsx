@@ -51,6 +51,7 @@ const MemeEditor: React.FC<MemeEditorProps> = ({ initialTemplate, initialTemplat
     savedTemplate,
     isTemplateSaving,
     isImagePublishing,
+    isBackgroundApplying,
     canPublishRemix,
     isTemplateSaveDisabled,
     changeZIndex,
@@ -79,6 +80,7 @@ const MemeEditor: React.FC<MemeEditorProps> = ({ initialTemplate, initialTemplat
     savedTemplate,
     isTemplateSaving,
     isImagePublishing,
+    isBackgroundApplying,
     canPublishRemix,
     isTemplateSaveDisabled,
     changeZIndex
@@ -145,6 +147,7 @@ const MemeEditor: React.FC<MemeEditorProps> = ({ initialTemplate, initialTemplat
                   completeTextEdit={completeTextEdit}
                   canvasInstance={canvasInstance}
                   workspaceSize={workspaceSize}
+                  isBackgroundLoading={isBackgroundApplying}
                 />
             </div>
 

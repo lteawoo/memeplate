@@ -1,5 +1,5 @@
 import React from 'react';
-import { Layout, Typography, theme } from 'antd';
+import { Layout, Typography, theme, Spin } from 'antd';
 import Icon from '@mdi/react';
 import { mdiImage } from '@mdi/js';
 import { Canvas, Textbox } from '../../core/canvas';
@@ -18,6 +18,7 @@ interface MemeCanvasProps {
   completeTextEdit?: (id: string, newText: string) => void;
   canvasInstance?: Canvas | null;
   workspaceSize?: { width: number; height: number };
+  isBackgroundLoading?: boolean;
 }
 
 const MemeCanvas: React.FC<MemeCanvasProps> = ({ 
@@ -28,7 +29,8 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
   editingTextId,
   completeTextEdit,
   canvasInstance,
-  workspaceSize
+  workspaceSize,
+  isBackgroundLoading = false
 }) => {
   const { token } = theme.useToken();
   const [editingText, setEditingText] = React.useState('');
@@ -341,6 +343,12 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
             <Title level={window.innerWidth < 768 ? 4 : 3} className="mb-1 md:mb-2 text-gray-700">나만의 Memeplate를 만들어보세요</Title>
             <Text type="secondary" className="block mb-4 md:mb-8 text-sm md:text-lg">이미지 탭에서 이미지를 업로드하여 시작하세요</Text>
           </div>
+        </div>
+      )}
+
+      {isBackgroundLoading && (
+        <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/70 backdrop-blur-[1px]">
+          <Spin size="large" />
         </div>
       )}
     </Content>

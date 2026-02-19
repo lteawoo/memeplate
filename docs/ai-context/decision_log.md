@@ -1,5 +1,27 @@
 # 결정 로그 (Decision Log)
 
+## [2026-02-18] 배경 적용 상태 전환을 원자 커밋으로 조정
+- **결정**: 배경 이미지 업로드/리사이즈 적용 시 `hasBackground/bgUrl/activeTool` 상태를 로딩 시작 시점이 아닌 성공 완료 시점에 일괄 반영함.
+- **이유**:
+  1. 업로드 시작 즉시 배경 표시 상태가 먼저 바뀌면, 실제 캔버스 크기 확정 전 중간 프레임이 노출되어 화면 출렁임이 커짐.
+  2. 실패 시 강제로 배경 상태를 초기화하면 기존 작업 화면이 불필요하게 사라지는 회귀가 생길 수 있음.
+- **구현 요약**:
+  - `apps/web/src/hooks/useMemeEditor.ts`
+    - `setBackgroundImage`에서 `setHasBackground/setBgUrl/setActiveTool` 선반영 제거.
+    - `CanvasImage.fromURL` 성공 후 상태를 일괄 반영.
+    - 실패 시 `hasBackground/bgUrl/activeTool` 강제 초기화 제거.
+
+## [2026-02-18] 모바일 헤더 정렬 및 사이드패널 디자인 정비
+- **결정**: 모바일에서 햄버거 메뉴를 헤더 우측 단독 배치에서 로고 인접 배치로 변경하고, 사이드패널(Drawer)은 좌측 오프캔버스 + 카드형 링크 UI로 재구성함.
+- **이유**:
+  1. 모바일 헤더의 시각적 중심이 좌측 로고에 있는데 햄버거가 우측에 분리되어 정렬 일관성이 떨어졌음.
+  2. 기존 텍스트 나열형 메뉴는 정보 밀도가 낮아 터치 타깃/그룹 구조 인지가 약했음.
+- **구현 요약**:
+  - `apps/web/src/components/layout/MainHeader.tsx`
+    - 모바일 햄버거 버튼을 로고 옆으로 이동.
+    - 헤더 inline `padding` 제거로 Tailwind 여백(`px-4 md:px-6`)과 충돌 해소.
+    - Drawer를 `placement="left"`로 변경하고, 라운드 카드형 내비게이션/계정 섹션 스타일 적용.
+
 ## [2026-02-19] 리사이즈 기준 분리 3차: 상위 래퍼 기준 측정으로 자기참조 루프 차단
 - **결정**: `MemeCanvas`의 viewport 실측 기준을 내부 `Content`가 아니라 상위 `Canvas Area` 래퍼로 분리하고, 동일 크기 재설정 시 `setViewportSize`를 무시함.
 - **이유**:

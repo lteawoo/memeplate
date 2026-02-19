@@ -67,6 +67,7 @@ interface MemePropertyPanelProps {
   savedTemplate: { id: string; title: string; description?: string; visibility: 'private' | 'public'; shareSlug: string } | null;
   isTemplateSaving: boolean;
   isImagePublishing: boolean;
+  isBackgroundApplying: boolean;
   canPublishRemix: boolean;
   isTemplateSaveDisabled: boolean;
   layers: CanvasObject[];
@@ -94,6 +95,7 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
     savedTemplate,
     isTemplateSaving,
     isImagePublishing,
+    isBackgroundApplying,
     canPublishRemix,
     isTemplateSaveDisabled,
     layers,
@@ -165,7 +167,11 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
               <Upload.Dragger
                 accept="image/*"
                 showUploadList={false}
+                disabled={isBackgroundApplying}
                 beforeUpload={(file) => {
+                  if (isBackgroundApplying) {
+                    return false;
+                  }
                   handleImageUpload({ file: file as unknown as UploadFile, fileList: [] });
                   return false; // Prevent default upload behavior
                 }}
@@ -175,7 +181,9 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
                 <p className="flex justify-center mb-1 md:mb-2">
                   <Icon path={mdiCloudUpload} size={window.innerWidth < 768 ? 1.8 : 2.5} color="#1677ff" />
                 </p>
-                <p className="ant-upload-text text-slate-600 font-semibold mt-1 md:mt-2 text-xs md:text-sm">클릭 또는 드래그하여 업로드</p>
+                <p className="ant-upload-text text-slate-600 font-semibold mt-1 md:mt-2 text-xs md:text-sm">
+                  {isBackgroundApplying ? '이미지 처리 중...' : '클릭 또는 드래그하여 업로드'}
+                </p>
               </Upload.Dragger>
             </div>
             
@@ -200,6 +208,8 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
                   onClick={() => bgUrl && setBackgroundImage(bgUrl)}
                   className="h-10 md:h-12 rounded-xl font-bold text-sm md:text-base mt-1 md:mt-2"
                   type="primary"
+                  loading={isBackgroundApplying}
+                  disabled={isBackgroundApplying}
                   block
                 >
                   배경 적용
