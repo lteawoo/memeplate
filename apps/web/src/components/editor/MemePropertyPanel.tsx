@@ -197,22 +197,21 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
       case 'edit':
         return (
           <div className="flex w-full flex-col gap-4">
-            <div className="mb-2 flex items-center gap-2 rounded-2xl border border-border bg-muted/60 p-2">
+            <div className="mb-1 flex items-center gap-2">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => addText()}
-                className="h-10 flex-1 rounded-xl border-border bg-muted text-xs font-bold text-foreground hover:bg-accent"
+                className="h-10 flex-1 rounded-xl border-transparent bg-muted text-xs font-bold text-foreground hover:border-border hover:bg-accent"
               >
                 <Icon path={mdiFormatColorText} size={0.7} /> 텍스트
               </Button>
-              <div className="h-4 w-px bg-border" />
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
                     type="button"
                     variant="outline"
-                    className="h-10 flex-1 rounded-xl border-border bg-muted text-xs font-bold text-foreground hover:bg-accent"
+                    className="h-10 flex-1 rounded-xl border-transparent bg-muted text-xs font-bold text-foreground hover:border-border hover:bg-accent"
                   >
                     <Icon path={mdiShape} size={0.7} /> 도형
                   </Button>
@@ -228,7 +227,7 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
               </DropdownMenu>
             </div>
 
-            <div className="flex flex-col overflow-hidden rounded-lg border border-border">
+            <div className="flex flex-col overflow-hidden rounded-xl border border-border md:rounded-2xl">
               <div className="flex items-center justify-between border-b border-border bg-muted px-3 py-2">
                 <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Layers ({layers.length})</span>
               </div>
@@ -625,8 +624,8 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
   };
 
   return (
-    <div className="flex w-full min-h-0 flex-col bg-editor-sidebar-bg md:h-full md:flex-1 md:overflow-hidden">
-      <div className="custom-scrollbar flex-1 overflow-y-auto px-4 py-4 md:px-6 md:py-6">
+    <div className="flex w-full min-h-0 flex-col bg-editor-sidebar-bg md:h-full md:flex-1 md:overflow-hidden md:bg-transparent">
+      <div className="custom-scrollbar flex-1 overflow-y-auto px-4 py-4 md:px-5 md:py-5">
         <div className="w-full max-w-full animate-in fade-in slide-in-from-top-4 duration-500">
           {renderPanelContent()}
         </div>

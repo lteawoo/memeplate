@@ -306,19 +306,19 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
 
   return (
     <div
-      className="relative flex min-h-0 min-w-0 flex-1 flex-col items-center justify-center overflow-hidden bg-editor-canvas-bg p-4 md:p-6"
+      className="editor-desktop-canvas-stage relative flex min-h-0 min-w-0 flex-1 flex-col items-center justify-center overflow-hidden p-4 md:p-7"
       ref={containerRef}
       style={{ touchAction: 'none' }}
     >
       <div
         ref={canvasViewportRef}
-        className={`relative flex items-center justify-center overflow-hidden ${hasBackground ? 'h-full w-full scale-100 opacity-100' : 'pointer-events-none absolute h-0 w-0 scale-95 opacity-0'}`}
+        className={`relative flex items-center justify-center overflow-hidden md:rounded-[22px] ${hasBackground ? 'h-full w-full scale-100 opacity-100' : 'pointer-events-none absolute h-0 w-0 scale-95 opacity-0'}`}
         style={{ fontSize: 0 }}
         onClick={(e) => e.stopPropagation()}
       >
         <canvas
           ref={canvasRef}
-          className="bg-card shadow-sm"
+          className="editor-canvas-element bg-card shadow-sm"
           style={{
             touchAction: 'none',
             width: displayWidth ? `${displayWidth}px` : undefined,
