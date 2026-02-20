@@ -3,7 +3,7 @@ import Icon from '@mdi/react';
 import { mdiImage } from '@mdi/js';
 import { Canvas, Textbox } from '../../core/canvas';
 import { resolveTextLayout } from '../../core/canvas/textLayout';
-import { MAX_CANVAS_AREA_PX, MAX_CANVAS_EDGE_PX } from '../../constants/canvasLimits';
+import { MAX_RENDER_CANVAS_AREA_PX, MAX_RENDER_CANVAS_EDGE_PX } from '../../constants/canvasLimits';
 import { resolveCssVarColor } from '../../theme/theme';
 
 const toRgba = (hexColor: string, alpha: number) => {
@@ -110,11 +110,11 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
     const intrinsicArea = Math.max(1, intrinsicWidth * intrinsicHeight);
     const edgeCap = intrinsicWidth && intrinsicHeight
       ? Math.min(
-        MAX_CANVAS_EDGE_PX / Math.max(1, intrinsicWidth),
-        MAX_CANVAS_EDGE_PX / Math.max(1, intrinsicHeight),
+        MAX_RENDER_CANVAS_EDGE_PX / Math.max(1, intrinsicWidth),
+        MAX_RENDER_CANVAS_EDGE_PX / Math.max(1, intrinsicHeight),
       )
       : 1;
-    const areaCap = Math.sqrt(MAX_CANVAS_AREA_PX / intrinsicArea);
+    const areaCap = Math.sqrt(MAX_RENDER_CANVAS_AREA_PX / intrinsicArea);
     const safeScale = Math.max(0.1, Math.min(targetScale, edgeCap, areaCap));
     canvasInstance.setRenderScale(safeScale);
   }, [canvasInstance, displayScale, intrinsicWidth, intrinsicHeight]);

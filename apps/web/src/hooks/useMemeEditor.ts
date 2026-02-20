@@ -4,13 +4,13 @@ import type { ToolType } from '../components/editor/MemeToolbar';
 import { toast } from 'sonner';
 import type { TemplateRecord, TemplateVisibility } from '../types/template';
 import { apiFetch } from '../lib/apiFetch';
-import { MAX_CANVAS_AREA_PX, MAX_CANVAS_EDGE_PX } from '../constants/canvasLimits';
+import { MAX_WORKSPACE_AREA_PX, MAX_WORKSPACE_EDGE_PX } from '../constants/canvasLimits';
 
 const CANVAS_MARGIN = 0;
-const PUBLISH_IMAGE_LONG_EDGE = 1920;
+const EXPORT_IMAGE_LONG_EDGE = MAX_WORKSPACE_EDGE_PX;
 const TEMPLATE_BACKGROUND_QUALITY = 0.98;
 const PUBLISH_IMAGE_QUALITY = 0.98;
-const PUBLISH_IMAGE_MULTIPLIER = 2;
+const EXPORT_IMAGE_MULTIPLIER = 1;
 const BACKGROUND_LOADING_MIN_MS = 180;
 
 interface HistoryItem {
@@ -132,12 +132,12 @@ const sanitizeTemplateNode = (node: unknown): unknown => {
 const sanitizeTemplateContent = (content: Record<string, unknown>): Record<string, unknown> =>
   sanitizeTemplateNode(content) as Record<string, unknown>;
 
-const getPublishImageSize = (width: number, height: number) => {
+const getBoundedImageSize = (width: number, height: number) => {
   const longEdge = Math.max(width, height);
-  if (!Number.isFinite(longEdge) || longEdge <= 0 || longEdge <= PUBLISH_IMAGE_LONG_EDGE) {
+  if (!Number.isFinite(longEdge) || longEdge <= 0 || longEdge <= EXPORT_IMAGE_LONG_EDGE) {
     return { width, height };
   }
-  const scale = PUBLISH_IMAGE_LONG_EDGE / longEdge;
+  const scale = EXPORT_IMAGE_LONG_EDGE / longEdge;
   return {
     width: Math.max(1, Math.round(width * scale)),
     height: Math.max(1, Math.round(height * scale))
@@ -162,9 +162,9 @@ const normalizeWorkspaceSize = (width: number, height: number) => {
   const safeHeight = Number.isFinite(height) && height > 0 ? Math.round(height) : 1;
   const longEdge = Math.max(safeWidth, safeHeight, 1);
   const area = safeWidth * safeHeight;
-  const edgeScale = MAX_CANVAS_EDGE_PX / longEdge;
-  const areaScale = area > MAX_CANVAS_AREA_PX
-    ? Math.sqrt(MAX_CANVAS_AREA_PX / area)
+  const edgeScale = MAX_WORKSPACE_EDGE_PX / longEdge;
+  const areaScale = area > MAX_WORKSPACE_AREA_PX
+    ? Math.sqrt(MAX_WORKSPACE_AREA_PX / area)
     : 1;
   const scale = Math.min(1, edgeScale, areaScale);
   if (scale >= 1) {
@@ -581,9 +581,6 @@ export const useMemeEditor = (options?: UseMemeEditorOptions) => {
       canvas.renderAll();
       setHasBackground(true);
       setActiveTool('edit');
-      if (normalizedSize.scaled) {
-        toast.info(`큰 원본이라 편집 안정성을 위해 ${normalizedSize.width}x${normalizedSize.height}로 조정했습니다.`);
-      }
       isBackgroundDirtyRef.current = true;
       isHistoryLocked.current = false;
 
@@ -601,7 +598,6 @@ export const useMemeEditor = (options?: UseMemeEditorOptions) => {
         return;
       }
       console.error('Failed to load image:', err);
-      toast.error('이미지를 불러오는데 실패했습니다.');
       isHistoryLocked.current = false;
       if (shouldRevokeObjectUrl) {
         URL.revokeObjectURL(safeImageUrl);
@@ -707,11 +703,12 @@ export const useMemeEditor = (options?: UseMemeEditorOptions) => {
     if (!canvasInstanceRef.current) return;
     const canvas = canvasInstanceRef.current;
     const exportFormat = format === 'jpg' ? 'jpeg' : format;
+    const exportSize = getBoundedImageSize(workspaceSize.width, workspaceSize.height);
     const dataURL = canvas.toDataURL({ 
       format: exportFormat, 
-      multiplier: 2,
-      width: workspaceSize.width,
-      height: workspaceSize.height
+      multiplier: EXPORT_IMAGE_MULTIPLIER,
+      width: exportSize.width,
+      height: exportSize.height
     });
 
     if (format === 'pdf') {
@@ -719,11 +716,11 @@ export const useMemeEditor = (options?: UseMemeEditorOptions) => {
       try {
         const { default: jsPDF } = await import('jspdf');
         const pdf = new jsPDF({ 
-          orientation: workspaceSize.width > workspaceSize.height ? 'landscape' : 'portrait', 
+          orientation: exportSize.width > exportSize.height ? 'landscape' : 'portrait', 
           unit: 'px', 
-          format: [workspaceSize.width, workspaceSize.height] 
+          format: [exportSize.width, exportSize.height] 
         });
-        pdf.addImage(dataURL, 'PNG', 0, 0, workspaceSize.width, workspaceSize.height);
+        pdf.addImage(dataURL, 'PNG', 0, 0, exportSize.width, exportSize.height);
         pdf.save(`meme-${Date.now()}.pdf`);
         toast.success('PDF 다운로드 완료', { id: toastId });
       } catch {
@@ -741,8 +738,12 @@ export const useMemeEditor = (options?: UseMemeEditorOptions) => {
   const copyToClipboard = async () => {
     if (!canvasInstanceRef.current) return;
     try {
+      const exportSize = getBoundedImageSize(workspaceSize.width, workspaceSize.height);
       const dataURL = canvasInstanceRef.current.toDataURL({ 
-          format: 'png', multiplier: 2, width: workspaceSize.width, height: workspaceSize.height
+          format: 'png',
+          multiplier: EXPORT_IMAGE_MULTIPLIER,
+          width: exportSize.width,
+          height: exportSize.height
       });
       const blob = await (await fetch(dataURL)).blob();
       await navigator.clipboard.write([ new ClipboardItem({ [blob.type]: blob }) ]);
@@ -764,12 +765,12 @@ export const useMemeEditor = (options?: UseMemeEditorOptions) => {
     try {
       setIsImagePublishing(true);
 
-      const publishSize = getPublishImageSize(workspaceSize.width, workspaceSize.height);
-      const publishExportWidth = Math.max(1, Math.round(publishSize.width * PUBLISH_IMAGE_MULTIPLIER));
-      const publishExportHeight = Math.max(1, Math.round(publishSize.height * PUBLISH_IMAGE_MULTIPLIER));
+      const publishSize = getBoundedImageSize(workspaceSize.width, workspaceSize.height);
+      const publishExportWidth = Math.max(1, Math.round(publishSize.width * EXPORT_IMAGE_MULTIPLIER));
+      const publishExportHeight = Math.max(1, Math.round(publishSize.height * EXPORT_IMAGE_MULTIPLIER));
       const imageDataUrl = canvasInstanceRef.current.toDataURL({
         format: 'webp',
-        multiplier: PUBLISH_IMAGE_MULTIPLIER,
+        multiplier: EXPORT_IMAGE_MULTIPLIER,
         width: publishSize.width,
         height: publishSize.height,
         quality: PUBLISH_IMAGE_QUALITY
