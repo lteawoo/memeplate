@@ -1,6 +1,22 @@
 # 프로젝트 상태 (Status)
 
 ## 현재 진행 상황
+- [x] **텍스트 최대크기 fit 보정 + 클리핑 적용 (완료 - 2026-02-20)**
+  - [x] `resolveTextLayout` 폰트 탐색 100회 제한 제거(최대값에서 최소값까지 실제 fit 지점 탐색)
+  - [x] 텍스트가 폭/높이 기준으로 맞는 가장 큰 폰트 크기에서 멈추도록 보정
+  - [x] `Textbox.draw`에 텍스트 박스 clip 적용(박스 외부 글자 렌더 차단)
+  - [x] `pnpm --filter memeplate-web lint`, `pnpm --filter memeplate-web build` 통과
+  - [x] 스크린샷 검증
+    - [x] `docs/ai-context/screenshots/2026-02-20_text_max_fit_clip_v1.png`
+- [x] **텍스트 특정 크기에서 사라짐 보정 (완료 - 2026-02-20)**
+  - [x] 긴 단어/무공백 문자열에서 줄바꿈 실패 시 텍스트가 비는 케이스 보정
+  - [x] 단어가 폭을 초과하면 문자 단위 분할 줄바꿈으로 fallback 처리
+  - [x] `pnpm --filter memeplate-web lint`, `pnpm --filter memeplate-web build` 통과
+- [x] **레이어 아이콘 라벨 제거 + 텍스트 최대크기 이슈 분석 (완료 - 2026-02-20)**
+  - [x] 레이어 리스트에서 텍스트 라벨 제거(아이콘만으로 구분)
+  - [x] 텍스트/사각형/원형을 서로 다른 아이콘으로 구분되도록 정렬
+  - [x] `최대 크기` 이슈 코드 분석 완료: 자동 축소 로직은 존재하나(`resolveTextLayout`) 텍스트 영역 클리핑 미구현으로 일부 케이스에서 넘침 체감 가능
+  - [x] `pnpm --filter memeplate-web lint`, `pnpm --filter memeplate-web build` 통과
 - [x] **모바일 에디터 디자인 정렬 1차 (완료 - 2026-02-20)**
   - [x] 모바일 패널을 데스크탑과 동일 톤(`editor-desktop-glass`, 동일 툴/히스토리 버튼 스타일)으로 정렬
   - [x] 모바일 상단 분할형 박스(`border-t`, `border-b` 기반 분리 섹션) 제거 후 단일 카드형 패널로 통합

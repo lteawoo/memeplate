@@ -37,6 +37,8 @@
   - [x] `core/canvas/textLayout.ts` 공통 레이아웃 유틸 추가
   - [x] `Textbox.ts` 렌더에서 공통 레이아웃 계산 재사용
   - [x] `MemeCanvas.tsx` 편집 오버레이 폰트/세로 정렬 계산에서 공통 로직 재사용
+  - [x] 긴 단어/무공백 문자열 문자 단위 줄바꿈 fallback 추가(특정 크기에서 텍스트 소실 체감 보정)
+  - [x] 최대 폰트 크기 탐색을 실제 fit 지점까지 보정(100회 제한 제거)
 - [x] **텍스트 레이어 기본값/placeholder 정리**
   - [x] `useMemeEditor.ts`: 새 텍스트 레이어 기본 문자열 제거(빈 텍스트 생성)
   - [x] `MemePropertyPanel.tsx`: 텍스트 레이어 입력 placeholder를 `텍스트-{순번}`으로 표시
@@ -85,7 +87,7 @@
   - [x] `MemePropertyPanel.tsx`: 외곽선 입력/슬라이더 단위를 `px`에서 `강도`로 변경 (`0~10`)
   - [x] `Textbox.ts`: `strokeWidth`를 폰트 크기 비례 실제 선 두께(px)로 변환해 렌더링
 - [ ] **에디터 기능 확장**
-  - [ ] 텍스트 영역 클리핑 (틀 밖으로 나가는 글자 숨김)
+  - [x] 텍스트 영역 클리핑 (틀 밖으로 나가는 글자 숨김)
   - [ ] 다중 선택(Multi-selection) 지원
   - [ ] 그룹화(Grouping) 기능
 - [ ] **시스템 고도화**

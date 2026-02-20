@@ -1,5 +1,58 @@
 # 결정 로그 (Decision Log)
 
+## [2026-02-20] 텍스트 최대 크기 탐색 보정(잘리기 직전 크기 고정) + 텍스트 박스 클리핑 적용
+- **결정**:
+  1. `resolveTextLayout`의 폰트 탐색에서 고정 100회 제한을 제거하고, 설정된 최대 폰트부터 최소 폰트까지 내려가며 실제 fit되는 최대 크기를 선택함.
+  2. `Textbox.draw`에서 임의 라인 스킵 조건(`+5` 여유치 기반) 대신 텍스트 박스 clip 경계를 사용함.
+- **이유**:
+  1. 최대 폰트가 큰 경우 100회 제한 때문에 fit 지점까지 도달하지 못해 텍스트가 갑자기 사라지거나 과대 렌더되는 문제가 있었음.
+  2. draw 단계의 조건부 라인 스킵은 경계 근처에서 라인이 갑자기 사라지는 체감을 유발하므로, clip 기반 경계 처리로 일관성을 높일 필요가 있었음.
+- **구현 요약**:
+  - `apps/web/src/core/canvas/textLayout.ts`
+    - 폰트 크기 탐색 로직을 “최대값 -> 최소값” 전수 탐색으로 변경
+    - 폭 초과 단어 분할 fallback에서 라인 정보를 유지해 레이아웃 결과가 비지 않도록 보정
+  - `apps/web/src/core/canvas/Textbox.ts`
+    - 텍스트 렌더 전에 박스 경계 clip 적용
+    - 라인별 `y` 임계값 스킵 조건 제거
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 스크린샷: `docs/ai-context/screenshots/2026-02-20_text_max_fit_clip_v1.png`
+
+## [2026-02-20] 텍스트 특정 크기에서 사라지는 케이스 보정(문자 단위 줄바꿈 fallback)
+- **결정**:
+  1. 긴 단어(무공백 포함)가 텍스트 박스 폭을 초과하면 문자 단위로 강제 분할해 줄바꿈하도록 변경함.
+- **이유**:
+  1. 기존 단어 단위 래핑에서는 특정 문자열이 폭을 넘으면 `fitsWidth=false`가 반복되어 결과적으로 표시 텍스트가 비는 체감이 발생할 수 있었음.
+- **구현 요약**:
+  - `apps/web/src/core/canvas/textLayout.ts`
+    - `wrapParagraph`에 `splitLongWord` fallback 추가
+    - 폭 초과 단어를 문자 단위 세그먼트로 분해해 라인 생성
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+
+## [2026-02-20] 레이어 리스트 라벨 제거(아이콘 전용) + 텍스트 최대크기 동작 분석
+- **결정**:
+  1. 레이어 리스트의 타입 라벨(텍스트/사각형/원형)을 제거하고 아이콘만 노출함.
+  2. 레이어 타입 식별성을 위해 텍스트/사각형/원형에 서로 다른 아이콘을 적용함.
+  3. 텍스트 `최대 크기` 이슈는 즉시 기능 변경 없이 원인 분석만 수행함.
+- **이유**:
+  1. 사용자 요청대로 레이어 구분을 아이콘 중심으로 단순화해 시각 밀도를 낮추기 위함.
+  2. `최대 크기`는 의도상 “상한값”이며, 텍스트가 박스를 벗어나 보이는 체감은 클리핑 미구현 영향 가능성이 큼.
+- **구현 요약**:
+  - `apps/web/src/components/editor/MemePropertyPanel.tsx`
+    - 레이어 라벨 텍스트 제거
+    - 타입 아이콘 매핑 추가(`text -> mdiFormatColorText`, `rect -> mdiSquare`, `circle -> mdiCircle`)
+- **분석 결과(코드 근거)**:
+  - `최대 크기` 입력은 `fontSize` 상한으로 동작 (`MemePropertyPanel`)
+  - 렌더 시 `resolveTextLayout`에서 박스 `width/height` 기준 자동 축소를 수행 (`core/canvas/textLayout.ts`)
+  - 다만 `Textbox.draw`에 텍스트 영역 clip이 없어 스트로크/특정 글리프/케이스에서 경계 밖으로 보일 수 있음 (`core/canvas/Textbox.ts`)
+  - TODO에 `텍스트 영역 클리핑`이 미완료 항목으로 남아 있음 (`docs/ai-context/todo.md`)
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+
 ## [2026-02-20] 모바일 에디터 디자인 정렬 1차: 데스크탑과 동일 패턴 적용
 - **결정**:
   1. 모바일 패널 상단 툴/히스토리 영역을 데스크탑과 같은 시각 패턴으로 통일함.

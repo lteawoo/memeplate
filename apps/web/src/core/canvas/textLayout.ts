@@ -33,6 +33,39 @@ const wrapParagraph = (ctx: CanvasRenderingContext2D, paragraph: string, maxWidt
     return { lines: [''], fitsWidth: true };
   }
 
+  const splitLongWord = (word: string) => {
+    const chars = Array.from(word);
+    const segments: string[] = [];
+    let currentSegment = '';
+
+    for (let i = 0; i < chars.length; i += 1) {
+      const char = chars[i];
+      const next = currentSegment + char;
+
+      if (ctx.measureText(next).width <= maxWidth) {
+        currentSegment = next;
+        continue;
+      }
+
+      if (!currentSegment) {
+        segments.push(char);
+        for (let j = i + 1; j < chars.length; j += 1) {
+          segments.push(chars[j]);
+        }
+        return { lines: segments, fitsWidth: false };
+      }
+
+      segments.push(currentSegment);
+      currentSegment = char;
+    }
+
+    if (currentSegment) {
+      segments.push(currentSegment);
+    }
+
+    return { lines: segments, fitsWidth: true };
+  };
+
   const words = paragraph.split(/\s+/);
   const lines: string[] = [];
   let currentLine = '';
@@ -41,7 +74,25 @@ const wrapParagraph = (ctx: CanvasRenderingContext2D, paragraph: string, maxWidt
     const word = words[i];
 
     if (ctx.measureText(word).width > maxWidth) {
-      return { lines: [], fitsWidth: false };
+      const wrapped = splitLongWord(word);
+      if (currentLine) {
+        lines.push(currentLine);
+        currentLine = '';
+      }
+
+      if (wrapped.lines.length === 0) {
+        return { lines: lines.length ? lines : [''], fitsWidth: false };
+      }
+
+      if (!wrapped.fitsWidth) {
+        lines.push(...wrapped.lines);
+        return { lines, fitsWidth: false };
+      }
+
+      lines.push(...wrapped.lines.slice(0, -1));
+      currentLine = wrapped.lines[wrapped.lines.length - 1];
+
+      continue;
     }
 
     const testLine = currentLine ? `${currentLine} ${word}` : word;
@@ -57,6 +108,47 @@ const wrapParagraph = (ctx: CanvasRenderingContext2D, paragraph: string, maxWidt
   return { lines, fitsWidth: true };
 };
 
+interface MeasuredLayout {
+  lines: string[];
+  totalHeight: number;
+  fitsWidth: boolean;
+}
+
+const measureLayoutAtFontSize = (
+  ctx: CanvasRenderingContext2D,
+  input: TextLayoutInput,
+  fontSize: number,
+  lineHeight: number,
+  maxWidth: number
+): MeasuredLayout => {
+  ctx.font = getFontDeclaration(fontSize, input.fontStyle, input.fontWeight, input.fontFamily);
+
+  const paragraphLines = input.text.split('\n');
+  const lines: string[] = [];
+  let fitsWidth = true;
+
+  for (let p = 0; p < paragraphLines.length; p += 1) {
+    const wrapped = wrapParagraph(ctx, paragraphLines[p], maxWidth);
+    if (wrapped.lines.length > 0) {
+      lines.push(...wrapped.lines);
+    } else {
+      lines.push('');
+    }
+
+    if (!wrapped.fitsWidth) {
+      fitsWidth = false;
+      break;
+    }
+  }
+
+  const normalizedLines = lines.length > 0 ? lines : [''];
+  return {
+    lines: normalizedLines,
+    totalHeight: normalizedLines.length * fontSize * lineHeight,
+    fitsWidth
+  };
+};
+
 export const resolveTextLayout = (
   ctx: CanvasRenderingContext2D,
   input: TextLayoutInput
@@ -65,61 +157,52 @@ export const resolveTextLayout = (
   const safeHeight = Math.max(1, input.height);
   const lineHeight = input.lineHeight || 1.2;
   const baseFontSize = isFinite(input.fontSize) ? input.fontSize : 40;
+  const maxSearchFontSize = Math.max(MIN_TEXT_FONT_SIZE, Math.round(baseFontSize));
 
-  let currentFontSize = Math.max(baseFontSize, MIN_TEXT_FONT_SIZE);
-  let acceptedLines: string[] = [''];
-  let acceptedTotalHeight = currentFontSize * lineHeight;
-  let acceptedFontSize = currentFontSize;
+  let acceptedFontSize = maxSearchFontSize;
+  let acceptedLayout = measureLayoutAtFontSize(
+    ctx,
+    input,
+    acceptedFontSize,
+    lineHeight,
+    safeWidth
+  );
 
-  for (let i = 0; i < 100 && currentFontSize >= MIN_TEXT_FONT_SIZE; i += 1) {
-    ctx.font = getFontDeclaration(
-      currentFontSize,
-      input.fontStyle,
-      input.fontWeight,
-      input.fontFamily
-    );
+  const isFitCandidate = (layout: MeasuredLayout) =>
+    layout.fitsWidth && layout.totalHeight <= safeHeight;
 
-    const paragraphLines = input.text.split('\n');
-    const lines: string[] = [];
-    let fitsWidth = true;
+  if (!isFitCandidate(acceptedLayout)) {
+    for (let nextFontSize = maxSearchFontSize - 1; nextFontSize >= MIN_TEXT_FONT_SIZE; nextFontSize -= 1) {
+      const nextLayout = measureLayoutAtFontSize(
+        ctx,
+        input,
+        nextFontSize,
+        lineHeight,
+        safeWidth
+      );
+      acceptedFontSize = nextFontSize;
+      acceptedLayout = nextLayout;
 
-    for (let p = 0; p < paragraphLines.length; p += 1) {
-      const wrapped = wrapParagraph(ctx, paragraphLines[p], safeWidth);
-      if (!wrapped.fitsWidth) {
-        fitsWidth = false;
-        break;
-      }
-      lines.push(...wrapped.lines);
-    }
-
-    if (fitsWidth) {
-      const totalHeight = lines.length * currentFontSize * lineHeight;
-      acceptedLines = lines.length ? lines : [''];
-      acceptedTotalHeight = totalHeight;
-      acceptedFontSize = currentFontSize;
-
-      if (totalHeight <= safeHeight || currentFontSize <= MIN_TEXT_FONT_SIZE) {
+      if (isFitCandidate(nextLayout)) {
         break;
       }
     }
-
-    currentFontSize -= 1;
   }
 
   const lineHeightPx = acceptedFontSize * lineHeight;
   let startY = -safeHeight / 2;
   if (input.verticalAlign === 'middle') {
-    startY = -acceptedTotalHeight / 2;
+    startY = -acceptedLayout.totalHeight / 2;
   } else if (input.verticalAlign === 'bottom') {
-    startY = safeHeight / 2 - acceptedTotalHeight;
+    startY = safeHeight / 2 - acceptedLayout.totalHeight;
   }
 
   return {
     fontSize: Math.max(acceptedFontSize, MIN_TEXT_FONT_SIZE),
     lineHeight,
     lineHeightPx,
-    lines: acceptedLines,
-    totalHeight: acceptedTotalHeight,
+    lines: acceptedLayout.lines,
+    totalHeight: acceptedLayout.totalHeight,
     startY
   };
 };

@@ -55,6 +55,10 @@ export class Textbox extends CanvasObject {
 
     ctx.save();
     try {
+      ctx.beginPath();
+      ctx.rect(-this.width / 2, -this.height / 2, this.width, this.height);
+      ctx.clip();
+
       const layout = resolveTextLayout(ctx, {
         text: this.text,
         width: this.width,
@@ -78,14 +82,12 @@ export class Textbox extends CanvasObject {
 
       layout.lines.forEach((line, index) => {
         const y = layout.startY + index * layout.lineHeightPx;
-        if (y + layout.fontSize <= this.height / 2 + 5) {
-          ctx.fillText(line, x, y);
-          
-          if (this.stroke && this.stroke !== 'transparent' && this.strokeWidth > 0) {
-            ctx.strokeStyle = this.stroke;
-            ctx.lineWidth = getAdaptiveStrokeWidth(this.strokeWidth, layout.fontSize);
-            ctx.strokeText(line, x, y);
-          }
+        ctx.fillText(line, x, y);
+
+        if (this.stroke && this.stroke !== 'transparent' && this.strokeWidth > 0) {
+          ctx.strokeStyle = this.stroke;
+          ctx.lineWidth = getAdaptiveStrokeWidth(this.strokeWidth, layout.fontSize);
+          ctx.strokeText(line, x, y);
         }
       });
     } finally {
