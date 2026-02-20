@@ -1,6 +1,19 @@
 # 프로젝트 상태 (Status)
 
 ## 현재 진행 상황
+- [x] **업로드 토스트 제거 (완료 - 2026-02-20)**
+  - [x] 이미지 업로드 성공 시 표시되던 안내 토스트 제거
+  - [x] 이미지 업로드 실패 시 표시되던 에러 토스트 제거
+  - [x] `pnpm --filter memeplate-web lint`, `pnpm --filter memeplate-web build` 통과
+  - [x] 스크린샷 검증
+    - [x] `docs/ai-context/screenshots/2026-02-20_upload_toast_removed_v1.png`
+- [x] **업로드/내보내기 해상도 상한 800 정책 적용 (완료 - 2026-02-20)**
+  - [x] 작업영역 정규화 상한을 `max edge 8192` 기반에서 `max 800x800` 바운딩 기준으로 변경(비율 유지 축소, 소형 원본은 유지)
+  - [x] 다운로드/클립보드/리믹스 게시 출력 해상도를 동일한 `max 800` 기준으로 정렬(`multiplier: 1`)
+  - [x] 렌더 백킹 스토어 보호 상한(8192/16MP)은 별도 상수로 유지하여 화면 표시 선명도 회귀 방지
+  - [x] `pnpm --filter memeplate-web lint`, `pnpm --filter memeplate-web build` 통과
+  - [x] 스크린샷 검증
+    - [x] `docs/ai-context/screenshots/2026-02-20_workspace_max_800_upload_v1.png`
 - [x] **텍스트 최대크기 fit 보정 + 클리핑 적용 (완료 - 2026-02-20)**
   - [x] `resolveTextLayout` 폰트 탐색 100회 제한 제거(최대값에서 최소값까지 실제 fit 지점 탐색)
   - [x] 텍스트가 폭/높이 기준으로 맞는 가장 큰 폰트 크기에서 멈추도록 보정

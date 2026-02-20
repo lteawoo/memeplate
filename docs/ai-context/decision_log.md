@@ -1,5 +1,44 @@
 # 결정 로그 (Decision Log)
 
+## [2026-02-20] 이미지 업로드 토스트 제거
+- **결정**:
+  1. 배경 이미지 업로드 성공 시 출력되던 안내 토스트를 제거함.
+  2. 배경 이미지 업로드 실패 시 출력되던 에러 토스트를 제거함.
+- **이유**:
+  1. 사용자 요청대로 업로드 과정에서 토스트 노출을 없애 편집 흐름을 방해하지 않도록 하기 위함.
+- **구현 요약**:
+  - `apps/web/src/hooks/useMemeEditor.ts`
+    - `setBackgroundImage` 성공 경로의 `toast.info(...)` 제거
+    - `setBackgroundImage` 실패 경로의 `toast.error(...)` 제거
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 수동 검증: `/create`에서 이미지 업로드 후 우하단 토스트 미노출 확인
+  - 스크린샷: `docs/ai-context/screenshots/2026-02-20_upload_toast_removed_v1.png`
+
+## [2026-02-20] 업로드/내보내기 해상도 정책 800 상한으로 단순화
+- **결정**:
+  1. 편집 작업영역(workspace) 정규화 상한을 `max edge 8192`에서 `max 800x800` 바운딩으로 전환함(비율 유지, 업스케일 없음).
+  2. 다운로드/클립보드/리믹스 게시 이미지 출력도 동일한 `max 800` 상한 정책으로 통일함.
+  3. 렌더 백킹 스토어 안정성 상한(8192/16MP)은 별도 상수로 유지해 화면 표시 품질 저하를 방지함.
+- **이유**:
+  1. 밈 에디터의 제품 방향(빠른 편집/공유) 기준에서 과도한 고해상도 보존보다 일관된 경량 출력이 우선임.
+  2. 기존에는 업로드 크기 상한(8192)과 게시/다운로드 배율(`multiplier: 2`)이 남아 실제 출력이 필요 이상으로 커질 수 있었음.
+- **구현 요약**:
+  - `apps/web/src/constants/canvasLimits.ts`
+    - 작업영역 상한(`MAX_WORKSPACE_*`)과 렌더 상한(`MAX_RENDER_CANVAS_*`) 상수를 분리
+  - `apps/web/src/hooks/useMemeEditor.ts`
+    - 작업영역 정규화 상한을 `800` 기준으로 변경
+    - 다운로드/PDF/클립보드/리믹스 게시 export 크기를 공통 `getBoundedImageSize`(`max 800`)로 통일
+    - export 배율을 `multiplier: 1`로 조정
+  - `apps/web/src/components/editor/MemeCanvas.tsx`
+    - 렌더 스케일 계산에서 렌더 전용 상수(`MAX_RENDER_CANVAS_*`) 사용으로 분리
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 수동 검증: `2880x1620` 업로드 시 캔버스 백킹 `1600x900`(DPR 2)로 확인되어 작업영역 `800x450`로 축소 적용
+  - 스크린샷: `docs/ai-context/screenshots/2026-02-20_workspace_max_800_upload_v1.png`
+
 ## [2026-02-20] 텍스트 최대 크기 탐색 보정(잘리기 직전 크기 고정) + 텍스트 박스 클리핑 적용
 - **결정**:
   1. `resolveTextLayout`의 폰트 탐색에서 고정 100회 제한을 제거하고, 설정된 최대 폰트부터 최소 폰트까지 내려가며 실제 fit되는 최대 크기를 선택함.
