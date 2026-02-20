@@ -238,6 +238,13 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
                   const isText = obj instanceof Textbox;
                   const isRect = obj instanceof Rect;
                   const isCircle = obj instanceof Circle;
+                  const layerTypeIcon = isText
+                    ? mdiFormatColorText
+                    : isRect
+                      ? mdiSquare
+                      : isCircle
+                        ? mdiCircle
+                        : mdiShape;
                   const textLayerNumber = textLayerOrder.get(obj.id) ?? 1;
 
                   return (
@@ -287,12 +294,10 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
                             isSelected ? 'border-primary bg-primary text-primary-foreground shadow-sm' : 'border-border bg-muted text-muted-foreground',
                           )}
                         >
-                          <Icon path={isText ? mdiFormatColorText : mdiShape} size={0.58} />
+                          <Icon path={layerTypeIcon} size={0.58} />
                         </div>
 
-                        <span className={cn('flex-1 truncate pl-1 text-[11px] font-bold', isSelected ? 'text-primary' : 'text-muted-foreground')}>
-                          {isText ? '텍스트 레이어' : isRect ? '사각형' : isCircle ? '원형' : '도형'}
-                        </span>
+                        <div className="flex-1" />
 
                         <div className="flex shrink-0 items-center gap-1">
                           <MemeColorPicker
@@ -417,7 +422,7 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
                                         onChange={(e) => {
                                           const next = Number(e.target.value);
                                           if (Number.isFinite(next)) {
-                                            updateProperty('fontSize', next);
+                                            updateProperty('fontSize', Math.max(8, Math.min(300, next)));
                                           }
                                         }}
                                         className="h-7 w-16 border-border px-2 text-right text-xs font-bold"
