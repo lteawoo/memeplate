@@ -1,5 +1,127 @@
 # 결정 로그 (Decision Log)
 
+## [2026-02-20] 모바일 에디터 디자인 정렬 1차: 데스크탑과 동일 패턴 적용
+- **결정**:
+  1. 모바일 패널 상단 툴/히스토리 영역을 데스크탑과 같은 시각 패턴으로 통일함.
+  2. 모바일의 분할형 박스(`border`로 끊긴 다단 섹션)를 단일 카드형 패널로 합침.
+- **이유**:
+  1. 사용자 요청대로 모바일도 데스크탑과 동일한 디자인 언어를 사용하도록 맞추기 위함.
+  2. 툴/히스토리 컨트롤이 분절되어 보이던 모바일 구조를 단순화해 일관성 및 시인성을 높이기 위함.
+- **구현 요약**:
+  - `apps/web/src/components/MemeEditor.tsx`
+    - `md:hidden` 모바일 블록을 데스크탑 패널과 동일 톤 구조로 재구성
+    - 모바일 툴 버튼 렌더를 `renderToolButton(tool, true, true)`로 변경
+    - 모바일 `undo/redo`를 데스크탑과 동일한 2열 버튼 스타일로 변경
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 스크린샷
+    - `docs/ai-context/screenshots/2026-02-20_editor_mobile_style_matched_v1.png`
+
+## [2026-02-20] 데스크탑 에디터 스타일 정렬 5차: 편집 패널 배경 복구
+- **결정**:
+  1. 캔버스 쪽 별도 배경 제거는 유지하고, 우측 편집 패널 배경만 복구함.
+- **이유**:
+  1. 사용자 피드백대로 에디터 패널은 다시 살아 있어야 하며, 제거 대상은 캔버스 쪽 별도 배경이었음.
+- **구현 요약**:
+  - `apps/web/src/components/MemeEditor.tsx`
+    - 우측 패널 클래스에 `md:bg-editor-sidebar-bg/88` 복구
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+
+## [2026-02-20] 데스크탑 에디터 스타일 정렬 4차: 상단 도구 상태 라벨 제거
+- **결정**:
+  1. 우측 패널 상단의 도구 상태 텍스트(`도구 선택/편집/공유`)를 제거함.
+- **이유**:
+  1. 상단 `편집/공유` 버튼이 이미 현재 상태를 표현하고 있어 라벨이 중복 정보였음.
+  2. 사용자 피드백대로 패널의 정보 밀도를 더 낮추기 위함.
+- **구현 요약**:
+  - `apps/web/src/components/MemeEditor.tsx`
+    - 우측 패널 헤더의 상태 라벨 `<p>` 제거
+    - 미사용 `activeToolLabel` 계산 로직 제거
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 스크린샷
+    - `docs/ai-context/screenshots/2026-02-20_editor_desktop_style_refresh_light_v4.png`
+
+## [2026-02-20] 데스크탑 에디터 스타일 정렬 3차: 캔버스 추가 배경 제거 + 편집 액션 섹션 단순화
+- **결정**:
+  1. 데스크탑 캔버스 영역의 별도 장식 배경(`editor-desktop-canvas-stage` radial layer)을 제거함.
+  2. 캔버스 래퍼의 추가 배경 클래스(`md:bg-editor-canvas-bg/80`)를 제거함.
+  3. `텍스트/도형` 버튼을 감싸던 외곽 섹션(rounded/border/bg)을 제거하고 버튼만 노출함.
+- **이유**:
+  1. 사용자 피드백대로 캔버스 영역에 배경이 한 겹 더 얹혀 보이고, 편집 액션 상단 섹션이 과하다는 문제가 있었음.
+  2. 전역 non-border 스타일 원칙과도 더 정합한 상태로 맞추기 위함.
+- **구현 요약**:
+  - `apps/web/src/index.css`
+    - `@media (min-width: 768px)`의 `.editor-desktop-canvas-stage` 배경 이미지 블록 제거
+  - `apps/web/src/components/MemeEditor.tsx`
+    - 캔버스 래퍼 클래스에서 `md:bg-editor-canvas-bg/80` 제거
+  - `apps/web/src/components/editor/MemePropertyPanel.tsx`
+    - `텍스트/도형` 액션 영역 외곽 컨테이너(border/bg/padding) 제거
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 스크린샷
+    - `docs/ai-context/screenshots/2026-02-20_editor_desktop_style_refresh_light_v3.png`
+    - `docs/ai-context/screenshots/2026-02-20_editor_desktop_style_refresh_dark_v3.png`
+
+## [2026-02-20] 데스크탑 에디터 스타일 정렬 2차: non-border 기준 복귀 + 단일 우측 패널
+- **결정**:
+  1. 데스크탑 에디터 레이아웃을 `중앙 캔버스 + 우측 단일 패널`로 단순화하고 좌측 툴레일을 제거함.
+  2. 우측 패널 상단에 `편집/공유` 도구 전환과 `실행 취소/다시 실행`을 통합 배치함.
+  3. 전역 원칙(기본 `border-transparent`, hover/focus 시 강조)에 맞춰 상시 보더 의존 스타일을 축소함.
+- **이유**:
+  1. 사용자 피드백대로 제공 기능 대비 패널 수가 과도하고 버튼 시인성이 낮아 조작 부담이 있었음.
+  2. 직전 데스크탑 스타일 리프레시(1차)가 non-border 기준과 일부 충돌해 시각 언어 정합이 떨어졌음.
+- **구현 요약**:
+  - `apps/web/src/components/MemeEditor.tsx`
+    - 데스크탑 좌측 패널 제거
+    - 우측 패널 헤더에 도구 버튼/히스토리 버튼 통합
+    - 데스크탑 버튼 상태값을 active 강조 + 비활성 고대비 hover로 재조정
+    - 데스크탑 컨테이너 상시 border 클래스 축소
+  - `apps/web/src/components/editor/MemePropertyPanel.tsx`
+    - 데스크탑 내부 카드 래퍼(`md:border/md:bg-card`) 제거로 중첩 패널 인상 완화
+  - `apps/web/src/components/editor/MemeCanvas.tsx`
+    - 데스크탑 캔버스 엘리먼트 상시 border 제거
+  - `apps/web/src/index.css`
+    - `editor-desktop-glass` 그림자/블러 강도 하향(보더 강조 축소)
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 스크린샷
+    - `docs/ai-context/screenshots/2026-02-20_editor_desktop_style_refresh_light_v2.png`
+    - `docs/ai-context/screenshots/2026-02-20_editor_desktop_style_refresh_dark_v2.png`
+
+## [2026-02-20] 데스크탑 에디터 스타일 리프레시 1차 (모바일 제외)
+- **결정**:
+  1. 모바일 UX는 유지하고 데스크탑(`md` 이상) 구간에만 시각 개선을 적용함.
+  2. 에디터 셸/사이드 패널/캔버스 스테이지에 전용 유틸 클래스(`editor-desktop-*`)를 도입해 배경 질감과 계층감을 보강함.
+  3. 우측 속성 패널 본문은 데스크탑에서만 카드 레이어(rounded/border/bg/blur)로 정리함.
+- **이유**:
+  1. 사용자 피드백대로 에디터 데스크탑 화면의 스타일 완성도가 낮아 보이는 문제를 빠르게 개선할 필요가 있었음.
+  2. 모바일까지 동시에 변경하면 회귀 범위가 커지므로 요청사항에 맞춰 데스크탑 전용 범위로 한정함.
+- **구현 요약**:
+  - `apps/web/src/index.css`
+    - `editor-desktop-shell`, `editor-desktop-glass`, `editor-desktop-canvas-stage`, `editor-canvas-element` 추가
+    - `@media (min-width: 768px)` 구간에서만 동작하도록 제한
+  - `apps/web/src/components/MemeEditor.tsx`
+    - 좌 툴레일/우 컨텍스트 패널을 플로팅 카드 스타일로 정렬
+    - 데스크탑 툴 버튼 active/inactive 시각 언어 보강
+    - 중앙 캔버스 영역 컨테이너에 데스크탑 전용 라운드/보더 적용
+  - `apps/web/src/components/editor/MemeCanvas.tsx`
+    - 캔버스 스테이지/캔버스 엘리먼트에 데스크탑 전용 클래스 연결
+  - `apps/web/src/components/editor/MemePropertyPanel.tsx`
+    - 패널 본문 래퍼에 데스크탑 전용 카드 레이어 적용
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 스크린샷
+    - `docs/ai-context/screenshots/2026-02-20_editor_desktop_style_refresh_v1.png`
+    - `docs/ai-context/screenshots/2026-02-20_editor_desktop_style_refresh_dark_v1.png`
+
 ## [2026-02-19] 웹 타입체크 누락 보정(`tsc -b`) + `preserveSymlinks` 제거
 - **결정**:
   1. `apps/web`의 타입검사 진입점을 `tsc` 단일 실행에서 프로젝트 레퍼런스 기반 `tsc -b`로 변경함.

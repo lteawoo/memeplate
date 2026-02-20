@@ -276,6 +276,18 @@
   background-color: transparent;
 }
 
+@media (min-width: 768px) {
+  .editor-desktop-glass {
+    backdrop-filter: blur(8px);
+    box-shadow: 0 14px 30px -28px color-mix(in srgb, var(--foreground) 36%, transparent);
+  }
+
+  .editor-desktop-canvas-stage .editor-canvas-element {
+    border-radius: 18px;
+    box-shadow: 0 26px 40px -34px color-mix(in srgb, var(--foreground) 42%, transparent);
+  }
+}
+
 @layer base {
   * {
     border-color: var(--border);

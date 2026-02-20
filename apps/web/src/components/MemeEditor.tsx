@@ -2,12 +2,6 @@ import React from 'react';
 import Icon from '@mdi/react';
 import { mdiUndo, mdiRedo, mdiPencil, mdiShareVariant } from '@mdi/js';
 import { Button } from '@/components/ui/button';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
 
 import MainHeader from './layout/MainHeader';
 import MemePropertyPanel from './editor/MemePropertyPanel';
@@ -88,15 +82,29 @@ const MemeEditor: React.FC<MemeEditorProps> = ({ initialTemplate, initialTemplat
     changeZIndex,
   };
 
-  const activeToolLabel = activeTool === 'edit'
-      ? '편집'
-      : activeTool === 'share'
-        ? '공유'
-        : '도구 선택';
-
-  const renderToolButton = (tool: { key: StudioTool; label: string; icon: string; requiresBackground?: boolean }, compact = false) => {
+  const renderToolButton = (
+    tool: { key: StudioTool; label: string; icon: string; requiresBackground?: boolean },
+    compact = false,
+    desktopPanel = false,
+  ) => {
     const disabled = Boolean(tool.requiresBackground && !hasBackground);
     const isActive = activeTool === tool.key;
+    const baseClassName = compact
+      ? desktopPanel
+        ? 'h-10 rounded-xl px-3 border border-transparent'
+        : 'h-11 rounded-lg px-2 border border-transparent'
+      : 'h-[60px] rounded-2xl px-2.5 border border-border/65 bg-editor-sidebar-subtle-bg/65';
+    const stateClassName = isActive
+      ? compact
+        ? desktopPanel
+          ? 'bg-primary text-primary-foreground shadow-sm'
+          : 'bg-muted text-foreground shadow-sm ring-1 ring-ring/40'
+        : 'bg-gradient-to-b from-primary/20 to-primary/8 text-foreground shadow-sm ring-1 ring-primary/35'
+      : compact
+        ? desktopPanel
+          ? 'bg-transparent text-foreground/90 hover:border-border hover:bg-card/70 hover:text-foreground'
+          : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+        : 'text-muted-foreground hover:bg-editor-sidebar-subtle-bg/90 hover:text-foreground';
     return (
       <Button
         key={tool.key}
@@ -104,13 +112,7 @@ const MemeEditor: React.FC<MemeEditorProps> = ({ initialTemplate, initialTemplat
         variant="ghost"
         disabled={disabled}
         onClick={() => setActiveTool(tool.key)}
-        className={`${
-          compact ? 'h-11 rounded-lg px-2' : 'h-14 rounded-xl px-2'
-        } flex w-full flex-col gap-1 border border-transparent ${
-          isActive
-            ? 'bg-muted text-foreground shadow-sm ring-1 ring-ring/40'
-            : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-        }`}
+        className={`${baseClassName} flex w-full flex-col gap-1 ${stateClassName}`}
       >
         <Icon path={tool.icon} size={compact ? 0.85 : 0.95} />
         <span className={`${compact ? 'text-[9px]' : 'text-[10px]'} font-black uppercase tracking-tight`}>
@@ -121,129 +123,106 @@ const MemeEditor: React.FC<MemeEditorProps> = ({ initialTemplate, initialTemplat
   };
 
   return (
-    <TooltipProvider>
-      <div className="flex min-h-screen flex-col bg-app-surface md:h-screen">
-        <MainHeader />
+    <div className="flex min-h-screen flex-col bg-app-surface md:h-screen">
+      <MainHeader />
 
-        <div className="relative flex min-h-0 flex-col md:flex-1 md:flex-row md:overflow-hidden">
-          <aside className="hidden h-full min-h-0 w-[88px] shrink-0 border-r border-editor-divider bg-editor-sidebar-bg/85 md:flex">
-            <div className="flex h-full w-full flex-col justify-between px-3 py-4">
-              <div className="space-y-2">
-                {STUDIO_TOOLS.map((tool) => renderToolButton(tool))}
-              </div>
-              {hasBackground ? (
-                <div className="space-y-2 border-t border-border/70 pt-3">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        onClick={undo}
-                        disabled={historyIndex <= 0}
-                        className="h-10 w-full rounded-xl border-border bg-muted text-foreground hover:bg-accent"
-                      >
-                        <Icon path={mdiUndo} size={0.9} />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="right">실행 취소 (Ctrl+Z)</TooltipContent>
-                  </Tooltip>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        onClick={redo}
-                        disabled={historyIndex >= history.length - 1}
-                        className="h-10 w-full rounded-xl border-border bg-muted text-foreground hover:bg-accent"
-                      >
-                        <Icon path={mdiRedo} size={0.9} />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="right">다시 실행 (Ctrl+Y)</TooltipContent>
-                  </Tooltip>
-                </div>
-              ) : null}
-            </div>
-          </aside>
-
-          <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+      <div className="relative flex min-h-0 flex-col md:flex-1 md:flex-row md:overflow-hidden">
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col md:py-3 md:pl-3 md:pr-2">
             <div
-              className="relative flex min-h-0 flex-1 flex-col overflow-hidden"
+              className="relative flex min-h-0 flex-1 flex-col overflow-hidden md:rounded-[28px]"
               ref={canvasAreaRef}
               onClick={() => {
                 if (canvasInstance) {
                   canvasInstance.discardActiveObject();
                 }
-              }}
-            >
-              <MemeCanvas
-                canvasRef={canvasRef}
-                containerRef={containerRef}
-                viewportRef={canvasAreaRef}
-                hasBackground={hasBackground}
-                editingTextId={editingTextId}
-                completeTextEdit={completeTextEdit}
-                canvasInstance={canvasInstance}
-                workspaceSize={workspaceSize}
-                isBackgroundLoading={isBackgroundApplying}
-                onUploadImage={handleImageUpload}
-              />
-            </div>
+            }}
+          >
+            <MemeCanvas
+              canvasRef={canvasRef}
+              containerRef={containerRef}
+              viewportRef={canvasAreaRef}
+              hasBackground={hasBackground}
+              editingTextId={editingTextId}
+              completeTextEdit={completeTextEdit}
+              canvasInstance={canvasInstance}
+              workspaceSize={workspaceSize}
+              isBackgroundLoading={isBackgroundApplying}
+              onUploadImage={handleImageUpload}
+            />
           </div>
+        </div>
 
-          <aside className="hidden h-full min-h-0 w-[360px] shrink-0 border-l border-editor-divider bg-editor-sidebar-bg md:flex md:flex-col">
-            <div className="border-b border-editor-divider px-4 py-3">
-              <p className="text-[11px] font-black uppercase tracking-[0.16em] text-muted-foreground">Context Panel</p>
-              <p className="mt-1 text-sm font-bold text-foreground">{activeToolLabel}</p>
+        <aside className="editor-desktop-glass hidden h-full min-h-0 w-[336px] shrink-0 md:my-3 md:mr-3 md:h-[calc(100%-1.5rem)] md:rounded-2xl md:bg-editor-sidebar-bg/88 md:flex md:flex-col">
+          <div className="space-y-3 px-4 py-4">
+            <div className="grid grid-cols-2 gap-1 rounded-xl bg-muted/70 p-1">
+              {STUDIO_TOOLS.map((tool) => renderToolButton(tool, true, true))}
             </div>
-            <div className="min-h-0 flex-1 overflow-hidden">
-              <MemePropertyPanel {...panelProps} />
-            </div>
-          </aside>
-
-          <div className="border-t border-editor-divider bg-editor-sidebar-bg/95 md:hidden">
-            <div className="border-b border-border/70 px-3 py-2">
-              <div className="grid grid-cols-2 gap-1 rounded-xl border border-border bg-muted/70 p-1">
-                {STUDIO_TOOLS.map((tool) => renderToolButton(tool, true))}
-              </div>
-            </div>
-
             {hasBackground ? (
-              <div className="border-b border-border/70 px-3 py-2">
-                <div className="flex items-center gap-2 rounded-xl border border-border bg-muted/70 p-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    onClick={undo}
-                    disabled={historyIndex <= 0}
-                    className="h-8 w-8 rounded-full border-border bg-muted text-foreground hover:bg-accent"
-                  >
-                    <Icon path={mdiUndo} size={0.8} />
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    onClick={redo}
-                    disabled={historyIndex >= history.length - 1}
-                    className="h-8 w-8 rounded-full border-border bg-muted text-foreground hover:bg-accent"
-                  >
-                    <Icon path={mdiRedo} size={0.8} />
-                  </Button>
-                </div>
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={undo}
+                  disabled={historyIndex <= 0}
+                  className="h-10 rounded-xl border-transparent bg-muted text-foreground hover:border-border hover:bg-accent"
+                >
+                  <Icon path={mdiUndo} size={0.85} />
+                  실행 취소
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={redo}
+                  disabled={historyIndex >= history.length - 1}
+                  className="h-10 rounded-xl border-transparent bg-muted text-foreground hover:border-border hover:bg-accent"
+                >
+                  <Icon path={mdiRedo} size={0.85} />
+                  다시 실행
+                </Button>
               </div>
             ) : null}
+          </div>
+          <div className="min-h-0 flex-1 overflow-hidden">
+            <MemePropertyPanel {...panelProps} />
+          </div>
+        </aside>
 
-            <div className="px-2 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-2">
-              <MemePropertyPanel {...panelProps} />
+        <div className="editor-desktop-glass md:hidden px-2 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-2">
+          <div className="overflow-hidden rounded-2xl bg-editor-sidebar-bg/88">
+            <div className="space-y-3 px-4 py-4">
+              <div className="grid grid-cols-2 gap-1 rounded-xl bg-muted/70 p-1">
+                {STUDIO_TOOLS.map((tool) => renderToolButton(tool, true, true))}
+              </div>
+              {hasBackground ? (
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={undo}
+                    disabled={historyIndex <= 0}
+                    className="h-10 rounded-xl border-transparent bg-muted text-foreground hover:border-border hover:bg-accent"
+                  >
+                    <Icon path={mdiUndo} size={0.85} />
+                    실행 취소
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={redo}
+                    disabled={historyIndex >= history.length - 1}
+                    className="h-10 rounded-xl border-transparent bg-muted text-foreground hover:border-border hover:bg-accent"
+                  >
+                    <Icon path={mdiRedo} size={0.85} />
+                    다시 실행
+                  </Button>
+                </div>
+              ) : null}
             </div>
+            <MemePropertyPanel {...panelProps} />
           </div>
         </div>
       </div>
-    </TooltipProvider>
+    </div>
   );
 };
 
