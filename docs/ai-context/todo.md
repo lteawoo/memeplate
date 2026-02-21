@@ -70,6 +70,31 @@
   - [x] `MemeEditor.tsx`: `workspaceSize` 변경 시 `zoomMode`를 `fit`으로 자동 복귀
   - [x] `EditorLayout.tsx`/`MemeEditor.tsx`/`MemeCanvas.tsx`: `min-w-0` 추가로 대형 캔버스가 레이아웃 폭을 밀어내는 문제 수정
   - [x] `MemeCanvas.tsx`: `fit` 모드 표시 크기를 floor 계산으로 변경해 비클리핑 보장 강화
+  - [x] `useMemeEditor.ts`: 줌 상태(`25%~400%`) 및 `Ctrl/Cmd + +|-|0` 단축키 재도입
+  - [x] `MemeCanvas.tsx`: `fitScale * zoom` 정책 유지 + `Canvas` viewport zoom/pan 연동
+  - [x] `MemeEditor.tsx`: 우측 패널에 `-`, 퍼센트, `+`, `맞춤` 줌 컨트롤 재추가(모바일/데스크탑 공통)
+  - [x] `Canvas.ts`: 렌더/포인터/컨트롤 좌표계를 viewport 기준으로 확장(풀캔버스 줌)
+  - [x] `MemeCanvas.tsx`: 일반 휠 스크롤(`Ctrl/Cmd` 미입력) 팬 지원 및 textarea 오버레이 좌표를 viewport 변환과 동기화
+  - [x] `Canvas.ts`: scene(workspace)와 view(screen) 크기를 분리해 full viewport 캔버스 지원
+  - [x] `MemeCanvas.tsx`: canvas 표시 크기를 fit px에서 `w-full h-full`로 전환
+  - [x] `MemeCanvas.tsx`: `Ctrl/Cmd + Wheel` 줌을 커서 앵커 기준으로 보정(줌 중심점 고정)
+  - [x] `MemeCanvas.tsx`/`MemeEditor.tsx`: 캔버스 스테이지 데스크탑 패딩/라운드 제거 + 좌측 영역 무여백 full-fill 정렬
+  - [x] `index.css`: 캔버스 스테이지를 에디터 톤(그리드)으로 정렬하고 캔버스 라운드/그림자 제거
+  - [x] `MemeCanvas.tsx`: 업로드 후 캔버스 흰 바탕 노출 제거(`bg-card -> bg-transparent`)
+  - [x] `Canvas.ts`: 에디터 배경(그리드/워크스페이스 프레임) 렌더를 캔버스 내부로 이관
+  - [x] `MemeCanvas.tsx`: `스페이스 + 좌클릭 드래그`, `중클릭 드래그` 팬 인터랙션 추가
+  - [x] `index.css`: 팬 모드 커서(`grab/grabbing`)를 캔버스 상태 클래스와 연동
+  - [x] `Canvas.ts`: viewport pan bounds에 overscroll 여유 추가(100% 상태에서도 이동 가능)
+  - [x] `Canvas.ts`: fit 상태에서 `centerViewport` 자동 중앙 정렬 지원
+  - [x] `MemeCanvas.tsx`: 일반 휠 팬을 확대 상태 제한 없이 항상 허용
+  - [x] `Canvas.ts`: 테마 속성 변경 감지(`data-theme/style/class`) 시 캔버스 즉시 재렌더
+  - [x] `useMemeEditor.ts`: `object:moving` 경계 제한 제거로 오브젝트 자유 이동 허용
+  - [x] `Canvas.ts`: 에디터 그리드를 viewport 결합 좌표계에서 screen 고정 좌표계로 분리
+  - [x] `MemeCanvas.tsx`: `Space + 좌클릭 드래그`, `중클릭 드래그` 팬 인터랙션 복구
+  - [x] `index.css`: 팬 준비/드래그 상태 커서(`grab/grabbing`) 스타일 정합화
+  - [x] `Canvas.ts`: 작업 그리드를 world 좌표계로 재전환(줌/팬 시 워크스페이스와 동기 이동)
+  - [x] `Canvas.ts`: 업로드 이미지 작업영역 점선 외곽선(workspace frame) 렌더 제거
+  - [x] `useMemeEditor.ts`: 텍스트/도형 레이어 이동/수정 시 workspace 내부 클램프 적용(회전 AABB 반영)
 - [x] **줌 정책 단순화 (Fit/100% 제거 + 최대 px 자동 스케일)**
   - [x] `MemeEditor.tsx`: `zoomMode` 상태 및 `Fit`/`100%` 버튼 제거
   - [x] `MemeCanvas.tsx`: 단일 `displayScale` 계산으로 통합

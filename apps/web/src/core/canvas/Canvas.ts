@@ -15,10 +15,16 @@ export class Canvas {
   private ctx: CanvasRenderingContext2D;
   private objects: CanvasObject[] = [];
   private activeObject: CanvasObject | null = null;
-  private width: number;
-  private height: number;
+  private sceneWidth: number;
+  private sceneHeight: number;
+  private viewWidth: number;
+  private viewHeight: number;
   private renderScale: number;
+  private viewportZoom: number = 1;
+  private viewportPanX: number = 0;
+  private viewportPanY: number = 0;
   private needsRedraw: boolean = true;
+  private themeObserver: MutationObserver | null = null;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private eventListeners: Record<string, ((options?: any) => void)[]> = {};
 
@@ -27,8 +33,10 @@ export class Canvas {
     const ctx = el.getContext('2d');
     if (!ctx) throw new Error('Could not get 2d context');
     this.ctx = ctx;
-    this.width = el.width;
-    this.height = el.height;
+    this.sceneWidth = el.width;
+    this.sceneHeight = el.height;
+    this.viewWidth = el.width;
+    this.viewHeight = el.height;
     this.renderScale = Math.max(1, window.devicePixelRatio || 1);
     this.syncBackingStoreSize();
     
@@ -36,6 +44,21 @@ export class Canvas {
     requestAnimationFrame(this.renderLoop);
     
     this.initEvents();
+    this.initThemeObserver();
+  }
+
+  private initThemeObserver() {
+    if (typeof window === 'undefined' || typeof MutationObserver === 'undefined') return;
+    const root = document.documentElement;
+    if (!root) return;
+
+    this.themeObserver = new MutationObserver(() => {
+      this.requestRender();
+    });
+    this.themeObserver.observe(root, {
+      attributes: true,
+      attributeFilter: ['data-theme', 'style', 'class']
+    });
   }
 
   private renderLoop() {
@@ -55,8 +78,8 @@ export class Canvas {
   }
 
   private syncBackingStoreSize() {
-    const pixelWidth = Math.max(1, Math.round(this.width * this.renderScale));
-    const pixelHeight = Math.max(1, Math.round(this.height * this.renderScale));
+    const pixelWidth = Math.max(1, Math.round(this.viewWidth * this.renderScale));
+    const pixelHeight = Math.max(1, Math.round(this.viewHeight * this.renderScale));
     if (this.el.width !== pixelWidth) this.el.width = pixelWidth;
     if (this.el.height !== pixelHeight) this.el.height = pixelHeight;
   }
@@ -69,6 +92,113 @@ export class Canvas {
     this.requestRender();
   }
 
+  private getViewportPanBounds(zoom: number) {
+    const safeZoom = isFinite(zoom) ? Math.max(0.1, zoom) : 1;
+    const scaledWidth = this.sceneWidth * safeZoom;
+    const scaledHeight = this.sceneHeight * safeZoom;
+    const overscrollX = Math.max(96, this.viewWidth * 0.18);
+    const overscrollY = Math.max(96, this.viewHeight * 0.18);
+
+    const centerPanX = scaledWidth <= this.viewWidth
+      ? (this.viewWidth - scaledWidth) / 2
+      : 0;
+    const minPanX = scaledWidth <= this.viewWidth
+      ? centerPanX - overscrollX
+      : (this.viewWidth - scaledWidth) - overscrollX;
+    const maxPanX = scaledWidth <= this.viewWidth
+      ? centerPanX + overscrollX
+      : overscrollX;
+
+    const centerPanY = scaledHeight <= this.viewHeight
+      ? (this.viewHeight - scaledHeight) / 2
+      : 0;
+    const minPanY = scaledHeight <= this.viewHeight
+      ? centerPanY - overscrollY
+      : (this.viewHeight - scaledHeight) - overscrollY;
+    const maxPanY = scaledHeight <= this.viewHeight
+      ? centerPanY + overscrollY
+      : overscrollY;
+
+    return { minPanX, maxPanX, minPanY, maxPanY };
+  }
+
+  private applyViewport(zoom: number, panX: number, panY: number) {
+    const safeZoom = isFinite(zoom) ? Math.max(0.1, Math.min(8, zoom)) : 1;
+    const { minPanX, maxPanX, minPanY, maxPanY } = this.getViewportPanBounds(safeZoom);
+    const clampedPanX = Math.max(minPanX, Math.min(maxPanX, panX));
+    const clampedPanY = Math.max(minPanY, Math.min(maxPanY, panY));
+    const changed = Math.abs(this.viewportZoom - safeZoom) > 0.0001
+      || Math.abs(this.viewportPanX - clampedPanX) > 0.0001
+      || Math.abs(this.viewportPanY - clampedPanY) > 0.0001;
+    if (!changed) return;
+
+    this.viewportZoom = safeZoom;
+    this.viewportPanX = clampedPanX;
+    this.viewportPanY = clampedPanY;
+    this.fire('viewport:changed', this.getViewportTransform());
+    this.requestRender();
+  }
+
+  getViewportTransform() {
+    return {
+      zoom: this.viewportZoom,
+      panX: this.viewportPanX,
+      panY: this.viewportPanY
+    };
+  }
+
+  setViewportZoom(zoom: number, anchor?: { x: number; y: number }) {
+    const safeZoom = isFinite(zoom) ? Math.max(0.1, Math.min(8, zoom)) : 1;
+    const anchorX = typeof anchor?.x === 'number' && isFinite(anchor.x) ? anchor.x : this.viewWidth / 2;
+    const anchorY = typeof anchor?.y === 'number' && isFinite(anchor.y) ? anchor.y : this.viewHeight / 2;
+    const worldX = (anchorX - this.viewportPanX) / this.viewportZoom;
+    const worldY = (anchorY - this.viewportPanY) / this.viewportZoom;
+    const nextPanX = anchorX - (worldX * safeZoom);
+    const nextPanY = anchorY - (worldY * safeZoom);
+    this.applyViewport(safeZoom, nextPanX, nextPanY);
+  }
+
+  setViewportSize(width: number, height: number) {
+    if (!isFinite(width) || !isFinite(height) || width <= 0 || height <= 0) return;
+    const safeWidth = Math.max(1, Math.round(width));
+    const safeHeight = Math.max(1, Math.round(height));
+    if (this.viewWidth === safeWidth && this.viewHeight === safeHeight) return;
+    this.viewWidth = safeWidth;
+    this.viewHeight = safeHeight;
+    this.syncBackingStoreSize();
+    this.applyViewport(this.viewportZoom, this.viewportPanX, this.viewportPanY);
+    this.requestRender();
+  }
+
+  panViewportByScreenDelta(deltaX: number, deltaY: number) {
+    if (!isFinite(deltaX) || !isFinite(deltaY)) return;
+    this.applyViewport(
+      this.viewportZoom,
+      this.viewportPanX + deltaX,
+      this.viewportPanY + deltaY
+    );
+  }
+
+  panViewportByCssDelta(deltaX: number, deltaY: number) {
+    if (!isFinite(deltaX) || !isFinite(deltaY)) return;
+    const rect = this.el.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) return;
+    const scaleX = this.viewWidth / rect.width;
+    const scaleY = this.viewHeight / rect.height;
+    this.panViewportByScreenDelta(deltaX * scaleX, deltaY * scaleY);
+  }
+
+  resetViewport() {
+    this.applyViewport(1, 0, 0);
+  }
+
+  centerViewport(zoom: number = this.viewportZoom) {
+    const safeZoom = isFinite(zoom) ? Math.max(0.1, Math.min(8, zoom)) : this.viewportZoom;
+    const panX = (this.viewWidth - (this.sceneWidth * safeZoom)) / 2;
+    const panY = (this.viewHeight - (this.sceneHeight * safeZoom)) / 2;
+    this.applyViewport(safeZoom, panX, panY);
+  }
+
   /**
    * Returns the scale factor between logical canvas size and its CSS display size.
    * Used to keep UI elements (like handles) consistent in size regardless of zoom/screen size.
@@ -76,7 +206,7 @@ export class Canvas {
   private getSceneScale(): number {
     const rect = this.el.getBoundingClientRect();
     if (rect.width === 0) return 1;
-    return this.width / rect.width;
+    return (this.viewWidth / rect.width) / this.viewportZoom;
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -414,12 +544,14 @@ export class Canvas {
         return { x: 0, y: 0 };
     }
 
-    const scaleX = this.width / cssWidth;
-    const scaleY = this.height / cssHeight;
+    const scaleX = this.viewWidth / cssWidth;
+    const scaleY = this.viewHeight / cssHeight;
+    const screenX = (clientX - rect.left) * scaleX;
+    const screenY = (clientY - rect.top) * scaleY;
     
     return {
-      x: (clientX - rect.left) * scaleX,
-      y: (clientY - rect.top) * scaleY
+      x: (screenX - this.viewportPanX) / this.viewportZoom,
+      y: (screenY - this.viewportPanY) / this.viewportZoom
     };
   }
 
@@ -489,15 +621,15 @@ export class Canvas {
 
   setWidth(width: number) {
     if (!isFinite(width) || width <= 0) return;
-    this.width = width;
-    this.syncBackingStoreSize();
+    this.sceneWidth = width;
+    this.applyViewport(this.viewportZoom, this.viewportPanX, this.viewportPanY);
     this.requestRender();
   }
 
   setHeight(height: number) {
     if (!isFinite(height) || height <= 0) return;
-    this.height = height;
-    this.syncBackingStoreSize();
+    this.sceneHeight = height;
+    this.applyViewport(this.viewportZoom, this.viewportPanX, this.viewportPanY);
     this.requestRender();
   }
 
@@ -512,8 +644,76 @@ export class Canvas {
     this.requestRender();
   }
 
+  private drawEditorGrid(step: number, alpha: number, color: string) {
+    if (!isFinite(step) || step <= 0 || !isFinite(this.viewportZoom) || this.viewportZoom <= 0) {
+      return;
+    }
+
+    const safeStep = Math.max(4, Math.round(step));
+    const worldLeft = (-this.viewportPanX) / this.viewportZoom;
+    const worldTop = (-this.viewportPanY) / this.viewportZoom;
+    const worldRight = (this.viewWidth - this.viewportPanX) / this.viewportZoom;
+    const worldBottom = (this.viewHeight - this.viewportPanY) / this.viewportZoom;
+
+    const startX = Math.floor(worldLeft / safeStep) * safeStep;
+    const startY = Math.floor(worldTop / safeStep) * safeStep;
+    const endX = Math.ceil(worldRight / safeStep) * safeStep;
+    const endY = Math.ceil(worldBottom / safeStep) * safeStep;
+
+    const maxLinesPerAxis = 600;
+
+    this.ctx.save();
+    this.ctx.beginPath();
+    this.ctx.strokeStyle = color;
+    this.ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
+    this.ctx.lineWidth = 1;
+
+    for (let x = startX, verticalCount = 0; x <= endX && verticalCount < maxLinesPerAxis; x += safeStep) {
+      const screenX = (x * this.viewportZoom) + this.viewportPanX;
+      const crispX = Math.round(screenX) + 0.5;
+      this.ctx.moveTo(crispX, 0);
+      this.ctx.lineTo(crispX, this.viewHeight);
+      verticalCount++;
+    }
+
+    for (let y = startY, horizontalCount = 0; y <= endY && horizontalCount < maxLinesPerAxis; y += safeStep) {
+      const screenY = (y * this.viewportZoom) + this.viewportPanY;
+      const crispY = Math.round(screenY) + 0.5;
+      this.ctx.moveTo(0, crispY);
+      this.ctx.lineTo(this.viewWidth, crispY);
+      horizontalCount++;
+    }
+
+    this.ctx.stroke();
+    this.ctx.restore();
+  }
+
+  private drawEditorBackdrop() {
+    const stageFill = getCssVarColor('--editor-canvas-bg', '#f2f3f1');
+    const gridMinor = getCssVarColor('--canvas-grid-minor', '#415a77');
+    const gridMajor = getCssVarColor('--canvas-grid-major', '#364c75');
+
+    this.ctx.save();
+    this.ctx.fillStyle = stageFill;
+    this.ctx.fillRect(0, 0, this.viewWidth, this.viewHeight);
+
+    this.drawEditorGrid(48, 0.07, gridMinor);
+    this.drawEditorGrid(240, 0.16, gridMajor);
+    this.ctx.restore();
+  }
+
   render() {
-    if (!this.ctx || !isFinite(this.width) || !isFinite(this.height) || this.width <= 0 || this.height <= 0) {
+    if (
+      !this.ctx
+      || !isFinite(this.sceneWidth)
+      || !isFinite(this.sceneHeight)
+      || !isFinite(this.viewWidth)
+      || !isFinite(this.viewHeight)
+      || this.sceneWidth <= 0
+      || this.sceneHeight <= 0
+      || this.viewWidth <= 0
+      || this.viewHeight <= 0
+    ) {
       return;
     }
 
@@ -531,6 +731,9 @@ export class Canvas {
       // Clear the canvas - use actual canvas element dimensions
       this.ctx.clearRect(0, 0, this.el.width, this.el.height);
       this.ctx.setTransform(this.renderScale, 0, 0, this.renderScale, 0, 0);
+      this.drawEditorBackdrop();
+      this.ctx.translate(this.viewportPanX, this.viewportPanY);
+      this.ctx.scale(this.viewportZoom, this.viewportZoom);
       
       // Draw all objects
       for (const obj of this.objects) {
@@ -662,48 +865,39 @@ export class Canvas {
         ? Math.max(0, Math.min(1, options.quality))
         : undefined;
     
-    if (options.left !== undefined || options.top !== undefined || options.width !== undefined || options.height !== undefined) {
-      // Create temp canvas for cropping
-      const tempCanvas = document.createElement('canvas');
-      const w = options.width || this.width;
-      const h = options.height || this.height;
-      const left = options.left || 0;
-      const top = options.top || 0;
-      const multiplier = options.multiplier || 1;
-      
-      tempCanvas.width = w * multiplier;
-      tempCanvas.height = h * multiplier;
-      const tCtx = tempCanvas.getContext('2d');
-      if (!tCtx) return '';
+    // Always render export from scene coordinates so viewport zoom/pan never affects output.
+    const tempCanvas = document.createElement('canvas');
+    const w = options.width || this.sceneWidth;
+    const h = options.height || this.sceneHeight;
+    const left = options.left || 0;
+    const top = options.top || 0;
+    const multiplier = options.multiplier || 1;
 
-      tCtx.scale(multiplier, multiplier);
-      tCtx.translate(-left, -top);
-      
-      // Draw everything
-      this.objects.forEach(obj => {
-        if (obj.visible) {
-          tCtx.save();
-          tCtx.translate(obj.left, obj.top);
-          tCtx.rotate((obj.angle * Math.PI) / 180);
-          tCtx.scale(obj.scaleX, obj.scaleY);
-          tCtx.globalAlpha = obj.opacity;
-          obj.draw(tCtx);
-          tCtx.restore();
-        }
-      });
-      
-      if (quality !== undefined && (format === 'jpeg' || format === 'webp')) {
-        return tempCanvas.toDataURL(mimeType, quality);
+    tempCanvas.width = w * multiplier;
+    tempCanvas.height = h * multiplier;
+    const tCtx = tempCanvas.getContext('2d');
+    if (!tCtx) return '';
+
+    tCtx.scale(multiplier, multiplier);
+    tCtx.translate(-left, -top);
+
+    this.objects.forEach(obj => {
+      if (obj.visible) {
+        tCtx.save();
+        tCtx.translate(obj.left, obj.top);
+        tCtx.rotate((obj.angle * Math.PI) / 180);
+        tCtx.scale(obj.scaleX, obj.scaleY);
+        tCtx.globalAlpha = obj.opacity;
+        obj.draw(tCtx);
+        tCtx.restore();
       }
-
-      return tempCanvas.toDataURL(mimeType);
-    }
+    });
 
     if (quality !== undefined && (format === 'jpeg' || format === 'webp')) {
-      return this.el.toDataURL(mimeType, quality);
+      return tempCanvas.toDataURL(mimeType, quality);
     }
 
-    return this.el.toDataURL(mimeType);
+    return tempCanvas.toDataURL(mimeType);
   }
 
   toJSON(includeBackground: boolean = true) {
@@ -713,8 +907,8 @@ export class Canvas {
       
     return {
       objects: objects.map(obj => obj.toJSON()),
-      width: this.width,
-      height: this.height
+      width: this.sceneWidth,
+      height: this.sceneHeight
     };
   }
 
@@ -810,6 +1004,10 @@ export class Canvas {
     this.el.removeEventListener('touchstart', this.handleDown);
     this.el.removeEventListener('mousemove', this.handleMouseMove);
     this.el.removeEventListener('dblclick', this.handleDoubleClick);
+    if (this.themeObserver) {
+      this.themeObserver.disconnect();
+      this.themeObserver = null;
+    }
     this.objects = [];
   }
 }

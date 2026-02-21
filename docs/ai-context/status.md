@@ -1,6 +1,88 @@
 # 프로젝트 상태 (Status)
 
 ## 현재 진행 상황
+- [x] **텍스트/도형 레이어 이미지 영역 이탈 방지 (완료 - 2026-02-20)**
+  - [x] 이동/수정 이벤트에서 배경 제외 선택 객체를 workspace 내부로 클램프
+  - [x] 회전 각도까지 반영한 AABB 기준으로 경계 계산(텍스트/도형 경계 이탈 방지)
+  - [x] `pnpm --filter memeplate-web lint`, `pnpm --filter memeplate-web build` 통과
+  - [x] 스크린샷 검증
+    - [x] `docs/ai-context/screenshots/2026-02-20_object_boundary_clamp_shape_v1.png`
+- [x] **업로드 이미지 작업영역 점선 외곽선 제거 (완료 - 2026-02-20)**
+  - [x] `Canvas.drawEditorBackdrop`의 workspace frame(`strokeRect`) 렌더 제거
+  - [x] 업로드 이미지 주변 점선 경계 없이 캔버스 그리드 + 이미지 본문만 표시
+  - [x] `pnpm --filter memeplate-web lint`, `pnpm --filter memeplate-web build` 통과
+  - [x] 스크린샷 검증
+    - [x] `docs/ai-context/screenshots/2026-02-20_editor_workspace_frame_removed_v1.png`
+- [x] **에디터 작업 그리드 줌/팬 연동 복구 (완료 - 2026-02-20)**
+  - [x] `Canvas.drawEditorGrid`를 screen 고정 좌표계에서 world 좌표계로 재전환
+  - [x] 확대/축소 시 작업 그리드가 워크스페이스(업로드 이미지/객체)와 함께 이동/스케일
+  - [x] `pnpm --filter memeplate-web lint`, `pnpm --filter memeplate-web build` 통과
+  - [x] 스크린샷 검증
+    - [x] `docs/ai-context/screenshots/2026-02-20_editor_grid_worldspace_zoom100_v1.png`
+    - [x] `docs/ai-context/screenshots/2026-02-20_editor_grid_worldspace_zoom110_v1.png`
+- [x] **업로드 이미지와 에디터 레이아웃 동시 이동 분리 (완료 - 2026-02-20)**
+  - [x] `Canvas.drawEditorGrid`를 viewport 좌표계에서 screen 좌표계로 분리(그리드 화면 고정)
+  - [x] 워크스페이스 프레임/오브젝트만 viewport pan/zoom을 타도록 유지
+  - [x] `MemeCanvas`에 `Space + 좌클릭 드래그`, `중클릭 드래그` 팬 인터랙션 복구
+  - [x] `pnpm --filter memeplate-web lint`, `pnpm --filter memeplate-web build` 통과
+  - [x] 스크린샷 검증
+    - [x] `docs/ai-context/screenshots/2026-02-20_editor_pan_decoupled_grid_v1.png`
+    - [x] `docs/ai-context/screenshots/2026-02-20_editor_pan_decoupled_grid_zoom110_v1.png`
+    - [x] `docs/ai-context/screenshots/2026-02-20_editor_pan_decoupled_grid_spacepan_v1.png`
+- [x] **오브젝트 이동 경계 해제 (완료 - 2026-02-20)**
+  - [x] `useMemeEditor`의 `object:moving` 경계 clamp 로직 제거
+  - [x] 오브젝트를 작업영역 경계에 묶지 않고 자유 이동 가능하도록 변경
+  - [x] `pnpm --filter memeplate-web lint`, `pnpm --filter memeplate-web build` 통과
+- [x] **에디터 라이트/다크 전환 렌더 동기화 보정 (완료 - 2026-02-20)**
+  - [x] `Canvas`에 `data-theme/style/class` 변경 감지(`MutationObserver`) 추가
+  - [x] 테마 전환 시 캔버스 엔진 `requestRender()`를 트리거해 에디터 배경/그리드 즉시 갱신
+  - [x] `pnpm --filter memeplate-web lint`, `pnpm --filter memeplate-web build` 통과
+  - [x] 스크린샷 검증
+    - [x] `docs/ai-context/screenshots/2026-02-20_editor_theme_sync_light_v1.png`
+    - [x] `docs/ai-context/screenshots/2026-02-20_editor_theme_sync_dark_v1.png`
+- [x] **이동 체감 보정 1차 (완료 - 2026-02-20)**
+  - [x] viewport pan bounds에 overscroll 여유 추가(100%/fit에서도 이동 체감 확보)
+  - [x] 일반 휠 팬을 `zoom > 100%` 제한 없이 항상 허용
+  - [x] fit 상태(`zoom=100%`)에서는 viewport를 자동 중앙정렬하도록 보정
+  - [x] `pnpm --filter memeplate-web lint`, `pnpm --filter memeplate-web build` 통과
+  - [x] 스크린샷 검증
+    - [x] `docs/ai-context/screenshots/2026-02-20_canvas_editor_pan_enabled_v1.png`
+- [x] **캔버스 내부 에디터 배경 렌더 + 팬 인터랙션 보강 (완료 - 2026-02-20)**
+  - [x] 에디터 배경(그리드/워크스페이스 프레임)을 스테이지 CSS가 아닌 `Canvas` 렌더 내부로 이관
+  - [x] `MemeCanvas`에 `스페이스 + 드래그`, `중클릭 드래그` 팬 동작 추가
+  - [x] `Ctrl/Cmd + Wheel` 커서 앵커 줌 + 일반 휠 팬(줌 인 상태) 동작 유지
+  - [x] `pnpm --filter memeplate-web lint`, `pnpm --filter memeplate-web build` 통과
+  - [x] 스크린샷 검증
+    - [x] `docs/ai-context/screenshots/2026-02-20_canvas_editor_style_internal_v2.png`
+    - [x] `docs/ai-context/screenshots/2026-02-20_canvas_editor_style_internal_pan_zoom_v1.png`
+- [x] **업로드 후 캔버스 흰 배경 제거 (완료 - 2026-02-20)**
+  - [x] 캔버스 요소 기본 배경을 `bg-card`에서 `bg-transparent`로 변경
+  - [x] 업로드 이미지 비율이 작업영역과 달라도 흰 바탕 대신 스테이지 톤이 노출되도록 보정
+  - [x] `pnpm --filter memeplate-web lint`, `pnpm --filter memeplate-web build` 통과
+  - [x] 스크린샷 검증
+    - [x] `docs/ai-context/screenshots/2026-02-20_editor_canvas_transparent_bg_v1.png`
+- [x] **풀캔버스 무여백 + 에디터 스타일 + 커서 기준 줌 보정 (완료 - 2026-02-20)**
+  - [x] `MemeEditor` 캔버스 영역 데스크탑 여백(`md:py/pl/pr`) 제거
+  - [x] `MemeCanvas` 스테이지 패딩 제거 및 viewport/canvas 라운드 제거
+  - [x] `MemeCanvas` `Ctrl/Cmd + Wheel` 줌 시 커서 위치를 viewport 앵커로 적용
+  - [x] `index.css` 캔버스 스테이지를 에디터 톤(은은한 그리드)으로 정렬하고 캔버스 그림자 제거
+  - [x] `pnpm --filter memeplate-web lint`, `pnpm --filter memeplate-web build` 통과
+  - [x] DOM 측정 검증: `canvas == viewport == stage` (`1092x746`)
+  - [x] 스크린샷 검증
+    - [x] `docs/ai-context/screenshots/2026-02-20_editor_full_canvas_flat_v3.png`
+- [x] **에디터 줌 기능 재도입 (완료 - 2026-02-20)**
+  - [x] `useMemeEditor`에 줌 상태(`25%~400%`) 및 `zoomIn/zoomOut/resetZoom` 액션 추가
+  - [x] `MemeEditor` 우측 패널(데스크탑/모바일)에 줌 컨트롤(`-`, 퍼센트, `+`, `맞춤`) 추가
+  - [x] `Ctrl/Cmd + +`, `Ctrl/Cmd + -`, `Ctrl/Cmd + 0` 단축키 지원
+  - [x] `Ctrl/Cmd + Wheel` 줌 지원 및 줌 인 상태에서 뷰포트 스크롤 팬 허용
+  - [x] 줌 적용 방식을 DOM transform에서 엔진 viewport(`Canvas` 내부 zoom/pan)로 전환
+  - [x] 일반 휠 스크롤 시(`Ctrl/Cmd` 미입력, 줌>100%) 캔버스 내부 팬 동작 지원
+  - [x] 캔버스 오버레이 위치 계산에 viewport 변환(zoom/pan) 반영
+  - [x] 캔버스 렌더 영역을 이미지 크기 고정이 아닌 viewport 전체(`w-full h-full`)로 전환
+  - [x] `pnpm --filter memeplate-web lint`, `pnpm --filter memeplate-web build` 통과
+  - [x] 스크린샷 검증
+    - [x] `docs/ai-context/screenshots/2026-02-20_editor_zoom_fullcanvas_v1.png`
+    - [x] `docs/ai-context/screenshots/2026-02-20_editor_full_canvas_viewport_v1.png`
 - [x] **업로드 토스트 제거 (완료 - 2026-02-20)**
   - [x] 이미지 업로드 성공 시 표시되던 안내 토스트 제거
   - [x] 이미지 업로드 실패 시 표시되던 에러 토스트 제거

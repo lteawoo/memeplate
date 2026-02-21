@@ -35,8 +35,13 @@ const MemeEditor: React.FC<MemeEditorProps> = ({ initialTemplate, initialTemplat
     workspaceSize,
     historyIndex,
     history,
+    zoom,
     undo,
     redo,
+    zoomIn,
+    zoomOut,
+    resetZoom,
+    zoomByWheelDelta,
     selectLayer,
     handleImageUpload,
     addText,
@@ -122,14 +127,79 @@ const MemeEditor: React.FC<MemeEditorProps> = ({ initialTemplate, initialTemplat
     );
   };
 
+  const zoomPercent = Math.round(zoom * 100);
+
+  const renderHistoryAndZoomControls = () => {
+    if (!hasBackground) return null;
+
+    return (
+      <div className="space-y-2">
+        <div className="grid grid-cols-2 gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={undo}
+            disabled={historyIndex <= 0}
+            className="h-10 rounded-xl border-transparent bg-muted text-foreground hover:border-border hover:bg-accent"
+          >
+            <Icon path={mdiUndo} size={0.85} />
+            실행 취소
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={redo}
+            disabled={historyIndex >= history.length - 1}
+            className="h-10 rounded-xl border-transparent bg-muted text-foreground hover:border-border hover:bg-accent"
+          >
+            <Icon path={mdiRedo} size={0.85} />
+            다시 실행
+          </Button>
+        </div>
+
+        <div className="grid grid-cols-4 gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={zoomOut}
+            disabled={zoom <= 0.25}
+            className="h-10 rounded-xl border-transparent bg-muted text-lg font-semibold text-foreground hover:border-border hover:bg-accent"
+          >
+            -
+          </Button>
+          <div className="flex h-10 items-center justify-center rounded-xl bg-muted text-sm font-semibold text-foreground">
+            {zoomPercent}%
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={zoomIn}
+            disabled={zoom >= 4}
+            className="h-10 rounded-xl border-transparent bg-muted text-lg font-semibold text-foreground hover:border-border hover:bg-accent"
+          >
+            +
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={resetZoom}
+            className="h-10 rounded-xl border-transparent bg-muted text-xs font-semibold text-foreground hover:border-border hover:bg-accent"
+          >
+            맞춤
+          </Button>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="flex min-h-screen flex-col bg-app-surface md:h-screen">
       <MainHeader />
 
       <div className="relative flex min-h-0 flex-col md:flex-1 md:flex-row md:overflow-hidden">
-          <div className="flex min-h-0 min-w-0 flex-1 flex-col md:py-3 md:pl-3 md:pr-2">
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col">
             <div
-              className="relative flex min-h-0 flex-1 flex-col overflow-hidden md:rounded-[28px]"
+              className="relative flex min-h-0 flex-1 flex-col overflow-hidden"
               ref={canvasAreaRef}
               onClick={() => {
                 if (canvasInstance) {
@@ -146,42 +216,21 @@ const MemeEditor: React.FC<MemeEditorProps> = ({ initialTemplate, initialTemplat
               completeTextEdit={completeTextEdit}
               canvasInstance={canvasInstance}
               workspaceSize={workspaceSize}
+              zoom={zoom}
               isBackgroundLoading={isBackgroundApplying}
               onUploadImage={handleImageUpload}
+              onZoomByWheelDelta={zoomByWheelDelta}
             />
           </div>
         </div>
 
         <aside className="editor-desktop-glass hidden h-full min-h-0 w-[336px] shrink-0 md:my-3 md:mr-3 md:h-[calc(100%-1.5rem)] md:rounded-2xl md:bg-editor-sidebar-bg/88 md:flex md:flex-col">
-          <div className="space-y-3 px-4 py-4">
-            <div className="grid grid-cols-2 gap-1 rounded-xl bg-muted/70 p-1">
-              {STUDIO_TOOLS.map((tool) => renderToolButton(tool, true, true))}
-            </div>
-            {hasBackground ? (
-              <div className="grid grid-cols-2 gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={undo}
-                  disabled={historyIndex <= 0}
-                  className="h-10 rounded-xl border-transparent bg-muted text-foreground hover:border-border hover:bg-accent"
-                >
-                  <Icon path={mdiUndo} size={0.85} />
-                  실행 취소
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={redo}
-                  disabled={historyIndex >= history.length - 1}
-                  className="h-10 rounded-xl border-transparent bg-muted text-foreground hover:border-border hover:bg-accent"
-                >
-                  <Icon path={mdiRedo} size={0.85} />
-                  다시 실행
-                </Button>
+            <div className="space-y-3 px-4 py-4">
+              <div className="grid grid-cols-2 gap-1 rounded-xl bg-muted/70 p-1">
+                {STUDIO_TOOLS.map((tool) => renderToolButton(tool, true, true))}
               </div>
-            ) : null}
-          </div>
+              {renderHistoryAndZoomControls()}
+            </div>
           <div className="min-h-0 flex-1 overflow-hidden">
             <MemePropertyPanel {...panelProps} />
           </div>
@@ -193,30 +242,7 @@ const MemeEditor: React.FC<MemeEditorProps> = ({ initialTemplate, initialTemplat
               <div className="grid grid-cols-2 gap-1 rounded-xl bg-muted/70 p-1">
                 {STUDIO_TOOLS.map((tool) => renderToolButton(tool, true, true))}
               </div>
-              {hasBackground ? (
-                <div className="grid grid-cols-2 gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={undo}
-                    disabled={historyIndex <= 0}
-                    className="h-10 rounded-xl border-transparent bg-muted text-foreground hover:border-border hover:bg-accent"
-                  >
-                    <Icon path={mdiUndo} size={0.85} />
-                    실행 취소
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={redo}
-                    disabled={historyIndex >= history.length - 1}
-                    className="h-10 rounded-xl border-transparent bg-muted text-foreground hover:border-border hover:bg-accent"
-                  >
-                    <Icon path={mdiRedo} size={0.85} />
-                    다시 실행
-                  </Button>
-                </div>
-              ) : null}
+              {renderHistoryAndZoomControls()}
             </div>
             <MemePropertyPanel {...panelProps} />
           </div>

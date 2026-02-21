@@ -12,6 +12,9 @@ const TEMPLATE_BACKGROUND_QUALITY = 0.98;
 const PUBLISH_IMAGE_QUALITY = 0.98;
 const EXPORT_IMAGE_MULTIPLIER = 1;
 const BACKGROUND_LOADING_MIN_MS = 180;
+const ZOOM_MIN = 0.25;
+const ZOOM_MAX = 4;
+const ZOOM_STEP = 0.1;
 
 interface HistoryItem {
   json: string;
@@ -157,6 +160,9 @@ const estimateDataUrlBytes = (dataUrl: string) => {
   return Math.max(0, Math.floor((base64.length * 3) / 4) - padding);
 };
 
+const clampZoom = (value: number) => Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, value));
+const roundZoom = (value: number) => Math.round(value * 100) / 100;
+
 const normalizeWorkspaceSize = (width: number, height: number) => {
   const safeWidth = Number.isFinite(width) && width > 0 ? Math.round(width) : 1;
   const safeHeight = Number.isFinite(height) && height > 0 ? Math.round(height) : 1;
@@ -178,6 +184,51 @@ const normalizeWorkspaceSize = (width: number, height: number) => {
 };
 
 const isTextObject = (obj?: CanvasObject | null) => obj instanceof Textbox || obj?.type === 'text';
+
+const clampObjectInsideWorkspace = (
+  target: CanvasObject | undefined,
+  workspaceWidth: number,
+  workspaceHeight: number,
+) => {
+  if (!target || target.name === 'background') return false;
+  if (!Number.isFinite(workspaceWidth) || !Number.isFinite(workspaceHeight) || workspaceWidth <= 0 || workspaceHeight <= 0) {
+    return false;
+  }
+
+  const scaledWidth = Math.max(0, (target.width || 0) * Math.abs(target.scaleX ?? 1));
+  const scaledHeight = Math.max(0, (target.height || 0) * Math.abs(target.scaleY ?? 1));
+  if (!Number.isFinite(scaledWidth) || !Number.isFinite(scaledHeight)) return false;
+
+  const angleRad = ((target.angle || 0) * Math.PI) / 180;
+  const absCos = Math.abs(Math.cos(angleRad));
+  const absSin = Math.abs(Math.sin(angleRad));
+
+  const halfAabbWidth = ((scaledWidth * absCos) + (scaledHeight * absSin)) / 2;
+  const halfAabbHeight = ((scaledWidth * absSin) + (scaledHeight * absCos)) / 2;
+  if (!Number.isFinite(halfAabbWidth) || !Number.isFinite(halfAabbHeight)) return false;
+
+  const minX = halfAabbWidth;
+  const maxX = workspaceWidth - halfAabbWidth;
+  const minY = halfAabbHeight;
+  const maxY = workspaceHeight - halfAabbHeight;
+
+  const prevLeft = target.left;
+  const prevTop = target.top;
+
+  if (minX > maxX) {
+    target.left = workspaceWidth / 2;
+  } else {
+    target.left = Math.max(minX, Math.min(maxX, target.left));
+  }
+
+  if (minY > maxY) {
+    target.top = workspaceHeight / 2;
+  } else {
+    target.top = Math.max(minY, Math.min(maxY, target.top));
+  }
+
+  return target.left !== prevLeft || target.top !== prevTop;
+};
 
 const getBackgroundSourceFromCanvas = (canvas: Canvas) => {
   const objects = canvas.getObjects();
@@ -227,6 +278,7 @@ export const useMemeEditor = (options?: UseMemeEditorOptions) => {
   const [color, setColor] = useState('#ffffff');
   const [hasBackground, setHasBackground] = useState(false);
   const [workspaceSize, setWorkspaceSize] = useState({ width: 0, height: 0 });
+  const [zoom, setZoom] = useState(1);
   const workspaceSizeRef = useRef({ width: 0, height: 0 });
   const [savedTemplate, setSavedTemplate] = useState<SavedTemplateMeta | null>(null);
   const [isTemplateSaving, setIsTemplateSaving] = useState(false);
@@ -249,6 +301,31 @@ export const useMemeEditor = (options?: UseMemeEditorOptions) => {
   const isBackgroundDirtyRef = useRef(false);
   const loadedTemplateKeyRef = useRef<string | null>(null);
   const [isCanvasReady, setIsCanvasReady] = useState(false);
+
+  const updateZoom = useCallback((updater: (prev: number) => number) => {
+    setZoom((prev) => roundZoom(clampZoom(updater(prev))));
+  }, []);
+
+  const zoomIn = useCallback(() => {
+    updateZoom((prev) => prev + ZOOM_STEP);
+  }, [updateZoom]);
+
+  const zoomOut = useCallback(() => {
+    updateZoom((prev) => prev - ZOOM_STEP);
+  }, [updateZoom]);
+
+  const resetZoom = useCallback(() => {
+    setZoom(1);
+  }, []);
+
+  const zoomByWheelDelta = useCallback((deltaY: number) => {
+    if (!Number.isFinite(deltaY) || deltaY === 0) return;
+    if (deltaY < 0) {
+      zoomIn();
+      return;
+    }
+    zoomOut();
+  }, [zoomIn, zoomOut]);
 
   const saveHistoryNow = useCallback(() => {
     if (isHistoryLocked.current || !canvasInstanceRef.current) return;
@@ -351,6 +428,40 @@ export const useMemeEditor = (options?: UseMemeEditorOptions) => {
   }, [redo, undo]);
 
   useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!(e.metaKey || e.ctrlKey)) return;
+
+      const target = e.target as HTMLElement | null;
+      if (target) {
+        const tagName = target.tagName;
+        if (tagName === 'INPUT' || tagName === 'TEXTAREA' || target.isContentEditable) {
+          return;
+        }
+      }
+
+      if (e.key === '=' || e.key === '+') {
+        e.preventDefault();
+        zoomIn();
+        return;
+      }
+
+      if (e.key === '-') {
+        e.preventDefault();
+        zoomOut();
+        return;
+      }
+
+      if (e.key === '0') {
+        e.preventDefault();
+        resetZoom();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [resetZoom, zoomIn, zoomOut]);
+
+  useEffect(() => {
     if (!canvasRef.current) return;
     const canvas = new Canvas(canvasRef.current);
     canvas.setWidth(600);
@@ -386,6 +497,11 @@ export const useMemeEditor = (options?: UseMemeEditorOptions) => {
     };
 
     const handleUpdate = (event?: CanvasObjectEvent) => {
+        const { width: workspaceWidth, height: workspaceHeight } = workspaceSizeRef.current;
+        const positionAdjusted = clampObjectInsideWorkspace(event?.target, workspaceWidth, workspaceHeight);
+        if (positionAdjusted) {
+          canvas.requestRender();
+        }
         if (event?.target && !isTextObject(event.target)) {
           isBackgroundDirtyRef.current = true;
         }
@@ -393,47 +509,12 @@ export const useMemeEditor = (options?: UseMemeEditorOptions) => {
         setLayers([...canvas.getObjects()]);
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const enforceBoundaries = (e: any) => {
-        const obj = e.target;
-        if (!obj || !canvasInstanceRef.current || !workspaceSizeRef.current.width) return;
-
-        const width = obj.width * obj.scaleX;
-        const height = obj.height * obj.scaleY;
-        
-        const boundLeft = obj.left - width / 2;
-        const boundTop = obj.top - height / 2;
-        
-        const minLeft = 0;
-        const minTop = 0;
-        const maxLeft = workspaceSizeRef.current.width;
-        const maxTop = workspaceSizeRef.current.height;
-
-        let moved = false;
-        let newLeft = obj.left;
-        let newTop = obj.top;
-
-        if (boundLeft < minLeft) {
-            newLeft = minLeft + width / 2;
-            moved = true;
-        }
-        if (boundTop < minTop) {
-            newTop = minTop + height / 2;
-            moved = true;
-        }
-        if (boundLeft + width > maxLeft) {
-            newLeft = maxLeft - width / 2;
-            moved = true;
-        }
-        if (boundTop + height > maxTop) {
-            newTop = maxTop - height / 2;
-            moved = true;
-        }
-
-        if (moved) {
-            obj.set('left', newLeft);
-            obj.set('top', newTop);
-        }
+    const handleObjectMoving = (event?: CanvasObjectEvent) => {
+      const { width: workspaceWidth, height: workspaceHeight } = workspaceSizeRef.current;
+      const positionAdjusted = clampObjectInsideWorkspace(event?.target, workspaceWidth, workspaceHeight);
+      if (positionAdjusted) {
+        canvas.requestRender();
+      }
     };
 
     canvas.on('mouse:dblclick', (opt: CanvasDoubleClickEvent) => {
@@ -449,11 +530,10 @@ export const useMemeEditor = (options?: UseMemeEditorOptions) => {
     canvas.on('selection:cleared', () => setActiveObject(null));
     
     canvas.on('object:added', handleUpdate);
+    canvas.on('object:moving', handleObjectMoving);
     canvas.on('object:modified', handleUpdate);
     canvas.on('object:removed', handleUpdate);
     
-    canvas.on('object:moving', enforceBoundaries);
-
     return () => {
       if (historyDebounceTimerRef.current) {
         clearTimeout(historyDebounceTimerRef.current);
@@ -506,6 +586,7 @@ export const useMemeEditor = (options?: UseMemeEditorOptions) => {
       canvas.discardActiveObject();
       canvas.requestRender();
       setActiveTool(hasBg ? 'edit' : null);
+      setZoom(1);
 
       const initialJson = JSON.stringify(canvas.toJSON(false));
       const initialItem: HistoryItem = { json: initialJson, selectedId: null };
@@ -581,6 +662,7 @@ export const useMemeEditor = (options?: UseMemeEditorOptions) => {
       canvas.renderAll();
       setHasBackground(true);
       setActiveTool('edit');
+      setZoom(1);
       isBackgroundDirtyRef.current = true;
       isHistoryLocked.current = false;
 
@@ -987,8 +1069,13 @@ export const useMemeEditor = (options?: UseMemeEditorOptions) => {
     workspaceSize,
     historyIndex,
     history,
+    zoom,
     undo,
     redo,
+    zoomIn,
+    zoomOut,
+    resetZoom,
+    zoomByWheelDelta,
     selectLayer,
     handleImageUpload,
     addText,
