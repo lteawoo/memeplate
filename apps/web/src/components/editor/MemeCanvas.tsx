@@ -27,8 +27,10 @@ interface MemeCanvasProps {
   completeTextEdit?: (id: string, newText: string) => void;
   canvasInstance?: Canvas | null;
   workspaceSize?: { width: number; height: number };
+  zoom?: number;
   isBackgroundLoading?: boolean;
   onUploadImage?: (file: File) => void;
+  onZoomByWheelDelta?: (deltaY: number) => void;
 }
 
 const MemeCanvas: React.FC<MemeCanvasProps> = ({
@@ -40,8 +42,10 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
   completeTextEdit,
   canvasInstance,
   workspaceSize,
+  zoom = 1,
   isBackgroundLoading = false,
   onUploadImage,
+  onZoomByWheelDelta,
 }) => {
   const [editingText, setEditingText] = React.useState('');
   const [editingOriginalText, setEditingOriginalText] = React.useState('');
@@ -52,7 +56,13 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
   const [viewportSize, setViewportSize] = React.useState({ width: 0, height: 0 });
   const [canvasCssSize, setCanvasCssSize] = React.useState({ width: 0, height: 0 });
   const [canvasCssOffset, setCanvasCssOffset] = React.useState({ left: 0, top: 0 });
+  const [viewportTransform, setViewportTransform] = React.useState({ zoom: 1, panX: 0, panY: 0 });
   const [isDragOverUpload, setIsDragOverUpload] = React.useState(false);
+  const [isSpacePressed, setIsSpacePressed] = React.useState(false);
+  const [isPanningCanvas, setIsPanningCanvas] = React.useState(false);
+  const panSessionRef = React.useRef<{ pointerId: number; clientX: number; clientY: number } | null>(null);
+  const pendingZoomAnchorRef = React.useRef<{ x: number; y: number } | null>(null);
+  const previousSafeZoomRef = React.useRef(zoom);
 
   const editingObject = React.useMemo(() => {
     if (!editingTextId || !canvasInstance) return null;
@@ -63,49 +73,74 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
   const intrinsicHeight = workspaceSize?.height || 0;
   const [canvasBorderSize, setCanvasBorderSize] = React.useState({ width: 0, height: 0 });
   const isMobileViewport = viewportSize.width < 768;
+  const viewportScreenWidth = Math.max(1, viewportSize.width - canvasBorderSize.width);
+  const viewportScreenHeight = Math.max(1, viewportSize.height - canvasBorderSize.height);
 
-  const displayScale = React.useMemo(() => {
-    if (!intrinsicWidth || !intrinsicHeight || !viewportSize.width || !viewportSize.height) {
+  const fitScale = React.useMemo(() => {
+    if (!intrinsicWidth || !intrinsicHeight || !viewportScreenWidth || !viewportScreenHeight) {
       return 1;
     }
-    const usableWidth = Math.max(1, viewportSize.width - canvasBorderSize.width);
     if (isMobileViewport) {
-      return Math.min(1, usableWidth / intrinsicWidth);
+      return Math.max(0.01, viewportScreenWidth / intrinsicWidth);
     }
-    const usableHeight = Math.max(1, viewportSize.height - canvasBorderSize.height);
     const viewportScale = Math.min(
-      usableWidth / intrinsicWidth,
-      usableHeight / intrinsicHeight,
+      viewportScreenWidth / intrinsicWidth,
+      viewportScreenHeight / intrinsicHeight,
     );
-    return Math.min(1, viewportScale);
+    return Math.max(0.01, viewportScale);
   }, [
     intrinsicWidth,
     intrinsicHeight,
-    viewportSize.width,
-    viewportSize.height,
-    canvasBorderSize.width,
-    canvasBorderSize.height,
+    viewportScreenWidth,
+    viewportScreenHeight,
     isMobileViewport,
   ]);
 
-  const usableViewportWidth = Math.max(1, viewportSize.width - canvasBorderSize.width);
-  const usableViewportHeight = Math.max(1, viewportSize.height - canvasBorderSize.height);
+  const safeZoom = React.useMemo(() => {
+    if (!Number.isFinite(zoom) || zoom <= 0) return 1;
+    return Math.max(0.25, Math.min(4, zoom));
+  }, [zoom]);
 
-  const displayWidth = intrinsicWidth
-    ? (isMobileViewport
-      ? Math.max(1, Math.floor(intrinsicWidth * displayScale))
-      : Math.min(usableViewportWidth, Math.max(1, Math.floor(intrinsicWidth * displayScale))))
-    : 0;
-  const displayHeight = intrinsicHeight
-    ? (isMobileViewport
-      ? Math.max(1, Math.floor(intrinsicHeight * displayScale))
-      : Math.min(usableViewportHeight, Math.max(1, Math.floor(intrinsicHeight * displayScale))))
-    : 0;
+  const stopCanvasPan = React.useCallback(() => {
+    panSessionRef.current = null;
+    setIsPanningCanvas(false);
+  }, []);
+
+  const resolveWheelZoomAnchor = React.useCallback((event: WheelEvent) => {
+    const viewportNode = canvasViewportRef.current;
+    if (!viewportNode || viewportScreenWidth <= 0 || viewportScreenHeight <= 0) return null;
+    const rect = viewportNode.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return null;
+
+    const ratioX = Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width));
+    const ratioY = Math.min(1, Math.max(0, (event.clientY - rect.top) / rect.height));
+    return {
+      x: ratioX * viewportScreenWidth,
+      y: ratioY * viewportScreenHeight
+    };
+  }, [viewportScreenHeight, viewportScreenWidth]);
+
+  React.useEffect(() => {
+    if (!canvasInstance) return;
+    canvasInstance.setViewportSize(viewportScreenWidth, viewportScreenHeight);
+    const zoomChanged = Math.abs(previousSafeZoomRef.current - safeZoom) > 0.0001;
+    const zoomAnchor = zoomChanged ? pendingZoomAnchorRef.current : null;
+    const targetViewportZoom = fitScale * safeZoom;
+    if (zoomAnchor) {
+      canvasInstance.setViewportZoom(targetViewportZoom, zoomAnchor);
+    } else if (safeZoom <= 1.0001) {
+      canvasInstance.centerViewport(targetViewportZoom);
+    } else {
+      canvasInstance.setViewportZoom(targetViewportZoom);
+    }
+    pendingZoomAnchorRef.current = null;
+    previousSafeZoomRef.current = safeZoom;
+  }, [canvasInstance, fitScale, safeZoom, viewportScreenWidth, viewportScreenHeight]);
 
   React.useEffect(() => {
     if (!canvasInstance) return;
     const dpr = Math.max(1, window.devicePixelRatio || 1);
-    const upscale = Math.max(1, displayScale);
+    const upscale = Math.max(1, fitScale * safeZoom);
     const targetScale = Math.min(4, dpr * upscale);
     const intrinsicArea = Math.max(1, intrinsicWidth * intrinsicHeight);
     const edgeCap = intrinsicWidth && intrinsicHeight
@@ -117,7 +152,25 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
     const areaCap = Math.sqrt(MAX_RENDER_CANVAS_AREA_PX / intrinsicArea);
     const safeScale = Math.max(0.1, Math.min(targetScale, edgeCap, areaCap));
     canvasInstance.setRenderScale(safeScale);
-  }, [canvasInstance, displayScale, intrinsicWidth, intrinsicHeight]);
+  }, [canvasInstance, fitScale, intrinsicWidth, intrinsicHeight, safeZoom]);
+
+  React.useEffect(() => {
+    if (!canvasInstance) return;
+    const handleViewportChanged = () => {
+      const next = canvasInstance.getViewportTransform();
+      setViewportTransform((prev) => {
+        if (prev.zoom === next.zoom && prev.panX === next.panX && prev.panY === next.panY) {
+          return prev;
+        }
+        return next;
+      });
+    };
+    handleViewportChanged();
+    canvasInstance.on('viewport:changed', handleViewportChanged);
+    return () => {
+      canvasInstance.off('viewport:changed', handleViewportChanged);
+    };
+  }, [canvasInstance]);
 
   React.useEffect(() => {
     const layoutContainer = viewportRef?.current ?? containerRef.current;
@@ -188,9 +241,131 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
     updateCanvasCssSize();
     const observer = new ResizeObserver(updateCanvasCssSize);
     observer.observe(canvas);
+    const viewportNode = canvasViewportRef.current;
+    if (viewportNode) {
+      observer.observe(viewportNode);
+      viewportNode.addEventListener('scroll', updateCanvasCssSize, { passive: true });
+    }
+    window.addEventListener('scroll', updateCanvasCssSize, true);
 
-    return () => observer.disconnect();
-  }, [canvasRef, displayWidth, displayHeight, hasBackground]);
+    return () => {
+      observer.disconnect();
+      if (viewportNode) {
+        viewportNode.removeEventListener('scroll', updateCanvasCssSize);
+      }
+      window.removeEventListener('scroll', updateCanvasCssSize, true);
+    };
+  }, [canvasRef, hasBackground, viewportScreenWidth, viewportScreenHeight]);
+
+  React.useEffect(() => {
+    const viewport = canvasViewportRef.current;
+    if (!viewport || !hasBackground) return;
+
+    const handleWheel = (event: WheelEvent) => {
+      if (event.ctrlKey || event.metaKey) {
+        if (!onZoomByWheelDelta) return;
+        event.preventDefault();
+        pendingZoomAnchorRef.current = resolveWheelZoomAnchor(event);
+        onZoomByWheelDelta(event.deltaY);
+      }
+    };
+
+    viewport.addEventListener('wheel', handleWheel, { passive: false });
+    return () => viewport.removeEventListener('wheel', handleWheel);
+  }, [hasBackground, onZoomByWheelDelta, resolveWheelZoomAnchor]);
+
+  React.useEffect(() => {
+    if (!hasBackground) {
+      setIsSpacePressed(false);
+      return;
+    }
+    const isTypingTarget = (target: EventTarget | null) => {
+      const element = target as HTMLElement | null;
+      if (!element) return false;
+      const tag = element.tagName;
+      return tag === 'INPUT' || tag === 'TEXTAREA' || element.isContentEditable;
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.code !== 'Space' || event.repeat || isTypingTarget(event.target)) return;
+      event.preventDefault();
+      setIsSpacePressed(true);
+    };
+
+    const handleKeyUp = (event: KeyboardEvent) => {
+      if (event.code !== 'Space') return;
+      setIsSpacePressed(false);
+      stopCanvasPan();
+    };
+
+    const handleWindowBlur = () => {
+      setIsSpacePressed(false);
+      stopCanvasPan();
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    window.addEventListener('blur', handleWindowBlur);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+      window.removeEventListener('blur', handleWindowBlur);
+    };
+  }, [hasBackground, stopCanvasPan]);
+
+  React.useEffect(() => {
+    const viewport = canvasViewportRef.current;
+    if (!viewport || !hasBackground || !canvasInstance) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const middleButtonPan = event.button === 1;
+      const spacePan = event.button === 0 && isSpacePressed;
+      if (!middleButtonPan && !spacePan) return;
+
+      panSessionRef.current = {
+        pointerId: event.pointerId,
+        clientX: event.clientX,
+        clientY: event.clientY,
+      };
+      setIsPanningCanvas(true);
+      viewport.setPointerCapture(event.pointerId);
+      event.preventDefault();
+      event.stopPropagation();
+    };
+
+    const handlePointerMove = (event: PointerEvent) => {
+      const panSession = panSessionRef.current;
+      if (!panSession || panSession.pointerId !== event.pointerId) return;
+
+      const deltaX = event.clientX - panSession.clientX;
+      const deltaY = event.clientY - panSession.clientY;
+      if (deltaX === 0 && deltaY === 0) return;
+
+      panSession.clientX = event.clientX;
+      panSession.clientY = event.clientY;
+      canvasInstance.panViewportByCssDelta(deltaX, deltaY);
+      event.preventDefault();
+    };
+
+    const handlePointerEnd = (event: PointerEvent) => {
+      if (panSessionRef.current?.pointerId !== event.pointerId) return;
+      stopCanvasPan();
+    };
+
+    viewport.addEventListener('pointerdown', handlePointerDown, { capture: true });
+    viewport.addEventListener('pointermove', handlePointerMove);
+    viewport.addEventListener('pointerup', handlePointerEnd);
+    viewport.addEventListener('pointercancel', handlePointerEnd);
+    viewport.addEventListener('lostpointercapture', handlePointerEnd);
+    return () => {
+      viewport.removeEventListener('pointerdown', handlePointerDown, { capture: true });
+      viewport.removeEventListener('pointermove', handlePointerMove);
+      viewport.removeEventListener('pointerup', handlePointerEnd);
+      viewport.removeEventListener('pointercancel', handlePointerEnd);
+      viewport.removeEventListener('lostpointercapture', handlePointerEnd);
+      stopCanvasPan();
+    };
+  }, [canvasInstance, hasBackground, isSpacePressed, stopCanvasPan]);
 
   React.useEffect(() => {
     if (editingObject) {
@@ -225,13 +400,16 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
       return { display: 'none' };
     }
 
-    const scaleX = canvasCssSize.width / intrinsicWidth;
-    const scaleY = canvasCssSize.height / intrinsicHeight;
-    const width = editingObject.width * editingObject.scaleX * scaleX;
-    const height = editingObject.height * editingObject.scaleY * scaleY;
+    const cssPerScreenX = canvasCssSize.width / viewportScreenWidth;
+    const cssPerScreenY = canvasCssSize.height / viewportScreenHeight;
+    const viewportZoom = viewportTransform.zoom;
+    const screenX = (editingObject.left * viewportZoom) + viewportTransform.panX;
+    const screenY = (editingObject.top * viewportZoom) + viewportTransform.panY;
+    const width = editingObject.width * editingObject.scaleX * viewportZoom * cssPerScreenX;
+    const height = editingObject.height * editingObject.scaleY * viewportZoom * cssPerScreenY;
 
-    const left = canvasCssOffset.left + editingObject.left * scaleX - width / 2;
-    const top = canvasCssOffset.top + editingObject.top * scaleY - height / 2;
+    const left = canvasCssOffset.left + (screenX * cssPerScreenX) - (width / 2);
+    const top = canvasCssOffset.top + (screenY * cssPerScreenY) - (height / 2);
 
     const measureCtx = document.createElement('canvas').getContext('2d');
     const layout = measureCtx ? resolveTextLayout(measureCtx, {
@@ -246,8 +424,8 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
       verticalAlign: editingObject.verticalAlign,
     }) : null;
     const fittedLogicalFontSize = layout?.fontSize || editingObject.fontSize || 40;
-    const displayFontSize = Math.max(8, fittedLogicalFontSize * editingObject.scaleY * scaleY);
-    const contentHeight = (layout?.totalHeight || 0) * editingObject.scaleY * scaleY;
+    const displayFontSize = Math.max(8, fittedLogicalFontSize * editingObject.scaleY * viewportZoom * cssPerScreenY);
+    const contentHeight = (layout?.totalHeight || 0) * editingObject.scaleY * viewportZoom * cssPerScreenY;
     const verticalPadding = editingObject.verticalAlign === 'middle'
       ? Math.max(0, (height - contentHeight) / 2)
       : editingObject.verticalAlign === 'bottom'
@@ -304,25 +482,32 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
     uploadInputRef.current?.click();
   }, [isBackgroundLoading]);
 
+  const viewportInteractionClass = React.useMemo(() => {
+    if (!hasBackground) return '';
+    if (isPanningCanvas) return 'is-pan-dragging';
+    if (isSpacePressed) return 'is-pan-ready';
+    return '';
+  }, [hasBackground, isPanningCanvas, isSpacePressed]);
+
   return (
     <div
-      className="editor-desktop-canvas-stage relative flex min-h-0 min-w-0 flex-1 flex-col items-center justify-center overflow-hidden p-4 md:p-7"
+      className="editor-desktop-canvas-stage relative flex min-h-0 min-w-0 flex-1 flex-col items-center justify-center overflow-hidden bg-editor-canvas-bg"
       ref={containerRef}
       style={{ touchAction: 'none' }}
     >
       <div
         ref={canvasViewportRef}
-        className={`relative flex items-center justify-center overflow-hidden md:rounded-[22px] ${hasBackground ? 'h-full w-full scale-100 opacity-100' : 'pointer-events-none absolute h-0 w-0 scale-95 opacity-0'}`}
-        style={{ fontSize: 0 }}
+        className={`editor-canvas-viewport relative flex items-center justify-center overflow-hidden ${viewportInteractionClass} ${hasBackground ? 'h-full w-full scale-100 opacity-100' : 'pointer-events-none absolute h-0 w-0 scale-95 opacity-0'}`}
+        style={{ fontSize: 0, touchAction: 'none' }}
         onClick={(e) => e.stopPropagation()}
       >
         <canvas
           ref={canvasRef}
-          className="editor-canvas-element bg-card shadow-sm"
+          className="editor-canvas-element bg-transparent"
           style={{
             touchAction: 'none',
-            width: displayWidth ? `${displayWidth}px` : undefined,
-            height: displayHeight ? `${displayHeight}px` : undefined,
+            width: '100%',
+            height: '100%',
           }}
         />
 

@@ -98,6 +98,9 @@
   --canvas-text-default: var(--alabaster-grey-900);
   --canvas-caret-on-dark: var(--alabaster-grey-900);
   --canvas-caret-on-light: var(--ink-black-500);
+  --canvas-grid-minor: var(--dusk-blue-500);
+  --canvas-grid-major: var(--prussian-blue-600);
+  --canvas-workspace-frame: var(--dusty-denim-500);
 
   --background: var(--app-bg);
   --foreground: var(--app-text-primary);
@@ -163,6 +166,9 @@
   --canvas-text-default: var(--alabaster-grey-900);
   --canvas-caret-on-dark: var(--alabaster-grey-900);
   --canvas-caret-on-light: var(--ink-black-500);
+  --canvas-grid-minor: var(--dusk-blue-500);
+  --canvas-grid-major: var(--dusty-denim-600);
+  --canvas-workspace-frame: var(--dusk-blue-700);
 
   --background: var(--app-bg);
   --foreground: var(--app-text-primary);
@@ -276,15 +282,32 @@
   background-color: transparent;
 }
 
+.editor-desktop-canvas-stage {
+  background-color: var(--editor-canvas-bg);
+}
+
+.editor-desktop-canvas-stage .editor-canvas-viewport {
+  background: transparent;
+  box-shadow: none;
+}
+
+.editor-desktop-canvas-stage .editor-canvas-viewport.is-pan-ready .editor-canvas-element {
+  cursor: grab !important;
+}
+
+.editor-desktop-canvas-stage .editor-canvas-viewport.is-pan-dragging .editor-canvas-element {
+  cursor: grabbing !important;
+}
+
+.editor-desktop-canvas-stage .editor-canvas-element {
+  border-radius: 0;
+  box-shadow: none;
+}
+
 @media (min-width: 768px) {
   .editor-desktop-glass {
     backdrop-filter: blur(8px);
     box-shadow: 0 14px 30px -28px color-mix(in srgb, var(--foreground) 36%, transparent);
-  }
-
-  .editor-desktop-canvas-stage .editor-canvas-element {
-    border-radius: 18px;
-    box-shadow: 0 26px 40px -34px color-mix(in srgb, var(--foreground) 42%, transparent);
   }
 }
 

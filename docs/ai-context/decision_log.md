@@ -1,5 +1,289 @@
 # 결정 로그 (Decision Log)
 
+## [2026-02-20] 텍스트/도형 레이어를 이미지(workspace) 내부로 제한
+- **결정**:
+  1. 배경(`name=background`)을 제외한 선택 객체는 이동/수정 시 workspace 경계를 벗어나지 못하도록 제한함.
+  2. 경계 계산은 객체 스케일 + 회전 각도를 반영한 AABB 기반으로 처리함.
+- **이유**:
+  1. 사용자 요청대로 텍스트/도형 레이어가 이미지 밖으로 나가지 않게 해야 편집 결과 예측 가능성이 높아짐.
+- **구현 요약**:
+  - `apps/web/src/hooks/useMemeEditor.ts`
+    - `clampObjectInsideWorkspace` 유틸 추가
+    - `object:moving`, `object:modified`, `object:added` 경로에서 클램프 적용
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 스크린샷:
+    - `docs/ai-context/screenshots/2026-02-20_object_boundary_clamp_shape_v1.png`
+
+## [2026-02-20] 업로드 이미지 작업영역 점선 외곽선 제거
+- **결정**:
+  1. 캔버스 백드롭에서 workspace frame(점선 `strokeRect`) 렌더를 제거함.
+- **이유**:
+  1. 사용자 요청대로 업로드 이미지의 외곽 점선 표시를 없애 더 단정한 편집 화면을 유지하기 위함.
+- **구현 요약**:
+  - `apps/web/src/core/canvas/Canvas.ts`
+    - `drawEditorBackdrop`의 workspace frame 계산/점선 렌더 블록 삭제
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 스크린샷:
+    - `docs/ai-context/screenshots/2026-02-20_editor_workspace_frame_removed_v1.png`
+
+## [2026-02-20] 에디터 작업 그리드의 줌/팬 연동 복구 (world 기준)
+- **결정**:
+  1. 에디터 작업 그리드를 screen 고정이 아닌 world 좌표계로 다시 전환함.
+  2. 결과적으로 작업 그리드는 업로드 이미지/객체와 동일하게 viewport zoom/pan을 따라 이동/확대됨.
+- **이유**:
+  1. “에디터다운” 편집 경험에서는 정렬 기준 그리드가 작업 공간과 함께 움직여야 좌표 감각이 일관됨.
+  2. 레이아웃(UI 패널) 고정은 유지하되, 캔버스 내부 작업 그리드는 편집 대상과 동일 좌표계를 공유해야 함.
+- **구현 요약**:
+  - `apps/web/src/core/canvas/Canvas.ts`
+    - `drawEditorGrid`에서 world bounds(`worldLeft/Top/Right/Bottom`) 계산 복원
+    - world line을 screen 좌표로 투영해 렌더(`screenX/screenY`)
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 스크린샷:
+    - `docs/ai-context/screenshots/2026-02-20_editor_grid_worldspace_zoom100_v1.png`
+    - `docs/ai-context/screenshots/2026-02-20_editor_grid_worldspace_zoom110_v1.png`
+
+## [2026-02-20] 에디터 배경(그리드)과 워크스페이스 이동 좌표계 분리
+- **결정**:
+  1. 에디터 그리드는 viewport pan/zoom 영향을 받지 않는 screen 좌표계로 고정함.
+  2. 업로드 이미지/오브젝트/워크스페이스 프레임만 viewport pan/zoom을 적용함.
+  3. 사용자가 기대하는 이동 조작을 위해 `Space + 좌클릭 드래그`, `중클릭 드래그` 팬 인터랙션을 복구함.
+- **이유**:
+  1. 기존 구현은 그리드도 viewport 변환을 같이 타서 “이미지와 에디터 레이아웃이 같이 움직이는” 체감이 발생했음.
+  2. 에디터 배경은 고정하고 편집 대상만 이동해야 일반 편집기 UX와 일치함.
+- **구현 요약**:
+  - `apps/web/src/core/canvas/Canvas.ts`
+    - `drawEditorGrid`에서 viewport 기반 world->screen 계산 제거
+    - 그리드 라인을 view(screen) 크기 기준으로 고정 렌더
+  - `apps/web/src/components/editor/MemeCanvas.tsx`
+    - `Space` 키 상태 추적 및 pointer pan 세션(`pointerdown/move/up`) 복구
+    - pan 중 `canvasInstance.panViewportByCssDelta` 호출
+  - `apps/web/src/index.css`
+    - `is-pan-ready`, `is-pan-dragging` 커서 스타일 적용
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 스크린샷:
+    - `docs/ai-context/screenshots/2026-02-20_editor_pan_decoupled_grid_v1.png`
+    - `docs/ai-context/screenshots/2026-02-20_editor_pan_decoupled_grid_zoom110_v1.png`
+    - `docs/ai-context/screenshots/2026-02-20_editor_pan_decoupled_grid_spacepan_v1.png`
+
+## [2026-02-20] 오브젝트 이동 경계 해제 (작업영역 밖 이동 허용)
+- **결정**:
+  1. 오브젝트 이동 시 작업영역 경계 안으로 되돌리는 clamp 로직을 제거함.
+- **이유**:
+  1. 사용자 피드백대로 오브젝트가 특정 영역에 갇혀 보였고, 일반 편집기처럼 자유 이동이 필요했음.
+- **구현 요약**:
+  - `apps/web/src/hooks/useMemeEditor.ts`
+    - `object:moving` 이벤트의 `enforceBoundaries` 로직 제거
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+
+## [2026-02-20] 에디터 라이트/다크 전환 시 캔버스 재렌더 동기화
+- **결정**:
+  1. 캔버스 엔진에서 루트 테마 속성(`data-theme/style/class`) 변경을 감지해 즉시 재렌더함.
+- **이유**:
+  1. 캔버스 배경/그리드는 CSS 변수 기반 렌더인데, 테마 전환 시 프레임 갱신 트리거가 없으면 이전 테마가 남아 보일 수 있음.
+- **구현 요약**:
+  - `apps/web/src/core/canvas/Canvas.ts`
+    - `themeObserver` 필드 추가
+    - `initThemeObserver`에서 루트 속성 변경을 감시하고 `requestRender` 호출
+    - `dispose`에서 observer 정리
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 스크린샷:
+    - `docs/ai-context/screenshots/2026-02-20_editor_theme_sync_light_v1.png`
+    - `docs/ai-context/screenshots/2026-02-20_editor_theme_sync_dark_v1.png`
+
+## [2026-02-20] 이동 체감 보정 1차 (fit 상태 이동성 강화)
+- **결정**:
+  1. viewport pan bounds에 overscroll 여유를 두어 100%/fit 상태에서도 이동이 가능하도록 변경함.
+  2. 일반 휠 팬을 `zoom > 100%` 조건 없이 항상 허용함.
+  3. fit 상태(`zoom=100%`)는 중앙 정렬(`centerViewport`)을 기본으로 유지함.
+- **이유**:
+  1. 사용자 피드백대로 기존 제한은 “이동이 거의 안 되는” 체감으로 이어졌음.
+  2. 트랙패드/휠 기반 팬은 확대 여부와 무관하게 동작해야 에디터 사용성이 일관됨.
+- **구현 요약**:
+  - `apps/web/src/core/canvas/Canvas.ts`
+    - `getViewportPanBounds`에 overscroll 범위 추가
+    - `centerViewport` 메서드 추가
+  - `apps/web/src/components/editor/MemeCanvas.tsx`
+    - viewport 반영 effect에서 fit 상태는 `centerViewport` 사용
+    - wheel 팬 조건에서 `zoom > 100%` 제한 제거
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 스크린샷: `docs/ai-context/screenshots/2026-02-20_canvas_editor_pan_enabled_v1.png`
+
+## [2026-02-20] 에디터 배경을 Canvas 렌더 내부로 이관 + 팬 인터랙션 보강
+- **결정**:
+  1. 에디터 느낌의 배경(그리드/워크스페이스 프레임)을 CSS 스테이지가 아닌 `Canvas` 엔진 렌더에서 직접 그림.
+  2. 캔버스 이동은 휠 팬 외에 `스페이스 + 드래그`, `중클릭 드래그`를 추가 지원함.
+- **이유**:
+  1. 사용자가 원하는 “캔버스 자체가 에디터스러운 느낌”은 DOM 배경보다 캔버스 좌표계에서 렌더해야 줌/팬 시 일관됨.
+  2. 편집기형 UX에서는 줌 이후 포지션 이동이 휠만으로는 제한적이어서 hand-pan 제스처가 필요함.
+- **구현 요약**:
+  - `apps/web/src/core/canvas/Canvas.ts`
+    - `drawEditorBackdrop`, `drawEditorGrid` 추가
+    - `render`에서 객체 렌더 전에 캔버스 내부 배경/그리드/워크스페이스 프레임 렌더
+  - `apps/web/src/components/editor/MemeCanvas.tsx`
+    - `Space` 키 상태 추적
+    - `pointerdown/move/up` 기반 `스페이스+좌드래그`, `중클릭 드래그` 팬 처리
+    - 기존 커서 앵커 줌(`Ctrl/Cmd + Wheel`) 유지
+  - `apps/web/src/index.css`
+    - 스테이지 고정 그리드 배경 제거
+    - 팬 상태 클래스(`is-pan-ready`, `is-pan-dragging`)에 맞춘 `grab/grabbing` 커서 스타일 추가
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 스크린샷:
+    - `docs/ai-context/screenshots/2026-02-20_canvas_editor_style_internal_v2.png`
+    - `docs/ai-context/screenshots/2026-02-20_canvas_editor_style_internal_pan_zoom_v1.png`
+
+## [2026-02-20] 업로드 후 캔버스 흰 배경 제거
+- **결정**:
+  1. 캔버스 요소 기본 배경색을 제거하고 투명 배경으로 고정함.
+- **이유**:
+  1. 업로드 이미지 비율과 작업영역 비율이 다를 때 캔버스 여백이 흰색으로 보이며 에디터 톤이 깨지는 문제가 있었음.
+- **구현 요약**:
+  - `apps/web/src/components/editor/MemeCanvas.tsx`
+    - `editor-canvas-element` 클래스에서 `bg-card`를 제거하고 `bg-transparent` 적용
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 스크린샷: `docs/ai-context/screenshots/2026-02-20_editor_canvas_transparent_bg_v1.png`
+
+## [2026-02-20] 캔버스 무여백 full-fill 정렬 + 라운드 제거 + 커서 앵커 줌
+- **결정**:
+  1. 캔버스 스테이지를 좌측 작업영역에 여백 없이 가득 채우도록 정렬함.
+  2. viewport/canvas 라운드를 제거해 각진 에디터형 캔버스 표면으로 통일함.
+  3. `Ctrl/Cmd + Wheel` 줌 중심을 화면 중앙 고정이 아니라 커서 위치(anchor)로 변경함.
+- **이유**:
+  1. 사용자 피드백대로 캔버스가 이미지 크기 박스처럼 보이지 않고 작업영역 전체를 점유해야 편집 맥락이 자연스러움.
+  2. 라운드 모서리/추가 여백은 편집기보다 카드형 UI 인상을 주어 몰입을 떨어뜨림.
+  3. 커서 기준 줌이 실제 편집 포인트 확대에 더 직관적이며 팬 이동량을 줄임.
+- **구현 요약**:
+  - `apps/web/src/components/MemeEditor.tsx`
+    - 캔버스 래퍼 데스크탑 여백(`md:py/pl/pr`) 제거
+    - 캔버스 컨테이너 라운드 제거
+  - `apps/web/src/components/editor/MemeCanvas.tsx`
+    - 스테이지 패딩 제거 + viewport 라운드 클래스 제거
+    - `Ctrl/Cmd + Wheel` 처리 시 커서 좌표를 viewport anchor로 계산해 `setViewportZoom(..., anchor)` 적용
+  - `apps/web/src/index.css`
+    - `editor-canvas-element` 라운드/그림자 제거
+    - 스테이지에 에디터 톤의 은은한 그리드 배경 추가
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 수동 검증:
+    - `/create`에서 업로드 후 DOM 측정 결과 `canvas(1092x746) == viewport(1092x746) == stage(1092x746)` 확인
+  - 스크린샷: `docs/ai-context/screenshots/2026-02-20_editor_full_canvas_flat_v3.png`
+
+## [2026-02-20] 풀 캔버스 뷰포트 전환 (canvas가 화면 전체 점유)
+- **결정**:
+  1. 캔버스 렌더 영역을 “이미지 크기만큼”에서 “뷰포트 전체”로 전환함.
+  2. 이를 위해 `Canvas` 엔진에서 `scene(workspace)`와 `view(screen)` 크기를 분리 관리함.
+- **이유**:
+  1. 사용자 피드백대로 에디터 캔버스가 화면 전체 작업영역을 차지해야 편집 맥락이 자연스러움.
+  2. 이미지 해상도와 화면 표시영역을 분리해야 확대/축소/팬/포인터 정합성을 동시에 유지할 수 있음.
+- **구현 요약**:
+  - `apps/web/src/core/canvas/Canvas.ts`
+    - `sceneWidth/sceneHeight`, `viewWidth/viewHeight` 분리
+    - `setViewportSize(width, height)` 추가
+    - viewport pan bounds를 `scene` vs `view` 기준으로 재계산
+    - `getPointer`를 `view -> scene` 변환으로 보정
+    - export(`toDataURL`)를 viewport와 무관한 scene 좌표 기준으로 고정
+  - `apps/web/src/components/editor/MemeCanvas.tsx`
+    - 캔버스 스타일을 `width/height: 100%`로 전환
+    - `canvasInstance.setViewportSize(...)` + `setViewportZoom(fitScale * userZoom)` 연동
+    - textarea 오버레이 좌표를 screen 단위 변환식으로 보정
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 수동 검증:
+    - `/create`에서 업로드 후 DOM 측정 결과 `canvas(776x622) == viewport(776x622)` 확인
+  - 스크린샷: `docs/ai-context/screenshots/2026-02-20_editor_full_canvas_viewport_v1.png`
+
+## [2026-02-20] 줌 처리 구조 전환 (DOM 레이어 스케일 -> 풀캔버스 viewport)
+- **결정**:
+  1. 줌 처리 주체를 `MemeCanvas` DOM 레이어(transform)에서 `Canvas` 엔진 내부 viewport(`zoom`, `pan`)로 전환함.
+  2. `Ctrl/Cmd + Wheel`은 기존대로 줌 입력으로 유지하고, 일반 휠 입력은 줌 인 상태(`>100%`)에서 캔버스 팬으로 해석함.
+  3. 텍스트 편집 textarea 오버레이 좌표는 `viewport zoom/pan` 변환을 포함해 계산하도록 수정함.
+- **이유**:
+  1. 사용자 피드백대로 “캔버스 자체가 줌을 흡수하는” 이질감을 줄이고, 툴형 편집기 관점의 좌표 일관성을 확보하기 위함.
+  2. 이후 핀치/커서 중심 줌/미니맵 등 확장 기능을 엔진 레벨에서 구현하기 쉬운 구조로 정리하기 위함.
+- **구현 요약**:
+  - `apps/web/src/core/canvas/Canvas.ts`
+    - `viewportZoom`, `viewportPanX/Y` 상태 추가
+    - `setViewportZoom`, `panViewportByCssDelta`, `resetViewport`, `getViewportTransform` 추가
+    - `render`에 viewport transform 적용
+    - `getPointer`를 viewport 역변환 좌표계로 변경
+    - `drawControls` 크기 보정 스케일에 viewport zoom 반영
+    - viewport가 적용된 상태에서도 export 결과가 원본 논리 좌표 기준이 되도록 `toDataURL` 분기 보강
+  - `apps/web/src/components/editor/MemeCanvas.tsx`
+    - DOM zoom wrapper 제거, 캔버스는 fit 크기 고정
+    - `Canvas` viewport 이벤트 구독(`viewport:changed`)으로 오버레이 좌표 동기화
+    - 일반 휠 팬 + `Ctrl/Cmd + Wheel` 줌 분기 처리
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 수동 검증:
+    - `/create`에서 `+`로 `110%` 확대 후 일반 휠 입력이 `preventDefault`되며 캔버스 픽셀 샘플 checksum이 변경되어 팬 반영 확인
+    - `Ctrl/Cmd + Wheel` 입력 후 줌 퍼센트가 `110% -> 100%`로 갱신됨
+  - 스크린샷: `docs/ai-context/screenshots/2026-02-20_editor_zoom_fullcanvas_v1.png`
+
+## [2026-02-20] 줌 적용 방식 보정 (캔버스 리사이즈 -> transform 레이어)
+- **결정**:
+  1. 줌 시 캔버스 요소 자체의 CSS `width/height`를 직접 키우는 방식 대신, `fit 크기`를 고정하고 별도 래퍼 레이어에 `transform: scale(...)`을 적용함.
+  2. 스크롤 팬은 줌 레이어 외곽 래퍼의 실제 치수(`fit * zoom`)로 처리해 뷰포트 오버플로 동작을 명확히 유지함.
+- **이유**:
+  1. 기존 방식은 “캔버스 자체가 커지면서 줌을 흡수하는” 체감이 있어 사용자 피드백 기준으로 어색함이 있었음.
+  2. fit 레이아웃과 사용자 줌을 분리하면 줌 동작이 더 예측 가능하고, 이후 팬/미니맵 확장도 단순해짐.
+- **구현 요약**:
+  - `apps/web/src/components/editor/MemeCanvas.tsx`
+    - `fitDisplayWidth/Height`와 `zoomedDisplayWidth/Height`를 분리 계산
+    - 캔버스는 fit 크기로 렌더하고, 상위 zoom 레이어에만 scale 적용
+    - overlay 좌표 업데이트 effect 의존성에 zoomed 치수 반영
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+
+## [2026-02-20] 에디터 줌 기능 재도입 (패널 컨트롤 + 단축키 + Ctrl/Cmd+Wheel)
+- **결정**:
+  1. Auto-fit 기반 표시 스케일 위에 사용자 줌 배율(`25%~400%`)을 곱하는 방식(`fitScale * zoom`)으로 줌 동작을 재도입함.
+  2. 줌 제어 진입점을 패널 버튼(`-`, 퍼센트, `+`, `맞춤`) + 단축키(`Ctrl/Cmd + +`, `Ctrl/Cmd + -`, `Ctrl/Cmd + 0`) + `Ctrl/Cmd + Wheel`로 통합함.
+  3. 줌 인 상태에서는 캔버스 뷰포트를 `overflow-auto`로 전환해 스크롤 팬을 허용하고, 텍스트 편집 오버레이 좌표 계산에 스크롤 이벤트를 반영함.
+- **이유**:
+  1. 사용자가 요청한 “직접 조절 가능한 줌”을 빠르게 복구하면서 기존 auto-fit 레이아웃 회귀를 피하기 위함.
+  2. 버튼/단축키/휠 간 동작을 동일 상태(`zoom`)로 수렴시켜 입력 채널별 불일치를 줄이기 위함.
+- **구현 요약**:
+  - `apps/web/src/hooks/useMemeEditor.ts`
+    - `zoom` 상태 및 `zoomIn`, `zoomOut`, `resetZoom`, `zoomByWheelDelta` 추가
+    - `Ctrl/Cmd + +`, `Ctrl/Cmd + -`, `Ctrl/Cmd + 0` 단축키 처리 추가
+    - 배경/템플릿 로드 시 줌을 `100%`(`zoom = 1`)로 초기화
+  - `apps/web/src/components/editor/MemeCanvas.tsx`
+    - 표시 스케일을 `fitScale * zoom`으로 변경
+    - `Ctrl/Cmd + Wheel` 이벤트를 줌 액션에 연결
+    - 줌 인 상태에서 뷰포트 `overflow-auto` 적용
+    - 오버레이 위치 계산에 뷰포트/윈도우 스크롤 이벤트 반영
+  - `apps/web/src/components/MemeEditor.tsx`
+    - 우측 패널(데스크탑/모바일 공통)에 줌 컨트롤 UI 추가
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 수동 검증:
+    - `/create`에서 `+/-` 버튼 클릭 시 줌 퍼센트가 `100 -> 110 -> 100`으로 갱신됨
+    - `Ctrl/Cmd + +`, `Ctrl/Cmd + 0` 단축키 동작 확인
+    - `Ctrl/Cmd + Wheel` 이벤트로 퍼센트가 `120 -> 110`으로 감소하는 것 확인
+  - 스크린샷: `docs/ai-context/screenshots/2026-02-20_editor_zoom_controls_v1.png`
+
 ## [2026-02-20] 이미지 업로드 토스트 제거
 - **결정**:
   1. 배경 이미지 업로드 성공 시 출력되던 안내 토스트를 제거함.
