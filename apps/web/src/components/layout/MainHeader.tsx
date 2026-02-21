@@ -25,6 +25,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
+import { buildLoginPath, getPathWithSearchAndHash } from '@/lib/loginNavigation';
 import { useAuthStore } from '../../stores/authStore';
 import { useThemeMode } from '../../theme/useThemeMode';
 
@@ -56,7 +57,8 @@ const MainHeader: React.FC = () => {
   }, [initialized, syncSession]);
 
   const handleLogin = () => {
-    navigate('/login');
+    if (location.pathname === '/login') return;
+    navigate(buildLoginPath(getPathWithSearchAndHash(location)));
   };
 
   const handleLogout = async () => {
@@ -85,7 +87,7 @@ const MainHeader: React.FC = () => {
               onClick={() => setIsDrawerOpen(true)}
               aria-label="메뉴 열기"
             >
-              <Icon path={mdiMenu} size={1.1} style={{ display: 'block' }} />
+              <Icon path={mdiMenu} size={1.1} className="block" />
             </Button>
           </div>
           <Link to="/" className="inline-flex h-8 items-center gap-4 no-underline">

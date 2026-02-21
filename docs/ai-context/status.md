@@ -1,6 +1,84 @@
 # 프로젝트 상태 (Status)
 
 ## 현재 진행 상황
+- [x] **인증 리다이렉트 `next` 플로우 통합 1차 (#109~#115, 완료 - 2026-02-21)**
+  - [x] 템플릿 상세 `리믹스` 버튼 비로그인 가드 (`/login?next=/create?shareSlug=...`)
+  - [x] `/create?shareSlug|templateId` 직접 진입 비로그인 가드
+  - [x] 로그인 페이지에서 `next`를 `/api/v1/auth/google/start?next=...`로 전달
+  - [x] OAuth start/callback에서 `next` 저장/복원 + 상대경로 검증 적용
+  - [x] 공통 401 리다이렉트(`/login?next=현재경로`) 정책 전환
+  - [x] 에디터 게시/저장 액션 실행 전 세션 확인 + 비로그인 로그인 유도
+  - [x] 헤더 로그인 진입 시 현재 경로 `next` 부착
+  - [x] 이슈 등록
+    - [x] `https://github.com/lteawoo/memeplate/issues/109`
+    - [x] `https://github.com/lteawoo/memeplate/issues/110`
+    - [x] `https://github.com/lteawoo/memeplate/issues/111`
+    - [x] `https://github.com/lteawoo/memeplate/issues/112`
+    - [x] `https://github.com/lteawoo/memeplate/issues/113`
+    - [x] `https://github.com/lteawoo/memeplate/issues/114`
+    - [x] `https://github.com/lteawoo/memeplate/issues/115`
+  - [x] `pnpm --filter memeplate-web lint`, `pnpm -r build` 통과
+  - [x] 스크린샷 검증
+    - [x] `docs/ai-context/screenshots/2026-02-22_auth_next_remix_login_v1.png`
+    - [x] `docs/ai-context/screenshots/2026-02-22_auth_next_editor_deeplink_guard_v1.png`
+    - [x] `docs/ai-context/screenshots/2026-02-22_auth_next_header_login_v1.png`
+- [x] **밈플릿 상세 프리뷰/썸네일 역할 분리 + PreviewFrame 공통화 (완료 - 2026-02-21)**
+  - [x] 상세 좌측 원본 이미지를 썸네일 카드 규칙에서 분리하고 `PreviewFrame`으로 전환
+  - [x] 이미지 상세/내 밈플릿 상세 시트 프리뷰도 동일 `PreviewFrame`으로 공통화
+  - [x] 목록/리믹스는 `ThumbnailCard` + `TemplateCardSkeletonGrid` 조합으로 썸네일 규칙 유지
+  - [x] `pnpm --filter memeplate-web lint`, `pnpm -r build` 통과
+  - [x] 스크린샷 검증
+    - [x] `docs/ai-context/screenshots/2026-02-22_previewframe_unify_templates_v1.png`
+    - [x] `docs/ai-context/screenshots/2026-02-22_previewframe_unify_template_detail_v1.png`
+- [x] **웹 UI 스타일 일원화 1차 (#108, 완료 - 2026-02-21)**
+  - [x] `Skeleton` primitive 톤을 `bg-border` 계열로 통일하고 목록/상세/썸네일 로딩에 공통 적용
+  - [x] 썸네일 스켈레톤 썸 영역 외곽선 제거(배경 유지)
+  - [x] 밈플릿 상세 좌측 원본 썸네일 스켈레톤을 리믹스 카드와 동일 규칙(`h-52 + bg-muted + no-border`)으로 정렬
+  - [x] 밈플릿 상세 좌측 원본 썸네일 스켈레톤 래퍼에 `overflow-hidden rounded-xl` 적용(리믹스/완료상태 라운드 체감 정렬)
+  - [x] `ImageShareDetailPage`를 템플릿 상세와 동일한 패널 톤(무보더 카드 + 동일 스켈레톤)으로 정렬
+  - [x] destructive 액션 red 하드코딩 제거(`MyTemplatesPage`, `MemePropertyPanel`) 및 semantic token 클래스 적용
+  - [x] 루트 배경 규칙 정렬(`LoginPage`, `MySectionLayout` -> `bg-app-surface`)
+  - [x] primitive radius 정렬(`ui/popover`, `ui/tooltip`: `rounded-md -> rounded-xl`)
+  - [x] `pnpm --filter memeplate-web lint`, `pnpm -r build` 통과
+  - [x] 스크린샷 검증
+    - [x] `docs/ai-context/screenshots/2026-02-21_style_unify_templates_light_v1.png`
+    - [x] `docs/ai-context/screenshots/2026-02-21_style_unify_template_detail_light_v1.png`
+    - [x] `docs/ai-context/screenshots/2026-02-21_style_unify_templates_dark_v1.png`
+    - [x] `docs/ai-context/screenshots/2026-02-21_style_unify_template_detail_dark_v1.png`
+    - [x] `docs/ai-context/screenshots/2026-02-21_style_unify_login_light_v1.png`
+    - [x] `docs/ai-context/screenshots/2026-02-21_style_unify_login_dark_v1.png`
+- [x] **밈플릿 상세 패널 외곽선 제거 (완료 - 2026-02-21)**
+  - [x] 상세 좌/우 패널(border) 제거로 분절감 완화
+  - [x] 상세 초기 로딩 상태 패널(border)도 동일 기준으로 정렬
+  - [x] `pnpm --filter memeplate-web lint`, `pnpm --filter memeplate-web build` 통과
+- [x] **밈플릿 상세 로딩 높이 안정화 (완료 - 2026-02-21)**
+  - [x] 상세 리믹스 스켈레톤 카드 개수 축소(`6 -> 2`)
+  - [x] 리믹스 로딩/빈상태에 동일 `min-h-[280px]` 적용으로 레이아웃 점프 완화
+  - [x] `pnpm --filter memeplate-web lint`, `pnpm --filter memeplate-web build` 통과
+- [x] **밈플릿 스켈레톤 공통 컴포넌트화 (완료 - 2026-02-21)**
+  - [x] `TemplateCardSkeletonGrid` 공통 컴포넌트 추가
+  - [x] `TemplatesPage` 목록 로딩 스켈레톤을 공통 컴포넌트로 치환
+  - [x] `TemplateShareDetailPage` 초기 로딩/리믹스 로딩 스켈레톤을 공통 컴포넌트로 치환
+  - [x] `pnpm --filter memeplate-web lint`, `pnpm --filter memeplate-web build` 통과
+- [x] **밈플릿 상세 스켈레톤 톤 통일 (완료 - 2026-02-21)**
+  - [x] 상세 로딩 스켈레톤의 강한 그라디언트 표현 제거
+  - [x] 목록 스켈레톤과 동일한 톤(`bg-muted`, `bg-border/70~80`, `border-border`)으로 정렬
+  - [x] 연관 이미지 스켈레톤 카드 wrapper를 목록 카드와 동일한 구조(`border-transparent + 내부 썸네일 border`)로 통일
+  - [x] `pnpm --filter memeplate-web lint`, `pnpm --filter memeplate-web build` 통과
+- [x] **밈플릿 상세 UI 정리 2차 (완료 - 2026-02-21)**
+  - [x] 원본 썸네일 영역 외곽선 제거
+  - [x] 리믹스 정렬 토글(`최신순/인기순`) 래퍼 외곽선 제거
+  - [x] 리믹스 빈상태를 아이콘 + 텍스트(타이틀/설명)로 교체
+  - [x] `pnpm --filter memeplate-web lint`, `pnpm --filter memeplate-web build` 통과
+  - [x] 스크린샷 검증
+    - [x] `docs/ai-context/screenshots/2026-02-21_template_detail_ui_cleanup_v1.png`
+- [x] **밈플릿 상세 썸네일 즉시 표시 보정 (완료 - 2026-02-21)**
+  - [x] `TemplateShareDetailPage` 메인 썸네일에 `onError` fallback 추가
+  - [x] `template.thumbnailUrl` 변경 시 `img.complete + naturalWidth` 선확인 후 `isMainImageLoaded` 동기화
+  - [x] 상세 이미지 `<img>`에 `key={template.thumbnailUrl}` 적용해 URL 전환 시 로드 이벤트 재평가 보장
+  - [x] `pnpm --filter memeplate-web lint` 통과
+  - [x] 스크린샷 검증
+    - [x] `docs/ai-context/screenshots/2026-02-21_template_detail_thumbnail_direct_nav_v1.png`
 - [x] **텍스트/도형 레이어 이미지 영역 이탈 방지 (완료 - 2026-02-20)**
   - [x] 이동/수정 이벤트에서 배경 제외 선택 객체를 workspace 내부로 클램프
   - [x] 회전 각도까지 반영한 AABB 기준으로 경계 계산(텍스트/도형 경계 이탈 방지)

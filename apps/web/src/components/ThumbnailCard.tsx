@@ -1,5 +1,6 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface ThumbnailCardProps {
   imageUrl?: string;
@@ -51,7 +52,7 @@ const ThumbnailCard: React.FC<ThumbnailCardProps> = ({
         {imageUrl && !hasImageError ? (
           <div className="thumb-card-media-surface relative flex h-full items-center justify-center overflow-hidden rounded-lg bg-muted/80">
             {!hasImageLoaded ? (
-              <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-muted to-border" />
+              <Skeleton className="absolute inset-0 rounded-lg bg-border/70" />
             ) : null}
             <img
               src={imageUrl}

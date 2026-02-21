@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/sheet';
 import MySectionLayout from '../components/layout/MySectionLayout';
 import TemplateThumbnailCard from '../components/TemplateThumbnailCard';
+import PreviewFrame from '../components/PreviewFrame';
 import type { TemplateRecord, TemplatesResponse, TemplateVisibility } from '../types/template';
 import { apiFetch } from '../lib/apiFetch';
 
@@ -258,7 +259,7 @@ const MyTemplatesPage: React.FC = () => {
                   <Button
                     type="button"
                     variant="outline"
-                    className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                    className="border-destructive/25 text-destructive hover:border-destructive/45 hover:bg-destructive/10 hover:text-destructive"
                     disabled={deleteTemplateMutation.isPending}
                     onClick={() => {
                       const confirmed = window.confirm('밈플릿을 삭제하시겠습니까? 삭제 후 복구할 수 없습니다.');
@@ -288,20 +289,12 @@ const MyTemplatesPage: React.FC = () => {
           </SheetHeader>
           {detailTarget ? (
             <div className="space-y-4 px-1 pb-6 pt-3">
-              <div className="overflow-hidden rounded-xl border border-border bg-muted">
-                {detailTarget.thumbnailUrl ? (
-                  <div className="flex items-center justify-center p-3">
-                    <img
-                      src={detailTarget.thumbnailUrl}
-                      alt={detailTarget.title}
-                      crossOrigin="anonymous"
-                      className="max-h-[360px] w-full object-contain"
-                    />
-                  </div>
-                ) : (
-                  <div className="flex h-52 items-center justify-center text-muted-foreground">미리보기 없음</div>
-                )}
-              </div>
+              <PreviewFrame
+                imageUrl={detailTarget.thumbnailUrl}
+                alt={detailTarget.title}
+                maxImageHeightClassName="max-h-[360px]"
+                contentClassName="p-3"
+              />
               {detailMetaLoading ? (
                 <div className="py-6 text-center">
                   <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-border border-t-foreground/60" />

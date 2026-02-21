@@ -28,7 +28,7 @@ const MySectionLayout: React.FC<MySectionLayoutProps> = ({
     : '/my';
 
   return (
-    <div className="min-h-screen bg-app-bg">
+    <div className="min-h-screen bg-app-surface">
       <MainHeader />
       <div className="flex w-full bg-app-surface-elevated">
         <aside

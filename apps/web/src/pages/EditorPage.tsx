@@ -1,16 +1,23 @@
 import React from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import MemeEditor from '../components/MemeEditor';
 import type { TemplateResponse, TemplateRecord } from '../types/template';
 import { apiFetch } from '../lib/apiFetch';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { buildLoginPath } from '@/lib/loginNavigation';
+import { useAuthStore } from '../stores/authStore';
 
 type EditorLoadMode = 'mine' | 'public';
 
 const EditorPage: React.FC = () => {
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const searchQuery = searchParams.toString();
   const templateId = searchParams.get('templateId');
   const shareSlug = searchParams.get('shareSlug');
+  const authUser = useAuthStore((state) => state.user);
+  const authInitialized = useAuthStore((state) => state.initialized);
+  const syncSession = useAuthStore((state) => state.syncSession);
   const [template, setTemplate] = React.useState<TemplateRecord | null>(null);
   const [templateMode, setTemplateMode] = React.useState<EditorLoadMode | undefined>(undefined);
   const [isLoading, setIsLoading] = React.useState(false);
@@ -23,6 +30,19 @@ const EditorPage: React.FC = () => {
         setTemplateMode(undefined);
         setLoadError(null);
         return;
+      }
+
+      if (!authUser) {
+        if (!authInitialized) {
+          await syncSession();
+        }
+        if (!useAuthStore.getState().user) {
+          const nextPath = searchQuery
+            ? `/create?${searchQuery}`
+            : '/create';
+          navigate(buildLoginPath(nextPath), { replace: true });
+          return;
+        }
       }
 
       setIsLoading(true);
@@ -57,7 +77,7 @@ const EditorPage: React.FC = () => {
     };
 
     void loadTemplate();
-  }, [shareSlug, templateId]);
+  }, [authInitialized, authUser, navigate, searchQuery, shareSlug, syncSession, templateId]);
 
   if (isLoading) {
     return (
