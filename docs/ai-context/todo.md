@@ -221,6 +221,14 @@
   - [x] `마이페이지(/my)` 화면 추가
   - [x] `/my`, `/my/templates` 공통 좌측 사이드 메뉴 레이아웃 적용
   - [x] `/login` 페이지 추가 (Memeplate 로고 + 하단 구글 로그인 버튼)
+  - [x] 인증 리다이렉트 `next` 플로우 1차 (#109~#115)
+  - [x] 템플릿 상세 `리믹스` 클릭 시 비로그인 로그인 유도 (`/login?next=/create?shareSlug=...`)
+  - [x] `/create?shareSlug|templateId` 직접 진입 비로그인 가드
+  - [x] 로그인 페이지 -> OAuth start `next` 전달
+  - [x] OAuth callback `next` 복귀 + 상대경로 검증(오픈 리다이렉트 방지)
+  - [x] 공통 API 401 리다이렉트 정책 `/login?next=` 통일
+  - [x] 헤더 로그인 진입 시 현재 경로 `next` 보존
+  - [x] 에디터 게시/저장 액션 실행 전 세션 확인 + 비로그인 로그인 유도
   - [ ] Supabase SQL 실행 및 초기 데이터 검증
 - [ ] **3차 밈플릿 도메인 구현**
   - [x] `TemplateRepository` Supabase 구현체 추가
@@ -243,3 +251,19 @@
   - [x] 공개 템플릿 시작 경로(`shareSlug`)의 `thumbnailUrl` 기반 배경 fallback 제거 (R2 URL 저장 정책 고정)
   - [x] 템플릿 R2 경로/저장정책 단순화 (`templates` 단일 + 썸네일 별도 업로드 제거)
   - [x] `templates.thumbnail_url` 컬럼 드롭 마이그레이션 추가 + API thumbnail 계산 로직 전환
+  - [x] 밈플릿 상세 진입 직후 썸네일 미표시 레이스 보정 (`img.complete` 동기화 + `onError` fallback + URL key 재평가)
+  - [x] 밈플릿 상세 뷰 스타일 정리 2차 (썸네일/정렬 토글 외곽선 제거 + 리믹스 빈상태 아이콘화)
+  - [x] 밈플릿 상세 로딩 스켈레톤 톤 통일 (목록 스켈레톤과 동일 톤/카드 구조 적용)
+  - [x] 밈플릿 목록/상세 카드 스켈레톤 공통 컴포넌트화 (`TemplateCardSkeletonGrid`)
+  - [x] 밈플릿 상세 로딩 높이 안정화 (리믹스 skeleton 2개 + 로딩/빈상태 min-height 정렬)
+  - [x] 밈플릿 상세 좌/우 패널 외곽선 제거(초기 로딩 패널 포함)
+  - [x] 웹 UI 스타일 일원화 1차 (#108)
+  - [x] `Skeleton` primitive 공통 적용(목록/상세/썸네일 로딩 톤 정렬)
+  - [x] 썸네일 스켈레톤 썸 영역 외곽선 제거(배경 유지)
+  - [x] 밈플릿 상세 좌측 원본 썸네일 스켈레톤을 리믹스 카드와 동일 규칙으로 정렬
+  - [x] 밈플릿 상세 좌측 원본 썸네일 스켈레톤 래퍼 라운드(`overflow-hidden rounded-xl`) 정렬
+  - [x] `ImageShareDetailPage` 상세 레이아웃 톤 정렬(무보더 카드 + 공통 스켈레톤)
+  - [x] destructive red 하드코딩 제거(`MyTemplatesPage`, `MemePropertyPanel`)
+  - [x] 루트 배경 규칙 정렬(`LoginPage`, `MySectionLayout`)
+  - [x] `popover`/`tooltip` radius 정렬(`rounded-xl`)
+  - [x] 상세 프리뷰/썸네일 역할 분리: `PreviewFrame` 공통 컴포넌트 도입 및 상세/시트 프리뷰 영역 적용

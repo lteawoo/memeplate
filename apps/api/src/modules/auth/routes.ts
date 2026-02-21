@@ -11,6 +11,7 @@ const GOOGLE_USERINFO_URL = 'https://openidconnect.googleapis.com/v1/userinfo';
 const ACCESS_COOKIE_NAME = 'mp_access';
 const REFRESH_COOKIE_NAME = 'mp_refresh';
 const OAUTH_STATE_COOKIE_NAME = 'mp_oauth_state';
+const OAUTH_NEXT_COOKIE_NAME = 'mp_oauth_next';
 
 type GoogleTokenResponse = {
   access_token: string;
@@ -132,6 +133,24 @@ const ensureOAuthConfig = () => {
     throw new Error('Google OAuth env is missing. Fill GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI.');
   }
   getJwtConfig();
+};
+
+const sanitizeNextPath = (rawNextPath: string | undefined) => {
+  if (!rawNextPath) return null;
+  const trimmed = rawNextPath.trim();
+  if (!trimmed.startsWith('/') || trimmed.startsWith('//')) {
+    return null;
+  }
+  try {
+    const webOrigin = new URL(env.WEB_ORIGIN);
+    const resolved = new URL(trimmed, webOrigin);
+    if (resolved.origin !== webOrigin.origin) {
+      return null;
+    }
+    return `${resolved.pathname}${resolved.search}${resolved.hash}`;
+  } catch {
+    return null;
+  }
 };
 
 // DB에는 refresh 토큰 원문 대신 해시만 저장한다.
@@ -349,12 +368,14 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
         timeWindow: '1 minute'
       }
     }
-  }, async (_req, reply) => {
+  }, async (req, reply) => {
     try {
       ensureOAuthConfig();
       // OAuth callback CSRF protection.
       const state = randomBytes(16).toString('hex');
-      const query = new URLSearchParams({
+      const queryParams = req.query as { next?: string };
+      const safeNextPath = sanitizeNextPath(queryParams.next);
+      const authQuery = new URLSearchParams({
         client_id: env.GOOGLE_CLIENT_ID as string,
         redirect_uri: env.GOOGLE_REDIRECT_URI as string,
         response_type: 'code',
@@ -364,8 +385,14 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
         state
       });
 
-      reply.header('Set-Cookie', buildSetCookie(OAUTH_STATE_COOKIE_NAME, state, 60 * 10));
-      return reply.redirect(`${GOOGLE_AUTH_URL}?${query.toString()}`);
+      const cookieHeaders = [
+        buildSetCookie(OAUTH_STATE_COOKIE_NAME, state, 60 * 10),
+        safeNextPath
+          ? buildSetCookie(OAUTH_NEXT_COOKIE_NAME, safeNextPath, 60 * 10)
+          : buildClearCookie(OAUTH_NEXT_COOKIE_NAME),
+      ];
+      reply.header('Set-Cookie', cookieHeaders);
+      return reply.redirect(`${GOOGLE_AUTH_URL}?${authQuery.toString()}`);
     } catch (error) {
       app.log.error(error);
       return reply.code(500).send({ message: 'Google OAuth is not configured.' });
@@ -398,7 +425,10 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       const cookies = parseCookieHeader(req.headers.cookie);
       const stateCookie = cookies[OAUTH_STATE_COOKIE_NAME];
       if (!stateCookie || stateCookie !== query.state) {
-        reply.header('Set-Cookie', buildClearCookie(OAUTH_STATE_COOKIE_NAME));
+        reply.header('Set-Cookie', [
+          buildClearCookie(OAUTH_STATE_COOKIE_NAME),
+          buildClearCookie(OAUTH_NEXT_COOKIE_NAME),
+        ]);
         return reply.code(400).send({ message: 'Invalid OAuth state.' });
       }
 
@@ -446,13 +476,16 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 
       const user = await upsertUserByGoogleIdentity(userInfo);
       const { accessToken, refreshToken, accessTtlSec, refreshTtlSec } = await issueTokenPair(user);
+      const safeNextPath = sanitizeNextPath(cookies[OAUTH_NEXT_COOKIE_NAME]);
+      const redirectUrl = safeNextPath ? new URL(safeNextPath, env.WEB_ORIGIN).toString() : env.WEB_ORIGIN;
 
       reply.header('Set-Cookie', [
         buildClearCookie(OAUTH_STATE_COOKIE_NAME),
+        buildClearCookie(OAUTH_NEXT_COOKIE_NAME),
         buildSetCookie(ACCESS_COOKIE_NAME, accessToken, accessTtlSec),
         buildSetCookie(REFRESH_COOKIE_NAME, refreshToken, refreshTtlSec)
       ]);
-      return reply.redirect(env.WEB_ORIGIN);
+      return reply.redirect(redirectUrl);
     } catch (error) {
       app.log.error(error);
       return reply.code(500).send({ message: 'OAuth callback handling failed.' });

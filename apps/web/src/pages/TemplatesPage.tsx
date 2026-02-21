@@ -8,9 +8,8 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import MainHeader from '../components/layout/MainHeader';
 import PageContainer from '../components/layout/PageContainer';
 import TemplateThumbnailCard from '../components/TemplateThumbnailCard';
+import TemplateCardSkeletonGrid from '../components/TemplateCardSkeletonGrid';
 import type { TemplateRecord, TemplatesResponse } from '../types/template';
-
-const SKELETON_ITEMS = Array.from({ length: 6 }, (_, idx) => idx);
 
 const fetchPublicTemplates = async (): Promise<TemplateRecord[]> => {
   const res = await fetch('/api/v1/templates/public?limit=50');
@@ -38,25 +37,7 @@ const TemplatesPage: React.FC = () => {
       <MainHeader />
       <PageContainer className="py-8">
         {isLoading ? (
-          <div
-            className="grid gap-4"
-            style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))' }}
-          >
-            {SKELETON_ITEMS.map((key) => (
-              <div key={key} className="overflow-hidden rounded-xl border border-transparent bg-transparent">
-                <div className="h-52 p-2">
-                  <div className="h-full w-full animate-pulse rounded-lg border border-border bg-muted" />
-                </div>
-                <div className="space-y-2 p-3">
-                  <div className="h-4 w-full animate-pulse rounded bg-border/80" />
-                  <div className="flex items-center gap-2">
-                    <div className="h-4 flex-1 animate-pulse rounded bg-border/70" />
-                    <div className="h-4 flex-1 animate-pulse rounded bg-border/70" />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+          <TemplateCardSkeletonGrid count={6} minItemWidth={240} />
         ) : error ? (
           <Alert variant="destructive">
             <AlertTitle>목록 로딩 실패</AlertTitle>

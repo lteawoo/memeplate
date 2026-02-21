@@ -5,6 +5,8 @@ import { toast } from 'sonner';
 import type { TemplateRecord, TemplateVisibility } from '../types/template';
 import { apiFetch } from '../lib/apiFetch';
 import { MAX_WORKSPACE_AREA_PX, MAX_WORKSPACE_EDGE_PX } from '../constants/canvasLimits';
+import { ensureAuthSession, getAuthUser } from '../stores/authStore';
+import { redirectToLoginWithNext } from '../lib/loginNavigation';
 
 const CANVAS_MARGIN = 0;
 const EXPORT_IMAGE_LONG_EDGE = MAX_WORKSPACE_EDGE_PX;
@@ -837,6 +839,11 @@ export const useMemeEditor = (options?: UseMemeEditorOptions) => {
 
   const publishImage = async (title: string, description: string) => {
     if (!canvasInstanceRef.current) return null;
+    await ensureAuthSession();
+    if (!getAuthUser()) {
+      redirectToLoginWithNext();
+      return null;
+    }
     if (!linkedTemplateId) {
       toast.warning('리믹스 게시 전 밈플릿을 먼저 선택하거나 저장하세요.');
       return null;
@@ -878,10 +885,7 @@ export const useMemeEditor = (options?: UseMemeEditorOptions) => {
         })
       });
 
-      if (res.status === 401) {
-        toast.error('로그인이 필요합니다.');
-        return null;
-      }
+      if (res.status === 401) return null;
 
       if (!res.ok) {
         const payload = (await res.json().catch(() => ({}))) as { message?: string };
@@ -908,6 +912,11 @@ export const useMemeEditor = (options?: UseMemeEditorOptions) => {
 
   const saveTemplate = async (title: string, description: string, visibility: TemplateVisibility) => {
     if (!canvasInstanceRef.current) return null;
+    await ensureAuthSession();
+    if (!getAuthUser()) {
+      redirectToLoginWithNext();
+      return null;
+    }
     if (isTemplateSaveDisabled) {
       toast.warning('공개 밈플릿으로 시작한 작업은 밈플릿 저장/공유를 지원하지 않습니다.');
       return null;
@@ -981,10 +990,7 @@ export const useMemeEditor = (options?: UseMemeEditorOptions) => {
         body
       });
 
-      if (res.status === 401) {
-        toast.error('로그인이 필요합니다.');
-        return null;
-      }
+      if (res.status === 401) return null;
 
       if (!res.ok) {
         const payload = (await res.json().catch(() => ({}))) as { message?: string };

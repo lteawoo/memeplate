@@ -1,3 +1,5 @@
+import { redirectToLoginWithNext } from './loginNavigation';
+
 const REFRESH_ENDPOINT = '/api/v1/auth/refresh';
 const AUTH_ME_ENDPOINT = '/api/v1/auth/me';
 
@@ -18,12 +20,6 @@ type ApiFetchOptions = {
 };
 
 let refreshInFlight: Promise<boolean> | null = null;
-
-const redirectToLogin = () => {
-  if (typeof window === 'undefined') return;
-  if (window.location.pathname === '/') return;
-  window.location.href = '/';
-};
 
 export const refreshAuthSession = async (): Promise<boolean> => {
   if (!refreshInFlight) {
@@ -67,7 +63,7 @@ export const apiFetch = async (
   const res = await fetch(input, requestInit);
   if (!retryOnUnauthorized || res.status !== 401) {
     if (res.status === 401 && redirectOnAuthFailure) {
-      redirectToLogin();
+      redirectToLoginWithNext();
     }
     return res;
   }
@@ -80,14 +76,14 @@ export const apiFetch = async (
   const refreshed = await refreshAuthSession();
   if (!refreshed) {
     if (redirectOnAuthFailure) {
-      redirectToLogin();
+      redirectToLoginWithNext();
     }
     return res;
   }
 
   const retryRes = await fetch(input, requestInit);
   if (retryRes.status === 401 && redirectOnAuthFailure) {
-    redirectToLogin();
+    redirectToLoginWithNext();
   }
   return retryRes;
 };

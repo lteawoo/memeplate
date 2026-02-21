@@ -1,5 +1,243 @@
 # 결정 로그 (Decision Log)
 
+## [2026-02-21] 인증 리다이렉트 `next` 플로우 통합 (로그인 유도/복귀)
+- **결정**:
+  1. 비로그인 상태에서 리믹스/에디터 보호 진입/헤더 로그인 진입 시 모두 `/login?next=...` 규칙으로 통일함.
+  2. 프론트 공통 유틸(`loginNavigation`)을 도입해 `next` 정규화/로그인 URL 생성/리다이렉트를 단일화함.
+  3. OAuth start/callback에 `next` 전달 및 복귀를 추가하고, 상대경로만 허용하도록 서버측 검증을 적용함.
+- **이유**:
+  1. 기존에는 인증 실패 시 홈(`/`)으로 이동하거나, 로그인 이후 원래 맥락으로 복귀되지 않아 리믹스 진입 UX가 끊겼음.
+  2. 화면마다 로그인 이동 규칙이 달라 중복 구현/회귀 위험이 있었음.
+  3. `next`를 허용할 때 오픈 리다이렉트 보안 리스크가 있어 서버 검증이 필요함.
+- **구현 요약**:
+  - 웹
+    - `apps/web/src/lib/loginNavigation.ts` 추가 (`sanitizeNextPath`, `buildLoginPath`, `redirectToLoginWithNext`)
+    - `apps/web/src/lib/apiFetch.ts` 401 리다이렉트를 `/login?next` 정책으로 전환
+    - `apps/web/src/components/layout/MainHeader.tsx` 로그인 버튼에 현재 경로 `next` 부착
+    - `apps/web/src/pages/TemplateShareDetailPage.tsx` 비로그인 리믹스 클릭 시 로그인 유도
+    - `apps/web/src/pages/EditorPage.tsx` `/create?shareSlug|templateId` 직접 진입 비로그인 가드 추가
+    - `apps/web/src/pages/LoginPage.tsx` `next`를 OAuth start 엔드포인트로 전달
+    - `apps/web/src/hooks/useMemeEditor.ts` 게시/저장 액션 실행 전 세션 확인 + 비로그인 리다이렉트
+  - API
+    - `apps/api/src/modules/auth/routes.ts`
+      - `/auth/google/start`에서 `next`를 안전하게 정규화 후 쿠키 보관
+      - `/auth/google/callback`에서 `next` 복원/검증 후 `WEB_ORIGIN + next`로 복귀
+      - state 불일치 시 `oauth_state`, `oauth_next` 쿠키 동시 정리
+- **관련 이슈**:
+  - #109, #110, #111, #112, #113, #114, #115
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm -r build`
+  - 수동 검증
+    - 템플릿 상세 `리믹스` 클릭 시 `/login?next=/create?shareSlug=...` 이동 확인
+    - `/create?shareSlug=...` 직접 접근 시 로그인 리다이렉트 확인
+    - 헤더 로그인 클릭 시 현재 경로 `next` 부착 확인
+    - 네트워크 요청에서 `/api/v1/auth/google/start?next=...` 호출 확인
+  - 스크린샷
+    - `docs/ai-context/screenshots/2026-02-22_auth_next_remix_login_v1.png`
+    - `docs/ai-context/screenshots/2026-02-22_auth_next_editor_deeplink_guard_v1.png`
+    - `docs/ai-context/screenshots/2026-02-22_auth_next_header_login_v1.png`
+
+## [2026-02-21] 밈플릿 상세 프리뷰/썸네일 역할 분리 + PreviewFrame 공통화
+- **결정**:
+  1. 밈플릿 상세 좌측 이미지는 카드 썸네일이 아니라 원본 확인용 `프리뷰`로 정의하고, 전용 공통 컴포넌트 `PreviewFrame`으로 분리함.
+  2. 목록/리믹스 카드 썸네일은 기존 `ThumbnailCard` + `TemplateCardSkeletonGrid` 규칙을 유지해 썸네일 역할을 고정함.
+  3. 프리뷰가 필요한 상세/시트 화면(`TemplateShareDetailPage`, `ImageShareDetailPage`, `MyTemplatesPage`)은 동일 `PreviewFrame`을 재사용함.
+- **이유**:
+  1. 사용자 피드백대로 상세 좌측 이미지는 썸네일이 아닌 프리뷰 성격이므로, 목록 썸네일과 동일 크기/비율 규칙을 강제하면 정보 전달력이 떨어짐.
+  2. `프리뷰`와 `썸네일`의 역할을 분리해야 “상세 좌측은 크게 확인, 목록/리믹스는 카드형 통일”을 동시에 만족할 수 있음.
+  3. 로딩/에러/빈상태 마크업을 컴포넌트로 공통화하면 이후 스타일 조정 시 누락 가능성이 줄어듦.
+- **구현 요약**:
+  - `apps/web/src/components/PreviewFrame.tsx` 추가
+  - `apps/web/src/pages/TemplateShareDetailPage.tsx`
+    - 좌측 원본 영역을 `PreviewFrame` 기반으로 교체
+  - `apps/web/src/pages/ImageShareDetailPage.tsx`
+    - 메인 이미지 표시 영역을 `PreviewFrame` 기반으로 교체
+  - `apps/web/src/pages/MyTemplatesPage.tsx`
+    - 상세 시트 프리뷰 영역을 `PreviewFrame` 기반으로 교체
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm -r build`
+  - 스크린샷:
+    - `docs/ai-context/screenshots/2026-02-22_previewframe_unify_templates_v1.png`
+    - `docs/ai-context/screenshots/2026-02-22_previewframe_unify_template_detail_v1.png`
+
+## [2026-02-21] 밈플릿 상세 좌측 썸네일 스켈레톤 라운드 체감 정렬
+- **결정**:
+  1. 밈플릿 상세 로딩의 좌측 원본 썸네일 스켈레톤 래퍼에 `overflow-hidden rounded-xl`을 적용함.
+- **이유**:
+  1. 사용자 피드백대로 좌측 원본 썸네일 스켈레톤은 리믹스 카드 대비 라운드 체감이 약하게 보였음.
+  2. 로딩 상태도 완료 상태(`overflow-hidden rounded-xl`)와 동일 구조를 가져야 시각 일관성이 유지됨.
+- **구현 요약**:
+  - `apps/web/src/pages/TemplateShareDetailPage.tsx`
+    - 좌측 썸네일 스켈레톤 래퍼 클래스에 `overflow-hidden rounded-xl` 추가
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+
+## [2026-02-21] 밈플릿 상세: 원본/리믹스 썸네일 스켈레톤 시각 규칙 통일
+- **결정**:
+  1. 밈플릿 상세 로딩의 좌측 원본 썸네일 스켈레톤을 리믹스 카드 스켈레톤과 동일한 규칙으로 정렬함.
+  2. 좌측 썸 영역의 외곽선은 제거하고, `h-52 + bg-muted` 톤으로 통일함.
+- **이유**:
+  1. 사용자 피드백대로 상세 화면에서 원본 썸네일 스켈레톤과 리믹스 썸네일 스켈레톤이 서로 달라 보였음.
+  2. 동일 역할(썸네일 로딩) 요소는 동일한 시각 언어를 써야 일관성이 유지됨.
+- **구현 요약**:
+  - `apps/web/src/pages/TemplateShareDetailPage.tsx`
+    - 좌측 썸네일 스켈레톤 영역 `h-56 p-2 + border` -> `h-52 bg-muted p-2 + no-border`로 변경
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+
+## [2026-02-21] 썸네일 스켈레톤 외곽선 제거(배경 유지)
+- **결정**:
+  1. 썸네일 스켈레톤 썸 영역의 `border`를 제거하고 배경(`bg-muted`)은 유지함.
+- **이유**:
+  1. 사용자 요청대로 스켈레톤의 면(배경 톤)은 유지하면서 외곽선만 제거해 더 플랫한 인상을 맞추기 위함.
+- **구현 요약**:
+  - `apps/web/src/components/TemplateCardSkeletonGrid.tsx`
+    - 썸 영역 스켈레톤 클래스에서 `border border-border` 제거
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+
+## [2026-02-21] 웹 UI 스타일 일원화 1차 (#108)
+- **결정**:
+  1. 상세/목록/썸네일 로딩 UI를 공통 `Skeleton` primitive 기반으로 정렬함.
+  2. `ImageShareDetailPage`를 템플릿 상세와 동일한 무보더 카드 톤으로 통일함.
+  3. destructive 액션의 red 하드코딩 클래스를 semantic token 기반으로 치환함.
+  4. 루트 배경과 primitive radius 일부를 공통 규칙으로 정렬함.
+- **이유**:
+  1. 전역 토큰 체계는 정리되어 있었지만 화면 단위에서 border/스켈레톤/상태색 편차가 누적되어 일관성이 깨졌음.
+  2. 사용자 피드백대로 상세 화면과 목록/로딩 상태가 서로 다른 디자인 언어를 쓰는 문제가 반복됨.
+  3. 하드코딩 red/gradient 의존은 다크모드 및 이후 스타일 수정 시 회귀 위험이 높음.
+- **구현 요약**:
+  - `apps/web/src/components/ui/skeleton.tsx`
+    - 기본 톤을 `bg-primary/10`에서 `bg-border/70` 계열로 변경
+  - `apps/web/src/components/TemplateCardSkeletonGrid.tsx`
+  - `apps/web/src/components/ThumbnailCard.tsx`
+  - `apps/web/src/pages/TemplateShareDetailPage.tsx`
+  - `apps/web/src/pages/ImageShareDetailPage.tsx`
+    - 공통 `Skeleton` 적용 및 상세 로딩/표시 톤 정렬
+  - `apps/web/src/pages/MyTemplatesPage.tsx`
+  - `apps/web/src/components/editor/MemePropertyPanel.tsx`
+    - destructive red 유틸리티를 semantic destructive 토큰 클래스로 치환
+  - `apps/web/src/pages/LoginPage.tsx`
+  - `apps/web/src/components/layout/MySectionLayout.tsx`
+    - 루트 배경을 `bg-app-surface`로 정렬
+  - `apps/web/src/components/ui/popover.tsx`
+  - `apps/web/src/components/ui/tooltip.tsx`
+    - radius를 `rounded-xl`로 통일
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm -r build`
+  - 스크린샷:
+    - `docs/ai-context/screenshots/2026-02-21_style_unify_templates_light_v1.png`
+    - `docs/ai-context/screenshots/2026-02-21_style_unify_template_detail_light_v1.png`
+    - `docs/ai-context/screenshots/2026-02-21_style_unify_templates_dark_v1.png`
+    - `docs/ai-context/screenshots/2026-02-21_style_unify_template_detail_dark_v1.png`
+    - `docs/ai-context/screenshots/2026-02-21_style_unify_login_light_v1.png`
+    - `docs/ai-context/screenshots/2026-02-21_style_unify_login_dark_v1.png`
+
+## [2026-02-21] 밈플릿 상세 좌/우 패널 외곽선 제거
+- **결정**:
+  1. 상세 페이지 좌측(원본 정보)과 우측(리믹스) 패널의 border를 제거함.
+  2. 초기 로딩 스켈레톤 구간의 패널도 동일하게 border를 제거해 상태 전환 시 시각 톤을 맞춤.
+- **이유**:
+  1. 사용자 피드백대로 상세 화면 카드 외곽선이 과해 분절감이 생겼음.
+  2. 로딩 전/후 톤이 다르면 전환 시 이질감이 커지므로 동일 규칙 적용이 필요함.
+- **구현 요약**:
+  - `apps/web/src/pages/TemplateShareDetailPage.tsx`
+    - 초기 로딩 좌/우 패널 wrapper의 `border border-border` 제거
+    - 로딩 완료 좌/우 패널 wrapper의 `border border-border` 제거
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+
+## [2026-02-21] 밈플릿 상세 로딩 높이 안정화: 스켈레톤 밀도 축소 + min-height 정렬
+- **결정**:
+  1. 상세 페이지 리믹스 영역의 skeleton 개수를 `6`에서 `2`로 축소함.
+  2. 리믹스 로딩 상태와 빈상태에 동일한 최소 높이(`min-h-[280px]`)를 적용함.
+- **이유**:
+  1. 상세 진입 직후 skeleton이 과도하게 길어져 초기 화면이 불필요하게 커 보였음.
+  2. 로딩 후 빈상태로 전환될 때 높이 차이로 인해 UI가 “꿈틀대는” 체감이 발생했음.
+- **구현 요약**:
+  - `apps/web/src/pages/TemplateShareDetailPage.tsx`
+    - `DETAIL_RELATED_SKELETON_COUNT = 2` 상수 추가
+    - 초기 로딩/리믹스 로딩에서 `TemplateCardSkeletonGrid` 개수를 2개로 조정
+    - 로딩 컨테이너와 빈상태에 `min-h-[280px]` 적용
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+
+## [2026-02-21] 밈플릿 목록/상세 카드 스켈레톤 공통 컴포넌트화
+- **결정**:
+  1. 목록과 상세에서 공통으로 쓰는 카드형 로딩 skeleton을 `TemplateCardSkeletonGrid`로 추출함.
+  2. 목록(`min 240px`)과 상세(`min 220px`)는 컴포넌트 props(`minItemWidth`)로만 차이를 두고 마크업/톤은 동일하게 유지함.
+- **이유**:
+  1. 동일 UI를 페이지별로 중복 관리하면 스타일 조정 시 누락/회귀가 반복됨.
+  2. 사용자가 지적한 “목록/상세 스켈레톤 불일치”를 구조적으로 방지하려면 단일 소스가 필요함.
+- **구현 요약**:
+  - `apps/web/src/components/TemplateCardSkeletonGrid.tsx` 추가
+  - `apps/web/src/pages/TemplatesPage.tsx` 로딩 분기에서 공통 컴포넌트 사용
+  - `apps/web/src/pages/TemplateShareDetailPage.tsx` 초기 로딩/리믹스 로딩 분기에서 공통 컴포넌트 사용
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+
+## [2026-02-21] 밈플릿 상세 로딩 스켈레톤을 목록 톤으로 통일
+- **결정**:
+  1. 상세 페이지의 로딩 스켈레톤에서 강한 그라디언트(`from-muted to-border`) 사용을 제거함.
+  2. 목록 페이지 스켈레톤과 동일한 색 강도(`bg-muted`, `bg-border/70~80`)로 맞춤.
+  3. 연관 이미지 스켈레톤 카드 구조를 목록과 동일하게 `wrapper border-transparent + 내부 썸네일 border-border` 패턴으로 통일함.
+- **이유**:
+  1. 사용자 피드백대로 목록/상세 로딩 뷰의 톤 차이가 커서 서비스 일관성이 떨어졌음.
+  2. 스켈레톤은 콘텐츠 위계보다 페이지 간 일관된 로딩 인상을 우선해야 함.
+- **구현 요약**:
+  - `apps/web/src/pages/TemplateShareDetailPage.tsx`
+    - 좌측 메타/이미지 skeleton bar 색 강도 완화 (`bg-border` -> `bg-border/70~80`)
+    - 좌측 메인 썸네일 skeleton을 gradient에서 단일 `bg-muted + border-border`로 변경
+    - 우측 연관 카드 skeleton wrapper/thumbnail/body skeleton 클래스를 목록 페이지와 동일 톤으로 변경
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+
+## [2026-02-21] 밈플릿 상세 UI 정리 2차: 썸네일/정렬 외곽선 제거 + 빈상태 아이콘화
+- **결정**:
+  1. 상세 좌측 원본 썸네일 컨테이너의 테두리를 제거함.
+  2. 리믹스 정렬 토글(`최신순/인기순`) 래퍼의 테두리를 제거함.
+  3. 리믹스가 없을 때 텍스트 단일 문구 대신 아이콘 + 타이틀 + 보조 설명 형태의 빈상태 컴포넌트로 변경함.
+- **이유**:
+  1. 사용자 피드백대로 상세 화면에서 외곽선 강조가 과하고 카드가 분절되어 보였음.
+  2. 빈상태는 단일 문장보다 시각적 힌트(아이콘)와 다음 액션 유도 문구가 함께 있을 때 인지성이 높음.
+- **구현 요약**:
+  - `apps/web/src/pages/TemplateShareDetailPage.tsx`
+    - 썸네일 래퍼 클래스에서 `border border-border` 제거
+    - 정렬 토글 래퍼 클래스에서 `border border-border` 제거
+    - `relatedImages.length === 0` 분기 UI를 `mdiImageOffOutline` 아이콘 기반 빈상태로 교체
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 스크린샷:
+    - `docs/ai-context/screenshots/2026-02-21_template_detail_ui_cleanup_v1.png`
+
+## [2026-02-21] 밈플릿 상세 썸네일 즉시 표시 레이스 보정
+- **결정**:
+  1. 상세 메인 썸네일 로딩 상태(`isMainImageLoaded`)를 `onLoad` 이벤트만으로 판단하지 않고, URL 변경 시점에 `img.complete && naturalWidth > 0`를 함께 확인함.
+  2. 상세 썸네일에도 목록 카드와 동일하게 `onError` fallback 상태를 추가함.
+  3. 상세 썸네일 `<img>`에 `key={template.thumbnailUrl}`를 부여해 이미지 URL 전환 시 로드 이벤트를 안정적으로 재평가함.
+- **이유**:
+  1. 목록에서 상세로 즉시 이동할 때 캐시 히트/렌더 타이밍에 따라 `onLoad`가 기대대로 반영되지 않으면 이미지가 `opacity-0`에 남아 “새로고침 후에만 보이는” 체감이 발생할 수 있음.
+  2. 실패 상태를 분리하지 않으면 로딩 skeleton이 무기한 유지되어 원인 파악이 어려움.
+- **구현 요약**:
+  - `apps/web/src/pages/TemplateShareDetailPage.tsx`
+    - `isMainImageError`, `mainImageRef` 상태 추가
+    - `template.thumbnailUrl` effect에서 `img.complete` 선확인 후 로딩 상태 동기화
+    - 메인 `<img>`에 `onLoad/onError`, `key={template.thumbnailUrl}` 적용
+    - 에러 시 `미리보기를 불러오지 못했습니다.` 오버레이 노출
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - 수동 검증: `/templates` 목록 클릭 직후 `/templates/s/:shareSlug` 진입 시 새로고침 없이 썸네일 즉시 표시 확인
+  - 스크린샷:
+    - `docs/ai-context/screenshots/2026-02-21_template_detail_thumbnail_direct_nav_v1.png`
+
 ## [2026-02-20] 텍스트/도형 레이어를 이미지(workspace) 내부로 제한
 - **결정**:
   1. 배경(`name=background`)을 제외한 선택 객체는 이동/수정 시 workspace 경계를 벗어나지 못하도록 제한함.

@@ -507,7 +507,7 @@ const MemePropertyPanel: React.FC<MemePropertyPanelProps> = (props) => {
                               selectLayer(obj);
                               deleteActiveObject();
                             }}
-                            className="h-8 w-8 rounded-lg border-border bg-muted p-0 text-muted-foreground hover:border-red-300 hover:bg-red-50 hover:text-red-600"
+                            className="h-8 w-8 rounded-lg border-border bg-muted p-0 text-muted-foreground hover:border-destructive/40 hover:bg-destructive/10 hover:text-destructive"
                           >
                             <Icon path={mdiDelete} size={0.7} />
                           </Button>
