@@ -10,11 +10,13 @@ const TemplateCardSkeletonGrid: React.FC<TemplateCardSkeletonGridProps> = ({ cou
   return (
     <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(auto-fill, minmax(${minItemWidth}px, 1fr))` }}>
       {Array.from({ length: count }, (_, idx) => (
-        <div key={idx} className="overflow-hidden rounded-xl border border-transparent bg-transparent">
-          <div className="h-52 p-2">
-            <Skeleton className="h-full w-full rounded-lg bg-muted" />
+        <div key={idx} className="overflow-hidden rounded-xl border border-transparent bg-transparent shadow-none">
+          <div className="thumb-card-surface h-52 w-full bg-transparent p-0">
+            <div className="thumb-card-media-surface relative flex h-full items-center justify-center overflow-hidden rounded-lg bg-transparent">
+              <Skeleton className="absolute inset-0 rounded-lg bg-border/70" />
+            </div>
           </div>
-          <div className="space-y-2 p-3">
+          <div className="space-y-2 p-[10px_12px]">
             <Skeleton className="h-4 w-full rounded bg-border/80" />
             <div className="flex items-center gap-2">
               <Skeleton className="h-4 flex-1 rounded bg-border/70" />

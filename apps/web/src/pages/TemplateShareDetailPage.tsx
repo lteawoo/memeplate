@@ -237,9 +237,7 @@ const TemplateShareDetailPage: React.FC = () => {
                 <Skeleton className="h-5 w-full rounded bg-border/80" />
                 <Skeleton className="h-4 w-28 rounded bg-border/70" />
               </div>
-              <div className="h-52 overflow-hidden rounded-xl bg-muted p-2">
-                <Skeleton className="h-full w-full rounded-lg bg-muted" />
-              </div>
+              <PreviewFrame alt="밈플릿 프리뷰 로딩" loadingPlaceholder contentClassName="h-52 p-2" />
               <div className="mt-4 space-y-2">
                 {Array.from({ length: 6 }, (_, idx) => (
                   <div key={idx} className="flex items-center justify-between gap-3">
@@ -322,7 +320,6 @@ const TemplateShareDetailPage: React.FC = () => {
                 </div>
                 <div className="mt-5 flex flex-col gap-2">
                   <Button type="button" onClick={() => { void handleRemixClick(); }}>리믹스</Button>
-                  <Button type="button" variant="outline" onClick={() => navigate('/templates')}>밈플릿 목록으로</Button>
                 </div>
               </div>
             </div>

@@ -257,6 +257,12 @@
   - [x] 밈플릿 목록/상세 카드 스켈레톤 공통 컴포넌트화 (`TemplateCardSkeletonGrid`)
   - [x] 밈플릿 상세 로딩 높이 안정화 (리믹스 skeleton 2개 + 로딩/빈상태 min-height 정렬)
   - [x] 밈플릿 상세 좌/우 패널 외곽선 제거(초기 로딩 패널 포함)
+  - [x] 리믹스/밈플릿 상세 초기 이미지 스켈레톤을 `PreviewFrame` 공통 마크업으로 통일(`loadingPlaceholder`)
+  - [x] 목록 스켈레톤 썸네일(`TemplateCardSkeletonGrid`)을 실카드(`ThumbnailCard`) 로딩 구조와 동일화
+  - [x] 썸네일 카드/스켈레톤 썸 표면 배경 제거(`bg-card`, `bg-muted`, `bg-muted/80`)
+  - [x] 리믹스 목록 썸네일 고착 대응: `ThumbnailCard` `img.complete + naturalWidth` 선확인 및 `key={imageUrl}` 동기화
+  - [x] 리믹스 상세 메인 이미지 고착 대응: `ImageShareDetailPage` 로드/에러 상태 분리 및 `onError` 연동
+  - [x] 밈플릿 상세/리믹스 상세의 `밈플릿 목록으로` 버튼 제거
   - [x] 웹 UI 스타일 일원화 1차 (#108)
   - [x] `Skeleton` primitive 공통 적용(목록/상세/썸네일 로딩 톤 정렬)
   - [x] 썸네일 스켈레톤 썸 영역 외곽선 제거(배경 유지)

@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 type PreviewFrameProps = {
   imageUrl?: string;
   alt: string;
+  loadingPlaceholder?: boolean;
   imageRef?: React.RefObject<HTMLImageElement | null>;
   imageKey?: string;
   isImageLoaded?: boolean;
@@ -24,6 +25,7 @@ type PreviewFrameProps = {
 const PreviewFrame: React.FC<PreviewFrameProps> = ({
   imageUrl,
   alt,
+  loadingPlaceholder = false,
   imageRef,
   imageKey,
   isImageLoaded,
@@ -42,10 +44,15 @@ const PreviewFrame: React.FC<PreviewFrameProps> = ({
   const hasLoadState = typeof isImageLoaded === 'boolean';
   const showSkeleton = hasLoadState && !isImageLoaded && !isImageError;
   const imageOpacityClass = hasLoadState ? (isImageLoaded ? 'opacity-100' : 'opacity-0') : 'opacity-100';
+  const showLoadingPlaceholder = loadingPlaceholder && !imageUrl;
 
   return (
     <div className={cn('overflow-hidden rounded-xl bg-transparent', frameClassName)}>
-      {imageUrl ? (
+      {showLoadingPlaceholder ? (
+        <div className={cn('relative flex items-center justify-center p-4', contentClassName)}>
+          <Skeleton className="absolute inset-0 rounded-lg bg-border/70" />
+        </div>
+      ) : imageUrl ? (
         <div className={cn('relative flex items-center justify-center p-4', contentClassName)}>
           {showSkeleton ? (
             <Skeleton className="absolute inset-0 rounded-lg bg-border/70" />

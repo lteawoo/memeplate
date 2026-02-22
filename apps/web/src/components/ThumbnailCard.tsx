@@ -26,9 +26,15 @@ const ThumbnailCard: React.FC<ThumbnailCardProps> = ({
   const isClickable = Boolean(onClick);
   const [hasImageError, setHasImageError] = React.useState(false);
   const [hasImageLoaded, setHasImageLoaded] = React.useState(false);
+  const imageRef = React.useRef<HTMLImageElement | null>(null);
 
   React.useEffect(() => {
     setHasImageError(false);
+    const imageEl = imageRef.current;
+    if (imageEl && imageEl.complete && imageEl.naturalWidth > 0) {
+      setHasImageLoaded(true);
+      return;
+    }
     setHasImageLoaded(false);
   }, [imageUrl]);
 
@@ -44,25 +50,33 @@ const ThumbnailCard: React.FC<ThumbnailCardProps> = ({
       }}
       role={isClickable ? 'button' : undefined}
       tabIndex={isClickable ? 0 : undefined}
-      className={`overflow-hidden rounded-xl border border-transparent bg-card shadow-none ${hoverSurfaceOnly ? 'hover-surface-only-card' : ''} ${isClickable ? 'cursor-pointer' : ''} ${
+      className={`overflow-hidden rounded-xl border border-transparent bg-transparent shadow-none ${hoverSurfaceOnly ? 'hover-surface-only-card' : ''} ${isClickable ? 'cursor-pointer' : ''} ${
         hoverable ? 'transition-shadow hover:shadow-[0_6px_14px_rgba(13,27,42,0.08)]' : ''
       }`}
     >
-      <div className="thumb-card-surface h-52 w-full bg-muted p-2">
+      <div className="thumb-card-surface h-52 w-full bg-transparent p-0">
         {imageUrl && !hasImageError ? (
-          <div className="thumb-card-media-surface relative flex h-full items-center justify-center overflow-hidden rounded-lg bg-muted/80">
+          <div className="thumb-card-media-surface relative flex h-full items-center justify-center overflow-hidden rounded-lg bg-transparent">
             {!hasImageLoaded ? (
               <Skeleton className="absolute inset-0 rounded-lg bg-border/70" />
             ) : null}
             <img
+              ref={imageRef}
+              key={imageUrl}
               src={imageUrl}
               alt={title}
               crossOrigin="anonymous"
               loading="lazy"
               decoding="async"
               fetchPriority="low"
-              onLoad={() => setHasImageLoaded(true)}
-              onError={() => setHasImageError(true)}
+              onLoad={() => {
+                setHasImageError(false);
+                setHasImageLoaded(true);
+              }}
+              onError={() => {
+                setHasImageLoaded(false);
+                setHasImageError(true);
+              }}
               className={`max-h-full w-full object-contain transition-opacity duration-200 ${hasImageLoaded ? 'opacity-100' : 'opacity-0'}`}
               draggable={false}
               onDragStart={(e) => e.preventDefault()}
