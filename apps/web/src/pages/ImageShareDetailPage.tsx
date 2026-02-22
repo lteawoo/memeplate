@@ -1,11 +1,18 @@
 import React from 'react';
 import { useParams } from 'react-router-dom';
+import { toast } from 'sonner';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Textarea } from '@/components/ui/textarea';
+import { apiFetch } from '@/lib/apiFetch';
 import MainHeader from '../components/layout/MainHeader';
 import PageContainer from '../components/layout/PageContainer';
 import PreviewFrame from '../components/PreviewFrame';
 import type { MemeImageRecord, MemeImageResponse } from '../types/image';
+import { useAuthStore } from '../stores/authStore';
 
 const formatBytes = (bytes: number) => {
   if (!Number.isFinite(bytes) || bytes <= 0) return '-';
@@ -21,6 +28,9 @@ const formatBytes = (bytes: number) => {
 
 const ImageShareDetailPage: React.FC = () => {
   const { shareSlug } = useParams<{ shareSlug: string }>();
+  const authUser = useAuthStore((state) => state.user);
+  const authInitialized = useAuthStore((state) => state.initialized);
+  const syncSession = useAuthStore((state) => state.syncSession);
   const viewedSlugRef = React.useRef<string | null>(null);
   const [image, setImage] = React.useState<MemeImageRecord | null>(null);
   const [isMainImageLoaded, setIsMainImageLoaded] = React.useState(false);
@@ -28,6 +38,16 @@ const ImageShareDetailPage: React.FC = () => {
   const mainImageRef = React.useRef<HTMLImageElement | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
+  const [editTitle, setEditTitle] = React.useState('');
+  const [editDescription, setEditDescription] = React.useState('');
+  const [isSavingMeta, setIsSavingMeta] = React.useState(false);
+  const isOwner = Boolean(authUser?.id && image?.ownerId && authUser.id === image.ownerId);
+
+  React.useEffect(() => {
+    if (!authInitialized) {
+      void syncSession();
+    }
+  }, [authInitialized, syncSession]);
 
   React.useEffect(() => {
     const load = async () => {
@@ -64,6 +84,11 @@ const ImageShareDetailPage: React.FC = () => {
   }, [image?.imageUrl]);
 
   React.useEffect(() => {
+    setEditTitle(image?.title ?? '');
+    setEditDescription(image?.description ?? '');
+  }, [image?.id, image?.title, image?.description]);
+
+  React.useEffect(() => {
     if (!shareSlug || !image || viewedSlugRef.current === shareSlug) return;
 
     viewedSlugRef.current = shareSlug;
@@ -80,6 +105,44 @@ const ImageShareDetailPage: React.FC = () => {
     };
     void incrementView();
   }, [shareSlug, image]);
+
+  const handleSaveMeta = React.useCallback(async () => {
+    if (!image || !isOwner) return;
+
+    const nextTitle = editTitle.trim();
+    const nextDescription = editDescription.trim();
+    if (!nextTitle) {
+      toast.error('제목을 입력하세요.');
+      return;
+    }
+
+    setIsSavingMeta(true);
+    try {
+      const res = await apiFetch(`/api/v1/images/${image.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: nextTitle,
+          description: nextDescription.length > 0 ? nextDescription : ''
+        })
+      });
+
+      if (!res.ok) {
+        const payload = (await res.json().catch(() => ({}))) as { message?: string };
+        throw new Error(payload.message || '리믹스 정보 수정에 실패했습니다.');
+      }
+
+      const payload = (await res.json()) as MemeImageResponse;
+      setImage(payload.image);
+      setEditTitle(payload.image.title);
+      setEditDescription(payload.image.description ?? '');
+      toast.success('리믹스 정보를 수정했습니다.');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '리믹스 정보 수정에 실패했습니다.');
+    } finally {
+      setIsSavingMeta(false);
+    }
+  }, [editDescription, editTitle, image, isOwner]);
 
   return (
     <div className="min-h-screen bg-app-surface">
@@ -172,6 +235,38 @@ const ImageShareDetailPage: React.FC = () => {
                   <span className="text-right font-medium text-foreground">{(image.likeCount ?? 0).toLocaleString()}</span>
                 </div>
               </div>
+              {isOwner ? (
+                <div className="mt-5 space-y-3 rounded-xl bg-muted p-4">
+                  <div className="text-xs font-semibold text-muted-foreground">내 리믹스 관리</div>
+                  <div className="space-y-2">
+                    <Label htmlFor="remix-title">제목</Label>
+                    <Input
+                      id="remix-title"
+                      value={editTitle}
+                      maxLength={100}
+                      onChange={(event) => setEditTitle(event.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="remix-description">설명</Label>
+                    <Textarea
+                      id="remix-description"
+                      value={editDescription}
+                      maxLength={500}
+                      rows={4}
+                      onChange={(event) => setEditDescription(event.target.value)}
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={isSavingMeta}
+                    onClick={() => { void handleSaveMeta(); }}
+                  >
+                    {isSavingMeta ? '저장 중...' : '제목/설명 저장'}
+                  </Button>
+                </div>
+              ) : null}
             </div>
           </div>
         ) : null}

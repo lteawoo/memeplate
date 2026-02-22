@@ -112,6 +112,7 @@ const TemplateShareDetailPage: React.FC = () => {
   const [isDeletingTemplate, setIsDeletingTemplate] = React.useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
   const isOwner = Boolean(authUser?.id && template?.ownerId && authUser.id === template.ownerId);
+  const hasRelatedRemixes = relatedImages.length > 0;
 
   const sortedRelatedImages = React.useMemo(() => {
     const next = [...relatedImages];
@@ -280,6 +281,10 @@ const TemplateShareDetailPage: React.FC = () => {
 
   const handleChangeVisibility = React.useCallback(async (nextVisibility: TemplateVisibility) => {
     if (!template || !isOwner || template.visibility === nextVisibility) return;
+    if (template.visibility === 'public' && nextVisibility === 'private' && hasRelatedRemixes) {
+      toast.error('리믹스가 1개 이상 있는 밈플릿은 비공개로 전환할 수 없습니다.');
+      return;
+    }
 
     setIsUpdatingVisibility(true);
     try {
@@ -301,10 +306,14 @@ const TemplateShareDetailPage: React.FC = () => {
     } finally {
       setIsUpdatingVisibility(false);
     }
-  }, [isOwner, template]);
+  }, [hasRelatedRemixes, isOwner, template]);
 
   const handleDeleteTemplate = React.useCallback(async () => {
     if (!template || !isOwner) return;
+    if (hasRelatedRemixes) {
+      toast.error('리믹스가 1개 이상 있는 밈플릿은 삭제할 수 없습니다.');
+      return;
+    }
 
     setIsDeletingTemplate(true);
     try {
@@ -322,7 +331,7 @@ const TemplateShareDetailPage: React.FC = () => {
     } finally {
       setIsDeletingTemplate(false);
     }
-  }, [isOwner, navigate, template]);
+  }, [hasRelatedRemixes, isOwner, navigate, template]);
 
   return (
     <div className="min-h-screen bg-app-surface">
@@ -439,12 +448,17 @@ const TemplateShareDetailPage: React.FC = () => {
                       <Button
                         type="button"
                         variant="destructive"
-                        disabled={isDeletingTemplate}
+                        disabled={isDeletingTemplate || hasRelatedRemixes}
                         onClick={() => setIsDeleteDialogOpen(true)}
                       >
                         삭제
                       </Button>
                     </div>
+                    {hasRelatedRemixes ? (
+                      <div className="text-xs text-muted-foreground">
+                        리믹스가 존재해 비공개 전환 및 삭제를 할 수 없습니다.
+                      </div>
+                    ) : null}
                   </div>
                 ) : null}
                 <div className="mt-5 flex flex-col gap-2">
