@@ -1,6 +1,20 @@
 # 프로젝트 상태 (Status)
 
 ## 현재 진행 상황
+- [x] **에디터 텍스트 상/하단 클리핑 완화 (완료 - 2026-02-22)**
+  - [x] 텍스트 높이 계산을 `fontSize*lineHeight` 단순치에서 glyph ascent/descent 반영 방식으로 보강
+  - [x] 텍스트 렌더 baseline을 `top`에서 `alphabetic`으로 전환해 상/하단 metric 기반 배치 정렬
+  - [x] stroke 두께와 악센트 glyph를 고려한 콘텐츠 inset(horizontal/vertical) 계산 도입
+  - [x] 캔버스 렌더(`Textbox`)와 편집 오버레이(`textarea`)에 동일 inset 규칙 적용해 WYSIWYG 정렬
+  - [x] 최소 폰트(`8px`)에서도 overflow가 남는 경우 `1px`까지 연속 축소(binary search)해 높이 fit 보장
+  - [x] 폰트값/레이아웃값 정합성을 위해 최종 폰트로 strict 재측정 추가(경계 clipping 방지)
+  - [x] 편집 오버레이(`textarea`)를 `border` 기반에서 `outline` 기반으로 전환해 내부 텍스트 영역 폭/높이 오차 제거
+  - [x] 편집 오버레이 상/하단 안전 여백(+1px)과 `spellCheck=false` 적용으로 편집 상태 clipping 체감 완화
+  - [x] `pnpm --filter memeplate-web lint`, `pnpm --filter memeplate-web build` 통과
+  - [x] 스크린샷 검증
+    - [x] `docs/ai-context/screenshots/2026-02-22_editor_text_vertical_clipping_fix_v1.png`
+    - [x] `docs/ai-context/screenshots/2026-02-22_editor_text_autoshrink_below_min_fit_v1.png`
+    - [x] `docs/ai-context/screenshots/2026-02-22_editor_text_edit_overlay_clipping_fix_v1.png`
 - [x] **에디터 캔버스 hover/터치 레이어 외곽선 표시 규칙 적용 (완료 - 2026-02-22)**
   - [x] 캔버스 hover(PC) 또는 캔버스 터치 활성(모바일) 상태에서 배경 제외 모든 레이어에 얇은 외곽선 표시
   - [x] 레이어 외곽선 스타일을 실선에서 점선으로 변경

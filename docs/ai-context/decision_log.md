@@ -1,5 +1,42 @@
 # 결정 로그 (Decision Log)
 
+## [2026-02-22] 에디터 텍스트 상/하단 클리핑 완화 (glyph metric + inset 정렬)
+- **결정**:
+  1. 텍스트 높이 적합성 판단을 `lineCount * fontSize * lineHeight` 단순 계산에서 glyph ascent/descent 기반 총 높이로 전환함.
+  2. `Textbox` 렌더 baseline을 `top`에서 `alphabetic`으로 바꾸고, baseline offset(`ascent`) 기준으로 각 줄을 배치함.
+  3. 외곽선(stroke) 두께와 악센트/하강문자(headroom)를 반영한 안전 inset(`horizontal`, `vertical`)을 계산해 레이아웃 박스에 적용함.
+  4. 캔버스 본문 렌더와 편집 오버레이 textarea에 동일 inset 규칙을 적용해 편집 중/완료 후의 텍스트 위치 불일치를 줄임.
+  5. 최소 폰트(8px)에서도 높이 overflow가 남는 경우, 1px까지 연속 폰트 축소를 허용해 클리핑 대신 autoshrink를 우선함.
+  6. 편집 상태(`textarea`)의 조기 줄바꿈/잘림을 줄이기 위해 `border` 대신 `outline`을 사용해 내부 레이아웃 폭/높이 손실을 제거함.
+- **이유**:
+  1. 기존에는 clip 박스 경계와 텍스트 배치가 너무 밀착되어 `Á`, `g/j/p/y`, 한글 조합에서 상/하단 잘림이 반복됨.
+  2. stroke 두께가 레이아웃 fit 계산에 반영되지 않아 "맞아 보이지만 잘리는" 케이스가 존재했음.
+  3. 오버레이와 캔버스 렌더 규칙이 다르면 편집 중에는 보이고 완료 후 잘리는 회귀가 발생할 수 있어 단일 규칙화가 필요했음.
+  4. 사용자 피드백대로 줄바꿈 자체는 허용하되, 박스 높이를 넘겨 잘리는 대신 폰트가 추가로 줄어드는 동작이 필요했음.
+  5. 편집 상태는 DOM 박스모델(`border-box`, border) 영향을 받기 때문에 캔버스 본문보다 먼저 줄바꿈되거나 하단이 짤릴 수 있었음.
+- **구현 요약**:
+  - `apps/web/src/core/canvas/textLayout.ts`
+    - `measureText` ascent/descent 기반 `totalHeight` 계산으로 변경
+    - `TextLayoutResult.baselineOffsetPx` 추가
+    - `getAdaptiveStrokeWidth`, `resolveTextContentInsets` 공통 유틸 추가
+    - `MIN_TEXT_FONT_SIZE(8)` 미적합 시 `ABSOLUTE_MIN_TEXT_FONT_SIZE(1)`까지 binary search 축소 fallback 추가
+    - 최종 폰트로 strict 재측정해 폰트값/레이아웃값 불일치 제거
+  - `apps/web/src/core/canvas/Textbox.ts`
+    - 2-pass 레이아웃(프로브 -> inset 반영 레이아웃) 적용
+    - baseline `alphabetic` 전환 + `baselineOffsetPx` 사용
+    - 좌/우 정렬 기준을 inset 적용 inner width 기준으로 보정
+  - `apps/web/src/components/editor/MemeCanvas.tsx`
+    - textarea 레이아웃에 캔버스와 동일 inset/inner-height 계산 적용
+    - `scaleX/scaleY` 절대값 기반 표시 폭/높이 계산으로 오버레이 안정화
+    - `border` -> `outline` 전환 + 상/하단 안전 inset(+1px) + `spellCheck=false` 적용
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 스크린샷
+    - `docs/ai-context/screenshots/2026-02-22_editor_text_vertical_clipping_fix_v1.png`
+    - `docs/ai-context/screenshots/2026-02-22_editor_text_autoshrink_below_min_fit_v1.png`
+    - `docs/ai-context/screenshots/2026-02-22_editor_text_edit_overlay_clipping_fix_v1.png`
+
 ## [2026-02-22] 캔버스 점선 외곽선 가시성 미세 조정(두께/대시 길이)
 - **결정**:
   1. 선택 객체 조절 박스 외곽선은 기존보다 약간 더 두껍게 표시함.
