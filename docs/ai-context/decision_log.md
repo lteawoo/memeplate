@@ -37,7 +37,7 @@
   - 스크린샷
     - `docs/ai-context/screenshots/2026-02-22_template_detail_guard_actions_hidden_with_remixes_v2.png`
     - `docs/ai-context/screenshots/2026-02-22_image_detail_owner_meta_edit_v1.png`
-    - `docs/ai-context/screenshots/2026-02-22_template_detail_remix_section_no_card_bg_v1.png`
+    - `docs/ai-context/screenshots/2026-02-22_template_detail_remix_section_no_card_bg_v2.png`
 
 ## [2026-02-22] 내 밈플릿 관리 동선 링크 복사 액션 제거 (#124)
 - **결정**:
