@@ -1,5 +1,36 @@
 # 결정 로그 (Decision Log)
 
+## [2026-02-22] 리믹스 상세 수정 모달 저장 중 닫힘 방지 (#135)
+- **결정**:
+  1. 리믹스 상세 수정 모달(`ImageShareDetailPage`)의 `onOpenChange`를 저장 상태 가드 함수로 교체함.
+  2. `isSavingMeta === true` 상태에서 모달 닫힘 요청(`nextOpen=false`)은 무시함.
+- **이유**:
+  1. 저장 중 오버레이 클릭/ESC/닫기(X)로 모달이 닫히면 진행 상태 인지가 끊기고, 취소 버튼 disabled 정책과도 일관성이 맞지 않음.
+  2. 저장 중 닫힘을 막으면 사용자가 요청 상태를 명확히 확인할 수 있고 중간 이탈로 인한 혼선을 줄일 수 있음.
+- **구현 요약**:
+  - `apps/web/src/pages/ImageShareDetailPage.tsx`
+    - `handleEditDialogOpenChange(nextOpen)` 추가
+    - 저장 중(`isSavingMeta`)에는 닫힘 요청만 차단
+    - `Dialog onOpenChange={handleEditDialogOpenChange}`로 연결
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+
+## [2026-02-22] 리믹스 상세 owner 관리 UI를 모달 편집 패턴으로 전환 (#134)
+- **결정**:
+  1. 리믹스 상세(`ImageShareDetailPage`)의 `내 리믹스 관리`는 인라인 입력 폼을 제거하고 `수정` 버튼 트리거로 단순화함.
+  2. 제목/설명 편집은 `Dialog` 모달에서만 수행하도록 전환하고, 저장 성공 시 모달을 자동으로 닫음.
+- **이유**:
+  1. 상세 패널 내 인라인 폼은 정보 확인 흐름을 길게 만들고 시각 밀도를 높임.
+  2. 수정 액션을 명시적으로 진입시키면 읽기/편집 모드를 분리해 UX 집중도를 높일 수 있음.
+- **구현 요약**:
+  - `apps/web/src/pages/ImageShareDetailPage.tsx`
+    - `Dialog` 컴포넌트 도입
+    - owner 관리 블록을 `수정` 버튼 UI로 전환
+    - 제목/설명 입력과 저장 버튼을 모달로 이동
+    - 저장 함수가 성공 여부를 반환하도록 보강해 성공 시 모달 닫힘 처리
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+
 ## [2026-02-22] 밈플릿/리믹스 썸네일 하단 텍스트 여백 규격 통일 (#132)
 - **결정**:
   1. `ThumbnailCard`의 본문 패딩을 `p-4`에서 `px-4 pt-3 pb-4`로 조정하고, 썸네일 래퍼에도 `px-4`를 적용해 썸네일/텍스트의 좌우 기준선을 동일화함.

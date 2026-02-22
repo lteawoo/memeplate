@@ -3,6 +3,14 @@ import { useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -40,6 +48,7 @@ const ImageShareDetailPage: React.FC = () => {
   const [error, setError] = React.useState<string | null>(null);
   const [editTitle, setEditTitle] = React.useState('');
   const [editDescription, setEditDescription] = React.useState('');
+  const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
   const [isSavingMeta, setIsSavingMeta] = React.useState(false);
   const isOwner = Boolean(authUser?.id && image?.ownerId && authUser.id === image.ownerId);
 
@@ -107,13 +116,13 @@ const ImageShareDetailPage: React.FC = () => {
   }, [shareSlug, image]);
 
   const handleSaveMeta = React.useCallback(async () => {
-    if (!image || !isOwner) return;
+    if (!image || !isOwner) return false;
 
     const nextTitle = editTitle.trim();
     const nextDescription = editDescription.trim();
     if (!nextTitle) {
       toast.error('제목을 입력하세요.');
-      return;
+      return false;
     }
 
     setIsSavingMeta(true);
@@ -137,12 +146,33 @@ const ImageShareDetailPage: React.FC = () => {
       setEditTitle(payload.image.title);
       setEditDescription(payload.image.description ?? '');
       toast.success('리믹스 정보를 수정했습니다.');
+      return true;
     } catch (err) {
       toast.error(err instanceof Error ? err.message : '리믹스 정보 수정에 실패했습니다.');
+      return false;
     } finally {
       setIsSavingMeta(false);
     }
   }, [editDescription, editTitle, image, isOwner]);
+
+  const handleOpenEditDialog = React.useCallback(() => {
+    if (!image || !isOwner) return;
+    setEditTitle(image.title);
+    setEditDescription(image.description ?? '');
+    setIsEditDialogOpen(true);
+  }, [image, isOwner]);
+
+  const handleSaveMetaFromDialog = React.useCallback(async () => {
+    const saved = await handleSaveMeta();
+    if (saved) {
+      setIsEditDialogOpen(false);
+    }
+  }, [handleSaveMeta]);
+
+  const handleEditDialogOpenChange = React.useCallback((nextOpen: boolean) => {
+    if (!nextOpen && isSavingMeta) return;
+    setIsEditDialogOpen(nextOpen);
+  }, [isSavingMeta]);
 
   return (
     <div className="min-h-screen bg-app-surface">
@@ -211,36 +241,58 @@ const ImageShareDetailPage: React.FC = () => {
                 </div>
               </div>
               {isOwner ? (
-                <div className="mt-5 space-y-3 rounded-xl bg-muted p-4">
-                  <div className="text-xs font-semibold text-muted-foreground">내 리믹스 관리</div>
-                  <div className="space-y-2">
-                    <Label htmlFor="remix-title">제목</Label>
-                    <Input
-                      id="remix-title"
-                      value={editTitle}
-                      maxLength={100}
-                      onChange={(event) => setEditTitle(event.target.value)}
-                    />
+                <>
+                  <div className="mt-5 space-y-3 rounded-xl bg-muted p-4">
+                    <div className="text-xs font-semibold text-muted-foreground">내 리믹스 관리</div>
+                    <Button type="button" variant="outline" onClick={handleOpenEditDialog}>수정</Button>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="remix-description">설명</Label>
-                    <Textarea
-                      id="remix-description"
-                      value={editDescription}
-                      maxLength={500}
-                      rows={4}
-                      onChange={(event) => setEditDescription(event.target.value)}
-                    />
-                  </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    disabled={isSavingMeta}
-                    onClick={() => { void handleSaveMeta(); }}
-                  >
-                    {isSavingMeta ? '저장 중...' : '제목/설명 저장'}
-                  </Button>
-                </div>
+                  <Dialog open={isEditDialogOpen} onOpenChange={handleEditDialogOpenChange}>
+                    <DialogContent className="sm:max-w-md">
+                      <DialogHeader>
+                        <DialogTitle>리믹스 정보 수정</DialogTitle>
+                        <DialogDescription>제목과 설명을 수정합니다.</DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="remix-title">제목</Label>
+                          <Input
+                            id="remix-title"
+                            value={editTitle}
+                            maxLength={100}
+                            onChange={(event) => setEditTitle(event.target.value)}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="remix-description">설명</Label>
+                          <Textarea
+                            id="remix-description"
+                            value={editDescription}
+                            maxLength={500}
+                            rows={4}
+                            onChange={(event) => setEditDescription(event.target.value)}
+                          />
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          disabled={isSavingMeta}
+                          onClick={() => setIsEditDialogOpen(false)}
+                        >
+                          취소
+                        </Button>
+                        <Button
+                          type="button"
+                          disabled={isSavingMeta}
+                          onClick={() => { void handleSaveMetaFromDialog(); }}
+                        >
+                          {isSavingMeta ? '저장 중...' : '저장'}
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </>
               ) : null}
             </div>
             <div className="order-1 rounded-2xl bg-card p-6 lg:order-2">

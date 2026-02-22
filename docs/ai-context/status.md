@@ -1,6 +1,14 @@
 # 프로젝트 상태 (Status)
 
 ## 현재 진행 상황
+- [x] **리믹스 상세 수정 모달 저장 중 닫힘 방지 (#135, 완료 - 2026-02-22)**
+  - [x] `ImageShareDetailPage` 수정 모달 `Dialog onOpenChange`를 저장 상태 가드로 전환
+  - [x] 저장 중에는 오버레이 클릭/ESC/닫기(X) 경로의 닫힘 요청을 무시하도록 처리
+  - [x] `pnpm --filter memeplate-web lint` 통과
+- [x] **리믹스 상세 owner 관리 UI 모달 전환 (#134, 완료 - 2026-02-22)**
+  - [x] `ImageShareDetailPage`의 `내 리믹스 관리`를 인라인 입력 폼에서 `수정` 버튼 트리거 UI로 단순화
+  - [x] 제목/설명 편집을 `Dialog` 모달로 이동하고 저장 성공 시 모달 자동 닫힘 처리
+  - [x] `pnpm --filter memeplate-web lint` 통과
 - [x] **밈플릿/리믹스 썸네일 하단 텍스트 여백 규격 통일 (#132, 완료 - 2026-02-22)**
   - [x] `ThumbnailCard` 본문 패딩을 `px-4 pt-3 pb-4`로 조정하고 썸네일 래퍼에 `px-4`를 적용해 썸네일/텍스트 좌우 기준선 정렬
   - [x] `TemplateCardSkeletonGrid`도 썸네일 래퍼(`px-4`) + 본문 패딩(`px-4 pt-3 pb-4`)을 동일 적용해 로딩/완료 상태 정렬
