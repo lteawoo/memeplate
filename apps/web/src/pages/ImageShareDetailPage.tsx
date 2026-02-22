@@ -257,7 +257,7 @@ const ImageShareDetailPage: React.FC = () => {
                 imageKey={image.imageUrl}
                 isImageLoaded={isMainImageLoaded}
                 isImageError={isMainImageError}
-                maxImageHeightClassName="max-h-[640px]"
+                maxImageHeightClassName="max-h-[800px] max-w-[800px]"
                 onLoad={() => {
                   setIsMainImageError(false);
                   setIsMainImageLoaded(true);

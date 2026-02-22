@@ -1,6 +1,10 @@
 # 프로젝트 상태 (Status)
 
 ## 현재 진행 상황
+- [x] **에디터 맞춤 배율 headroom 적용 (완료 - 2026-02-22)**
+  - [x] `MemeCanvas`의 `fitScale` 계산 결과에 `0.94` headroom 비율을 적용
+  - [x] `맞춤` 상태에서 캔버스가 화면 가장자리에 과도하게 밀착되는 체감 완화
+  - [x] `pnpm --filter memeplate-web lint` 통과
 - [x] **전역 컨테이너 최대폭 1440 재정렬 (#128, 완료 - 2026-02-22)**
   - [x] `PageContainer` 최대폭을 `max-w-6xl`에서 `max-w-[1440px]`로 조정
   - [x] 홈 화면 히어로 래퍼의 `max-w-2xl` 제한 제거 및 `w-full max-w-[1440px]`로 정렬
