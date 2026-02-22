@@ -1,6 +1,11 @@
 # 프로젝트 상태 (Status)
 
 ## 현재 진행 상황
+- [x] **내 밈플릿 헤더 문구/CTA 정리 (완료 - 2026-02-22)**
+  - [x] `MyTemplatesPage` 타이틀을 `내 밈플릿 관리`에서 `내 밈플릿`으로 변경
+  - [x] 헤더 설명 문구 제거
+  - [x] 헤더 `새 밈플릿 만들기` 버튼 제거
+  - [x] `pnpm --filter memeplate-web lint` 통과
 - [x] **템플릿 상세 owner 버튼 지연 개선 (완료 - 2026-02-22)**
   - [x] `/api/v1/templates/s/:shareSlug` 응답에 `isOwner` 포함
   - [x] `TemplateShareDetailPage`에서 `isOwner`를 상세 응답 기반으로 즉시 판별(인증 동기화 완료 대기 완화)
