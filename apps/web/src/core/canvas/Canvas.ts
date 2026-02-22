@@ -25,6 +25,8 @@ export class Canvas {
   private viewportPanY: number = 0;
   private needsRedraw: boolean = true;
   private themeObserver: MutationObserver | null = null;
+  private isCanvasMouseHovering: boolean = false;
+  private isCanvasTouchHovering: boolean = false;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private eventListeners: Record<string, ((options?: any) => void)[]> = {};
 
@@ -233,7 +235,12 @@ export class Canvas {
       this.el.addEventListener('mousedown', this.handleDown);
       this.el.addEventListener('touchstart', this.handleDown, { passive: false });
       this.el.addEventListener('mousemove', this.handleMouseMove);
+      this.el.addEventListener('mouseenter', this.handleMouseEnter);
+      this.el.addEventListener('mouseleave', this.handleMouseLeave);
       this.el.addEventListener('dblclick', this.handleDoubleClick);
+      window.addEventListener('mousemove', this.handleWindowMouseMove);
+      window.addEventListener('touchstart', this.handleWindowTouchStart, true);
+      window.addEventListener('touchcancel', this.handleWindowTouchCancel);
     }
   
     private handleDoubleClick = (e: MouseEvent) => {
@@ -248,6 +255,10 @@ export class Canvas {
       // Prevent double firing on touch devices (touchstart followed by mousedown)
       if (e.type === 'touchstart' && e.cancelable) {
         e.preventDefault();
+        if (!this.isCanvasTouchHovering) {
+          this.isCanvasTouchHovering = true;
+          this.requestRender();
+        }
       }
   
       const { x, y } = this.getPointer(e);
@@ -285,6 +296,47 @@ export class Canvas {
     private handleMouseMove = (e: MouseEvent) => {
       this.updateCursor(e);
     };
+
+  private handleMouseEnter = () => {
+    if (this.isCanvasMouseHovering) return;
+    this.isCanvasMouseHovering = true;
+    this.requestRender();
+  };
+
+  private handleMouseLeave = () => {
+    if (!this.isCanvasMouseHovering) return;
+    this.isCanvasMouseHovering = false;
+    this.el.style.cursor = 'default';
+    this.requestRender();
+  };
+
+  private handleWindowTouchStart = (e: TouchEvent) => {
+    const target = e.target;
+    if (target instanceof Node && this.el.contains(target)) {
+      return;
+    }
+    if (!this.isCanvasTouchHovering) return;
+    this.isCanvasTouchHovering = false;
+    this.requestRender();
+  };
+
+  private handleWindowTouchCancel = () => {
+    if (!this.isCanvasTouchHovering) return;
+    this.isCanvasTouchHovering = false;
+    this.requestRender();
+  };
+
+  private handleWindowMouseMove = (e: MouseEvent) => {
+    if (!this.isCanvasMouseHovering) return;
+    const rect = this.el.getBoundingClientRect();
+    const isInside = e.clientX >= rect.left
+      && e.clientX <= rect.right
+      && e.clientY >= rect.top
+      && e.clientY <= rect.bottom;
+    if (isInside) return;
+    this.isCanvasMouseHovering = false;
+    this.requestRender();
+  };
   private updateCursor(e: MouseEvent) {
     const { x, y } = this.getPointer(e);
     const control = this.activeObject ? this.findControl(this.activeObject, x, y) : null;
@@ -765,6 +817,14 @@ export class Canvas {
         }
       }
 
+      const shouldDrawLayerOutlines = (this.isCanvasMouseHovering || this.isCanvasTouchHovering) && !this.activeObject;
+      if (shouldDrawLayerOutlines) {
+        for (const obj of this.objects) {
+          if (!obj || !obj.visible || obj.name === 'background') continue;
+          this.drawHoverOutline(obj);
+        }
+      }
+
       // Draw controls for the active object
       if (this.activeObject && this.activeObject.visible) {
         try {
@@ -807,11 +867,15 @@ export class Canvas {
       
       // 1. Draw bounding box (Stroke only)
       const offset = 4 * scale;
+      this.ctx.lineWidth = Math.max(1.5 * scale, 1.1);
+      this.ctx.setLineDash([Math.max(4.6 * scale, 1.9), Math.max(3.2 * scale, 1.4)]);
       this.ctx.beginPath();
       this.ctx.rect(-viewWidth / 2 - offset, -viewHeight / 2 - offset, viewWidth + (offset * 2), viewHeight + (offset * 2));
       this.ctx.stroke();
+      this.ctx.setLineDash([]);
       
       // 2. Draw handles
+      this.ctx.lineWidth = 1 * scale;
       this.ctx.fillStyle = controlFill;
       this.ctx.strokeStyle = controlStroke;
       const halfW = viewWidth / 2 + offset;
@@ -851,6 +915,43 @@ export class Canvas {
           this.ctx.stroke();
         }
       });
+    } finally {
+      this.ctx.restore();
+    }
+  }
+
+  private drawHoverOutline(obj: CanvasObject) {
+    if (!obj || !isFinite(obj.left) || !isFinite(obj.top)) return;
+
+    const scale = this.getSceneScale();
+    const scaleX = obj.scaleX ?? 1;
+    const scaleY = obj.scaleY ?? 1;
+    const width = obj.width || 0;
+    const height = obj.height || 0;
+
+    if (!isFinite(scaleX) || !isFinite(scaleY) || !isFinite(width) || !isFinite(height)) return;
+
+    this.ctx.save();
+    try {
+      const outlineColor = getCssVarColor('--canvas-control-stroke', '#364c75');
+      const viewWidth = width * scaleX;
+      const viewHeight = height * scaleY;
+      const offset = 2 * scale;
+
+      this.ctx.translate(obj.left, obj.top);
+      this.ctx.rotate(((obj.angle || 0) * Math.PI) / 180);
+      this.ctx.strokeStyle = outlineColor;
+      this.ctx.globalAlpha = 0.45;
+      this.ctx.lineWidth = Math.max(0.75 * scale, 0.5);
+      this.ctx.setLineDash([Math.max(3.2 * scale, 1.4), Math.max(2.4 * scale, 1.1)]);
+      this.ctx.beginPath();
+      this.ctx.rect(
+        -viewWidth / 2 - offset,
+        -viewHeight / 2 - offset,
+        viewWidth + (offset * 2),
+        viewHeight + (offset * 2)
+      );
+      this.ctx.stroke();
     } finally {
       this.ctx.restore();
     }
@@ -1003,7 +1104,12 @@ export class Canvas {
     this.el.removeEventListener('mousedown', this.handleDown);
     this.el.removeEventListener('touchstart', this.handleDown);
     this.el.removeEventListener('mousemove', this.handleMouseMove);
+    this.el.removeEventListener('mouseenter', this.handleMouseEnter);
+    this.el.removeEventListener('mouseleave', this.handleMouseLeave);
     this.el.removeEventListener('dblclick', this.handleDoubleClick);
+    window.removeEventListener('mousemove', this.handleWindowMouseMove);
+    window.removeEventListener('touchstart', this.handleWindowTouchStart, true);
+    window.removeEventListener('touchcancel', this.handleWindowTouchCancel);
     if (this.themeObserver) {
       this.themeObserver.disconnect();
       this.themeObserver = null;
