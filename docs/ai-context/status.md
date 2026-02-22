@@ -1,6 +1,48 @@
 # 프로젝트 상태 (Status)
 
 ## 현재 진행 상황
+- [x] **템플릿 상세 접근권한 보강 + 내 밈플릿 상세 진입 동선 통합 (#122, 완료 - 2026-02-22)**
+  - [x] `/api/v1/templates/s/:shareSlug` 상세 조회 권한을 `public 또는 owner` 허용 정책으로 확장
+  - [x] 비소유 private 템플릿 접근 시 404 유지(존재 여부 노출 억제)
+  - [x] private 상세 응답에 `Cache-Control: private, no-store` 적용
+  - [x] `/my/templates` 카드 클릭 동선을 상세 패널 오픈에서 `/templates/s/:shareSlug` 이동으로 통일
+  - [x] `TemplateShareDetailPage`에 owner 전용 관리 액션(공개전환/편집/삭제) 추가
+  - [x] 비소유자는 상세에서 관리 액션 미노출 유지
+  - [x] public 템플릿만 조회수 증가 호출하도록 분기 보강
+  - [x] `pnpm --filter memeplate-web lint`, `pnpm --filter memeplate-web build`, `pnpm --filter memeplate-api build` 통과
+  - [x] 스크린샷 검증
+    - [x] `docs/ai-context/screenshots/2026-02-22_my_templates_navigate_to_template_detail_list_v2.png`
+    - [x] `docs/ai-context/screenshots/2026-02-22_my_templates_click_to_template_detail_owner_private_v1.png`
+    - [x] `docs/ai-context/screenshots/2026-02-22_template_detail_owner_manage_actions_v1.png`
+    - [x] `docs/ai-context/screenshots/2026-02-22_template_detail_non_owner_no_manage_actions_v1.png`
+    - [x] `docs/ai-context/screenshots/2026-02-22_template_detail_private_non_owner_404_v1.png`
+- [x] **마이페이지/내 밈플릿 관리 전역 UI·UX 일원화 1차 (#121, 완료 - 2026-02-22)**
+  - [x] `MySectionLayout`을 `PageContainer` 기반으로 정렬하고 사이드 메뉴를 `224px` 기준 + 카드형 내비로 통일
+  - [x] 모바일 마이 섹션에 `내 프로필/내 밈플릿` 인라인 내비 탭 추가(데스크톱 aside 대체)
+  - [x] `MyPage` 로딩 상태를 수동 스피너에서 `Skeleton + Card` 패턴으로 교체
+  - [x] `MyPage` 저장 CTA를 헤더 action 슬롯으로 이동(`form` submit 연결)
+  - [x] `MyPage` 인증 이탈 시 `/login?next=...` 정책으로 정렬
+  - [x] `MyTemplatesPage` 로딩 상태를 `TemplateCardSkeletonGrid`로 통일
+  - [x] `MyTemplatesPage` 에러 상태에 `다시 시도` CTA 추가, 빈상태에 `첫 밈플릿 만들기` CTA 추가
+  - [x] 공개/비공개 토글 버튼을 raw `<button>`에서 공통 `Button` primitive 기반으로 통일
+  - [x] 삭제 액션을 `window.confirm`에서 `Dialog` 확인 플로우로 전환(확정 버튼 `destructive`)
+  - [x] `MyTemplatesPage` 카드 리스트 UI를 `/templates`와 동일한 카드 정보 구조(제목/작성자/조회/좋아요)로 통일
+  - [x] `MyTemplatesPage` 카드 내 액션 버튼 제거 후 관리 액션(공개설정/편집/삭제/링크복사)을 상세보기 시트로 이동
+  - [x] 상세보기 시트에서 `ownerId === authUser.id`일 때만 편집/삭제/공개설정 노출(비소유자는 읽기 전용 안내)
+  - [x] 상세 시트 spacing을 8-grid 기준(`px-4/pt-4/content p-4`)으로 정렬
+  - [x] 공통 카드 spacing 정렬: `ThumbnailCard`, `TemplateCardSkeletonGrid` 본문 패딩 `p-4`로 통일
+  - [x] `pnpm --filter memeplate-web lint`, `pnpm --filter memeplate-web build` 통과
+  - [x] 스크린샷 검증
+    - [x] `docs/ai-context/screenshots/2026-02-22_my_page_ui_unify_light_v1.png`
+    - [x] `docs/ai-context/screenshots/2026-02-22_my_page_ui_unify_dark_v1.png`
+    - [x] `docs/ai-context/screenshots/2026-02-22_my_templates_ui_unify_light_v1.png`
+    - [x] `docs/ai-context/screenshots/2026-02-22_my_templates_ui_unify_dark_v1.png`
+    - [x] `docs/ai-context/screenshots/2026-02-22_my_page_ui_unify_mobile_dark_v1.png`
+    - [x] `docs/ai-context/screenshots/2026-02-22_my_templates_ui_unify_mobile_dark_v1.png`
+    - [x] `docs/ai-context/screenshots/2026-02-22_my_templates_delete_dialog_mobile_dark_v1.png`
+    - [x] `docs/ai-context/screenshots/2026-02-22_my_templates_list_same_as_templates_v1.png`
+    - [x] `docs/ai-context/screenshots/2026-02-22_my_templates_detail_owner_actions_v1.png`
+    - [x] `docs/ai-context/screenshots/2026-02-22_my_templates_detail_non_owner_hide_actions_v1.png`
 - [x] **에디터 텍스트 상/하단 클리핑 완화 (완료 - 2026-02-22)**
   - [x] 텍스트 높이 계산을 `fontSize*lineHeight` 단순치에서 glyph ascent/descent 반영 방식으로 보강
   - [x] 텍스트 렌더 baseline을 `top`에서 `alphabetic`으로 전환해 상/하단 metric 기반 배치 정렬

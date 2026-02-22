@@ -2,16 +2,26 @@ import React from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Icon from '@mdi/react';
 import { mdiImageOffOutline } from '@mdi/js';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { buildLoginPath } from '@/lib/loginNavigation';
+import { apiFetch } from '@/lib/apiFetch';
 import MainHeader from '../components/layout/MainHeader';
 import PageContainer from '../components/layout/PageContainer';
 import TemplateCardSkeletonGrid from '../components/TemplateCardSkeletonGrid';
 import PreviewFrame from '../components/PreviewFrame';
 import { useAuthStore } from '../stores/authStore';
-import type { TemplateResponse, TemplateRecord } from '../types/template';
+import type { TemplateResponse, TemplateRecord, TemplateVisibility } from '../types/template';
 import type { MemeImageRecord, MemeImagesResponse } from '../types/image';
 import ThumbnailCard from '../components/ThumbnailCard';
 
@@ -44,6 +54,38 @@ const formatMimeToLabel = (contentType: string | null, fallbackUrl?: string) => 
   return ext ? ext.toUpperCase() : '-';
 };
 
+type SegmentedOption = {
+  label: React.ReactNode;
+  value: TemplateVisibility;
+};
+
+interface SegmentedButtonsProps {
+  value: TemplateVisibility;
+  options: SegmentedOption[];
+  onChange: (value: TemplateVisibility) => void;
+  disabled?: boolean;
+}
+
+const SegmentedButtons: React.FC<SegmentedButtonsProps> = ({ value, options, onChange, disabled }) => (
+  <div className="grid w-full grid-cols-2 gap-2 rounded-xl bg-app-surface p-2">
+    {options.map((option) => {
+      const active = option.value === value;
+      return (
+        <Button
+          key={option.value}
+          type="button"
+          variant={active ? 'default' : 'ghost'}
+          disabled={disabled}
+          onClick={() => onChange(option.value)}
+          className="h-10 rounded-lg text-sm font-semibold"
+        >
+          {option.label}
+        </Button>
+      );
+    })}
+  </div>
+);
+
 const TemplateShareDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const { shareSlug } = useParams<{ shareSlug: string }>();
@@ -66,6 +108,10 @@ const TemplateShareDetailPage: React.FC = () => {
   const mainImageRef = React.useRef<HTMLImageElement | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
+  const [isUpdatingVisibility, setIsUpdatingVisibility] = React.useState(false);
+  const [isDeletingTemplate, setIsDeletingTemplate] = React.useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
+  const isOwner = Boolean(authUser?.id && template?.ownerId && authUser.id === template.ownerId);
 
   const sortedRelatedImages = React.useMemo(() => {
     const next = [...relatedImages];
@@ -84,6 +130,12 @@ const TemplateShareDetailPage: React.FC = () => {
     );
     return next;
   }, [relatedImages, relatedSort]);
+
+  React.useEffect(() => {
+    if (!authInitialized) {
+      void syncSession();
+    }
+  }, [authInitialized, syncSession]);
 
   React.useEffect(() => {
     const load = async () => {
@@ -184,7 +236,7 @@ const TemplateShareDetailPage: React.FC = () => {
   }, [template?.thumbnailUrl]);
 
   React.useEffect(() => {
-    if (!shareSlug || !template || viewedSlugRef.current === shareSlug) {
+    if (!shareSlug || !template || template.visibility !== 'public' || viewedSlugRef.current === shareSlug) {
       return;
     }
 
@@ -225,6 +277,52 @@ const TemplateShareDetailPage: React.FC = () => {
 
     navigate(buildLoginPath(remixPath));
   }, [authInitialized, authUser, navigate, syncSession, template?.shareSlug]);
+
+  const handleChangeVisibility = React.useCallback(async (nextVisibility: TemplateVisibility) => {
+    if (!template || !isOwner || template.visibility === nextVisibility) return;
+
+    setIsUpdatingVisibility(true);
+    try {
+      const res = await apiFetch(`/api/v1/templates/${template.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ visibility: nextVisibility }),
+      });
+
+      if (!res.ok) {
+        const payload = (await res.json().catch(() => ({}))) as { message?: string };
+        throw new Error(payload.message || '공개 상태 변경에 실패했습니다.');
+      }
+
+      setTemplate((prev) => (prev ? { ...prev, visibility: nextVisibility } : prev));
+      toast.success('공개 상태를 변경했습니다.');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '공개 상태 변경에 실패했습니다.');
+    } finally {
+      setIsUpdatingVisibility(false);
+    }
+  }, [isOwner, template]);
+
+  const handleDeleteTemplate = React.useCallback(async () => {
+    if (!template || !isOwner) return;
+
+    setIsDeletingTemplate(true);
+    try {
+      const res = await apiFetch(`/api/v1/templates/${template.id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const payload = (await res.json().catch(() => ({}))) as { message?: string };
+        throw new Error(payload.message || '밈플릿 삭제에 실패했습니다.');
+      }
+
+      toast.success('밈플릿을 삭제했습니다.');
+      setIsDeleteDialogOpen(false);
+      navigate('/my/templates');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '밈플릿 삭제에 실패했습니다.');
+    } finally {
+      setIsDeletingTemplate(false);
+    }
+  }, [isOwner, navigate, template]);
 
   return (
     <div className="min-h-screen bg-app-surface">
@@ -317,7 +415,51 @@ const TemplateShareDetailPage: React.FC = () => {
                     <span className="text-muted-foreground">조회수</span>
                     <span className="text-right font-medium text-foreground">{(template.viewCount ?? 0).toLocaleString()}</span>
                   </div>
+                  <div className="flex items-start justify-between gap-3">
+                    <span className="text-muted-foreground">공개 상태</span>
+                    <span className="text-right font-medium text-foreground">{template.visibility === 'public' ? '공개' : '비공개'}</span>
+                  </div>
                 </div>
+                {isOwner ? (
+                  <div className="mt-5 space-y-3 rounded-xl bg-muted p-4">
+                    <div className="text-xs font-semibold text-muted-foreground">내 템플릿 관리</div>
+                    <SegmentedButtons
+                      value={template.visibility}
+                      options={[
+                        { label: '비공개', value: 'private' },
+                        { label: '공개', value: 'public' },
+                      ]}
+                      disabled={isUpdatingVisibility}
+                      onChange={(value) => { void handleChangeVisibility(value); }}
+                    />
+                    <div className="flex flex-wrap gap-2">
+                      <Button type="button" variant="outline" onClick={() => navigate(`/create?templateId=${template.id}`)}>
+                        편집
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        disabled={template.visibility !== 'public'}
+                        onClick={() => {
+                          const url = `${window.location.origin}/templates/s/${template.shareSlug}`;
+                          void navigator.clipboard.writeText(url)
+                            .then(() => toast.success('공유 링크를 복사했습니다.'))
+                            .catch(() => toast.error('링크 복사에 실패했습니다.'));
+                        }}
+                      >
+                        링크 복사
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        disabled={isDeletingTemplate}
+                        onClick={() => setIsDeleteDialogOpen(true)}
+                      >
+                        삭제
+                      </Button>
+                    </div>
+                  </div>
+                ) : null}
                 <div className="mt-5 flex flex-col gap-2">
                   <Button type="button" onClick={() => { void handleRemixClick(); }}>리믹스</Button>
                 </div>
@@ -385,6 +527,35 @@ const TemplateShareDetailPage: React.FC = () => {
                 </div>
               )}
             </div>
+
+            <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>밈플릿 삭제</DialogTitle>
+                  <DialogDescription>
+                    ‘{template.title}’을(를) 삭제하시겠습니까? 삭제 후 복구할 수 없습니다.
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsDeleteDialogOpen(false)}
+                    disabled={isDeletingTemplate}
+                  >
+                    취소
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    disabled={isDeletingTemplate}
+                    onClick={() => { void handleDeleteTemplate(); }}
+                  >
+                    삭제
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
         ) : null}
       </PageContainer>

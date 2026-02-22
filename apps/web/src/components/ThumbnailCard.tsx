@@ -88,11 +88,11 @@ const ThumbnailCard: React.FC<ThumbnailCardProps> = ({
           </div>
         )}
       </div>
-      <CardContent className="p-[10px_12px]">
+      <CardContent className="p-4">
         {children}
       </CardContent>
       {actions?.length ? (
-        <div className="flex items-center justify-between gap-2 border-t border-border px-3 py-2">
+        <div className="flex items-center justify-between gap-2 border-t border-border px-4 py-2">
           {actions.map((action, index) => (
             <React.Fragment key={index}>{action}</React.Fragment>
           ))}

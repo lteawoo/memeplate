@@ -1,5 +1,5 @@
 import type { FastifyPluginAsync } from 'fastify';
-import { requireAuth } from '../auth/guard.js';
+import { requireAuth, resolveAuthUser } from '../auth/guard.js';
 import { env } from '../../config/env.js';
 import {
   CreateTemplateSchema,
@@ -79,9 +79,13 @@ export const templateRoutes: FastifyPluginAsync = async (app) => {
       });
     }
 
-    const template = await repository.getPublicDetailByShareSlug(paramsParsed.data.shareSlug);
+    const viewerUserId = resolveAuthUser(req)?.id ?? null;
+    const template = await repository.getDetailByShareSlug(paramsParsed.data.shareSlug, viewerUserId);
     if (!template) {
       return reply.code(404).send({ message: 'Template not found.' });
+    }
+    if (template.visibility === 'private') {
+      reply.header('Cache-Control', 'private, no-store');
     }
     return reply.send({ template });
   });

@@ -1,5 +1,99 @@
 # 결정 로그 (Decision Log)
 
+## [2026-02-22] 템플릿 상세 접근권한 보강 + 내 밈플릿 상세 진입 동선 통합 (#122)
+- **결정**:
+  1. `내 밈플릿` 카드 클릭은 로컬 상세 패널 대신 기존 템플릿 상세 경로(`/templates/s/:shareSlug`)로 통일함.
+  2. shareSlug 상세 API 권한을 `visibility = public` 또는 `owner_id = viewer` 조건으로 확장함.
+  3. 비소유 private 템플릿은 기존과 동일하게 404로 응답해 존재 여부 노출을 억제함.
+  4. 상세 페이지의 편집/삭제/공개전환은 owner에게만 노출하고, 비소유자에게는 읽기/리믹스 뷰만 유지함.
+  5. private 상세 응답에는 `Cache-Control: private, no-store`를 설정함.
+  6. 조회수 증가 호출은 public 템플릿에만 수행하도록 조건 분기함.
+- **이유**:
+  1. 상세 화면을 이중 구현하면 유지보수 비용과 회귀 가능성이 커져 단일 상세 경로 재사용이 유리함.
+  2. 클라이언트 조건 분기는 UX 보조일 뿐이므로, 실제 접근 권한은 서버 단에서 일관되게 강제해야 함.
+  3. private 리소스에 대해 403/401로 분기하면 존재 여부 추측 가능성이 있어 404 일관 응답이 안전함.
+- **구현 요약**:
+  - `apps/api/src/modules/templates/repository.ts`
+    - `getDetailByShareSlug(shareSlug, viewerUserId?)` 계약 추가
+  - `apps/api/src/modules/templates/supabaseRepository.ts`
+    - `getDetailByShareSlug` 구현(public 또는 owner 허용)
+  - `apps/api/src/modules/templates/routes.ts`
+    - `/templates/s/:shareSlug`에서 optional auth user를 읽어 권한 판단
+    - private 응답 `Cache-Control: private, no-store` 설정
+  - `apps/web/src/pages/MyTemplatesPage.tsx`
+    - 리스트 카드 UI를 `/templates`와 동일 구조로 유지
+    - 카드 클릭 시 `/templates/s/:shareSlug`로 이동
+    - 상세 패널/인라인 관리 액션 제거
+  - `apps/web/src/pages/TemplateShareDetailPage.tsx`
+    - owner 전용 관리 액션(공개전환/편집/삭제) 추가
+    - 삭제 확인 `Dialog` + API 연동
+    - public일 때만 조회수 증가 호출
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - `pnpm --filter memeplate-api build`
+  - 스크린샷
+    - `docs/ai-context/screenshots/2026-02-22_my_templates_navigate_to_template_detail_list_v2.png`
+    - `docs/ai-context/screenshots/2026-02-22_my_templates_click_to_template_detail_owner_private_v1.png`
+    - `docs/ai-context/screenshots/2026-02-22_template_detail_owner_manage_actions_v1.png`
+    - `docs/ai-context/screenshots/2026-02-22_template_detail_non_owner_no_manage_actions_v1.png`
+    - `docs/ai-context/screenshots/2026-02-22_template_detail_private_non_owner_404_v1.png`
+
+## [2026-02-22] 마이페이지/내 밈플릿 관리 전역 UI·UX 일원화 1차 (#121)
+- **결정**:
+  1. `MySectionLayout`은 `PageContainer`를 기준으로 폭/내측 여백을 통일하고, 데스크톱 사이드바를 카드형 내비(`224px`)로 정렬함.
+  2. 모바일에서는 데스크톱 aside를 숨기는 대신 동일 메뉴(`내 프로필/내 밈플릿`)를 인라인 탭 형태로 노출함.
+  3. `MyPage`/`MyTemplatesPage` 로딩 상태는 수동 스피너 대신 공통 Skeleton 패턴을 사용함.
+  4. `MyPage` 저장 CTA는 본문 내부 버튼에서 헤더 action 슬롯으로 이동해 마이 섹션 내 액션 위계를 통일함.
+  5. `MyTemplatesPage` 삭제 플로우는 브라우저 `window.confirm`을 제거하고 공통 `Dialog` 기반 확인 UX로 전환함(확정 버튼 `destructive`).
+  6. 마이 섹션 인증 이탈 리다이렉트는 홈(`/`) 고정 대신 `/login?next=현재경로` 정책으로 정렬함.
+  7. 썸네일 계열 공통 컴포넌트(`ThumbnailCard`, `TemplateCardSkeletonGrid`)의 본문 패딩을 `p-4`로 맞춰 8-grid 정합성을 높임.
+  8. `MyTemplatesPage`의 목록 카드 UI는 `/templates`와 동일한 정보 위계(제목/작성자/조회/좋아요)로 정렬하고, 카드 내 관리 액션은 제거함.
+  9. 공개설정/편집/삭제/링크복사 같은 관리 액션은 상세보기 시트 내부로 이동하고, 편집/삭제/공개설정은 소유자에게만 노출함.
+- **이유**:
+  1. 전역 토큰 체계는 이미 도입되었지만 마이 섹션에서 상태뷰/액션/spacing 패턴 편차가 누적되어 화면 간 일관성이 떨어졌음.
+  2. 데스크톱/모바일에서 같은 정보구조를 유지하지 않으면 마이 섹션 내 이동 인지성이 약해짐.
+  3. destructive 액션은 동일한 확인 패턴으로 제공해야 실수 방지와 접근성(포커스 흐름) 측면에서 안정적임.
+  4. 로그인 복귀 경로(`next`)가 화면마다 다르면 인증 이후 맥락 복원이 끊어짐.
+  5. 목록 카드에 관리 버튼이 다수 노출되면 `/templates`와 시각 규칙이 달라지고, 1차 액션 집중도가 떨어짐.
+  6. 편집 기능을 상세보기+소유자 조건으로 제한하면 권한 경계가 명확해지고 실수 클릭(오작동) 위험이 줄어듦.
+- **구현 요약**:
+  - `apps/web/src/components/layout/MySectionLayout.tsx`
+    - `PageContainer` 적용
+    - 데스크톱 `224px` 카드형 내비
+    - 모바일 인라인 탭 내비 추가
+  - `apps/web/src/pages/MyPage.tsx`
+    - 로딩: Skeleton 카드화
+    - 저장 CTA: 헤더 action 슬롯으로 이동(`form` submit 연결)
+    - 인증 이탈 시 `buildLoginPath(getPathWithSearchAndHash(location))` 사용
+    - 오류 상태 `다시 시도`/`로그인` 액션 추가
+  - `apps/web/src/pages/MyTemplatesPage.tsx`
+    - 로딩: `TemplateCardSkeletonGrid` 사용
+    - 에러 상태 `다시 시도` 버튼 추가, 빈상태 CTA 추가
+    - 목록 카드 UI를 `/templates`와 동일한 구조(제목/작성자/조회/좋아요)로 정렬
+    - 카드 자체 클릭 시 상세보기 시트 오픈으로 전환
+    - 공개/비공개 토글을 상세보기 시트 내부 `Button` primitive 기반으로 정렬
+    - 편집/삭제/공개설정 노출을 `ownerId === authUser.id` 조건으로 제한
+    - 삭제 확인을 `Dialog` 플로우로 전환
+    - 상세 시트 spacing을 8-grid 기준으로 조정
+  - `apps/web/src/components/ThumbnailCard.tsx`
+  - `apps/web/src/components/TemplateCardSkeletonGrid.tsx`
+    - 본문 패딩 `p-4`로 정렬
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 스크린샷
+    - `docs/ai-context/screenshots/2026-02-22_my_page_ui_unify_light_v1.png`
+    - `docs/ai-context/screenshots/2026-02-22_my_page_ui_unify_dark_v1.png`
+    - `docs/ai-context/screenshots/2026-02-22_my_templates_ui_unify_light_v1.png`
+    - `docs/ai-context/screenshots/2026-02-22_my_templates_ui_unify_dark_v1.png`
+    - `docs/ai-context/screenshots/2026-02-22_my_page_ui_unify_mobile_dark_v1.png`
+    - `docs/ai-context/screenshots/2026-02-22_my_templates_ui_unify_mobile_dark_v1.png`
+    - `docs/ai-context/screenshots/2026-02-22_my_templates_delete_dialog_mobile_dark_v1.png`
+    - `docs/ai-context/screenshots/2026-02-22_my_templates_list_same_as_templates_v1.png`
+    - `docs/ai-context/screenshots/2026-02-22_my_templates_detail_owner_actions_v1.png`
+    - `docs/ai-context/screenshots/2026-02-22_my_templates_detail_non_owner_hide_actions_v1.png`
+
 ## [2026-02-22] 에디터 텍스트 상/하단 클리핑 완화 (glyph metric + inset 정렬)
 - **결정**:
   1. 텍스트 높이 적합성 판단을 `lineCount * fontSize * lineHeight` 단순 계산에서 glyph ascent/descent 기반 총 높이로 전환함.
