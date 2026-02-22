@@ -113,6 +113,8 @@ const TemplateShareDetailPage: React.FC = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
   const isOwner = Boolean(authUser?.id && template?.ownerId && authUser.id === template.ownerId);
   const hasRelatedRemixes = relatedImages.length > 0;
+  const isPrivateSwitchHidden = hasRelatedRemixes && template?.visibility === 'public';
+  const isDeleteHidden = hasRelatedRemixes;
 
   const sortedRelatedImages = React.useMemo(() => {
     const next = [...relatedImages];
@@ -432,31 +434,35 @@ const TemplateShareDetailPage: React.FC = () => {
                 {isOwner ? (
                   <div className="mt-5 space-y-3 rounded-xl bg-muted p-4">
                     <div className="text-xs font-semibold text-muted-foreground">내 템플릿 관리</div>
-                    <SegmentedButtons
-                      value={template.visibility}
-                      options={[
-                        { label: '비공개', value: 'private' },
-                        { label: '공개', value: 'public' },
-                      ]}
-                      disabled={isUpdatingVisibility}
-                      onChange={(value) => { void handleChangeVisibility(value); }}
-                    />
+                    {!isPrivateSwitchHidden ? (
+                      <SegmentedButtons
+                        value={template.visibility}
+                        options={[
+                          { label: '비공개', value: 'private' },
+                          { label: '공개', value: 'public' },
+                        ]}
+                        disabled={isUpdatingVisibility}
+                        onChange={(value) => { void handleChangeVisibility(value); }}
+                      />
+                    ) : null}
                     <div className="flex flex-wrap gap-2">
                       <Button type="button" variant="outline" onClick={() => navigate(`/create?templateId=${template.id}`)}>
                         편집
                       </Button>
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        disabled={isDeletingTemplate || hasRelatedRemixes}
-                        onClick={() => setIsDeleteDialogOpen(true)}
-                      >
-                        삭제
-                      </Button>
+                      {!isDeleteHidden ? (
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          disabled={isDeletingTemplate}
+                          onClick={() => setIsDeleteDialogOpen(true)}
+                        >
+                          삭제
+                        </Button>
+                      ) : null}
                     </div>
                     {hasRelatedRemixes ? (
                       <div className="text-xs text-muted-foreground">
-                        리믹스가 존재해 비공개 전환 및 삭제를 할 수 없습니다.
+                        리믹스가 존재해 비공개 전환/삭제 액션은 표시하지 않습니다.
                       </div>
                     ) : null}
                   </div>

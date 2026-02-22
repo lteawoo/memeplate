@@ -19,7 +19,7 @@
     - 템플릿 PATCH: `public -> private` 전환 시 리믹스 존재하면 `409`
     - 템플릿 DELETE: 리믹스 존재하면 `409`
   - `apps/web/src/pages/TemplateShareDetailPage.tsx`
-    - 리믹스 존재 시 삭제 비활성화 + 안내 문구
+    - 리믹스 존재 시 `비공개`/`삭제` 액션 미노출 + 안내 문구
     - `비공개` 전환 시도 가드 및 토스트 메시지
   - `apps/web/src/pages/ImageShareDetailPage.tsx`
     - owner 전용 `내 리믹스 관리` 영역 추가
@@ -33,7 +33,7 @@
     - `PATCH /api/v1/templates/:templateId` -> `409 Conflict` (`비공개 전환 차단`)
     - `DELETE /api/v1/templates/:templateId` -> `409 Conflict` (`삭제 차단`)
   - 스크린샷
-    - `docs/ai-context/screenshots/2026-02-22_template_detail_guard_private_delete_with_remixes_v1.png`
+    - `docs/ai-context/screenshots/2026-02-22_template_detail_guard_actions_hidden_with_remixes_v2.png`
     - `docs/ai-context/screenshots/2026-02-22_image_detail_owner_meta_edit_v1.png`
 
 ## [2026-02-22] 내 밈플릿 관리 동선 링크 복사 액션 제거 (#124)
