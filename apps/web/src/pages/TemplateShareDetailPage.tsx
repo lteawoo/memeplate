@@ -6,6 +6,9 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Dialog,
   DialogContent,
@@ -110,8 +113,17 @@ const TemplateShareDetailPage: React.FC = () => {
   const [error, setError] = React.useState<string | null>(null);
   const [isUpdatingVisibility, setIsUpdatingVisibility] = React.useState(false);
   const [isDeletingTemplate, setIsDeletingTemplate] = React.useState(false);
+  const [isSavingMeta, setIsSavingMeta] = React.useState(false);
+  const [isManageDialogOpen, setIsManageDialogOpen] = React.useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
-  const isOwner = Boolean(authUser?.id && template?.ownerId && authUser.id === template.ownerId);
+  const [isRelatedLoaded, setIsRelatedLoaded] = React.useState(false);
+  const [isOwnerFromDetail, setIsOwnerFromDetail] = React.useState<boolean | null>(null);
+  const [editTitle, setEditTitle] = React.useState('');
+  const [editDescription, setEditDescription] = React.useState('');
+  const isCurrentTemplate = Boolean(template?.shareSlug && shareSlug && template.shareSlug === shareSlug);
+  const isOwnerByAuth = Boolean(authInitialized && isCurrentTemplate && authUser?.id && template?.ownerId && authUser.id === template.ownerId);
+  const isOwnerByDetail = isOwnerFromDetail === true;
+  const isOwner = Boolean(isCurrentTemplate && (isOwnerByDetail || isOwnerByAuth));
   const hasRelatedRemixes = relatedImages.length > 0;
   const isPrivateSwitchHidden = hasRelatedRemixes && template?.visibility === 'public';
   const isDeleteHidden = hasRelatedRemixes;
@@ -141,6 +153,21 @@ const TemplateShareDetailPage: React.FC = () => {
   }, [authInitialized, syncSession]);
 
   React.useEffect(() => {
+    setIsLoading(true);
+    setError(null);
+    setTemplate(null);
+    setRelatedImages([]);
+    setRelatedError(null);
+    setIsRelatedLoading(false);
+    setIsRelatedLoaded(false);
+    setIsMainImageLoaded(false);
+    setIsMainImageError(false);
+    setIsManageDialogOpen(false);
+    setIsDeleteDialogOpen(false);
+    setIsOwnerFromDetail(null);
+    setEditTitle('');
+    setEditDescription('');
+
     const load = async () => {
       if (!shareSlug) {
         setError('잘못된 공유 링크입니다.');
@@ -155,6 +182,7 @@ const TemplateShareDetailPage: React.FC = () => {
         }
         const payload = (await res.json()) as TemplateResponse;
         setTemplate(payload.template);
+        setIsOwnerFromDetail(typeof payload.isOwner === 'boolean' ? payload.isOwner : null);
       } catch (err) {
         setError(err instanceof Error ? err.message : '밈플릿을 불러오지 못했습니다.');
       } finally {
@@ -206,10 +234,13 @@ const TemplateShareDetailPage: React.FC = () => {
     const loadRelatedImages = async () => {
       if (!template?.id) {
         setRelatedImages([]);
+        setIsRelatedLoading(false);
+        setIsRelatedLoaded(false);
         return;
       }
 
       setIsRelatedLoading(true);
+      setIsRelatedLoaded(false);
       setRelatedError(null);
       try {
         const res = await fetch(`/api/v1/images/public?limit=30&templateId=${template.id}`);
@@ -222,6 +253,7 @@ const TemplateShareDetailPage: React.FC = () => {
         setRelatedError(err instanceof Error ? err.message : '연관 이미지를 불러오지 못했습니다.');
       } finally {
         setIsRelatedLoading(false);
+        setIsRelatedLoaded(true);
       }
     };
 
@@ -237,6 +269,11 @@ const TemplateShareDetailPage: React.FC = () => {
     }
     setIsMainImageLoaded(false);
   }, [template?.thumbnailUrl]);
+
+  React.useEffect(() => {
+    setEditTitle(template?.title ?? '');
+    setEditDescription(template?.description ?? '');
+  }, [template?.id, template?.title, template?.description]);
 
   React.useEffect(() => {
     if (!shareSlug || !template || template.visibility !== 'public' || viewedSlugRef.current === shareSlug) {
@@ -326,6 +363,7 @@ const TemplateShareDetailPage: React.FC = () => {
       }
 
       toast.success('밈플릿을 삭제했습니다.');
+      setIsManageDialogOpen(false);
       setIsDeleteDialogOpen(false);
       navigate('/my/templates');
     } catch (err) {
@@ -334,6 +372,62 @@ const TemplateShareDetailPage: React.FC = () => {
       setIsDeletingTemplate(false);
     }
   }, [hasRelatedRemixes, isOwner, navigate, template]);
+
+  const handleSaveMeta = React.useCallback(async () => {
+    if (!template || !isOwner) return false;
+
+    const nextTitle = editTitle.trim();
+    const nextDescription = editDescription.trim();
+    if (!nextTitle) {
+      toast.error('제목을 입력하세요.');
+      return false;
+    }
+
+    setIsSavingMeta(true);
+    try {
+      const res = await apiFetch(`/api/v1/templates/${template.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: nextTitle,
+          description: nextDescription.length > 0 ? nextDescription : ''
+        })
+      });
+
+      if (!res.ok) {
+        const payload = (await res.json().catch(() => ({}))) as { message?: string };
+        throw new Error(payload.message || '밈플릿 정보 수정에 실패했습니다.');
+      }
+
+      const payload = (await res.json()) as TemplateResponse;
+      setTemplate(payload.template);
+      setEditTitle(payload.template.title);
+      setEditDescription(payload.template.description ?? '');
+      toast.success('밈플릿 정보를 수정했습니다.');
+      return true;
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '밈플릿 정보 수정에 실패했습니다.');
+      return false;
+    } finally {
+      setIsSavingMeta(false);
+    }
+  }, [editDescription, editTitle, isOwner, template]);
+
+  const handleOpenManageDialog = React.useCallback(() => {
+    if (!template || !isOwner) return;
+    setEditTitle(template.title);
+    setEditDescription(template.description ?? '');
+    setIsManageDialogOpen(true);
+  }, [isOwner, template]);
+
+  const handleManageDialogOpenChange = React.useCallback((nextOpen: boolean) => {
+    if (!nextOpen && (isUpdatingVisibility || isDeletingTemplate || isSavingMeta)) return;
+    setIsManageDialogOpen(nextOpen);
+  }, [isDeletingTemplate, isSavingMeta, isUpdatingVisibility]);
+
+  const handleSaveMetaFromDialog = React.useCallback(async () => {
+    await handleSaveMeta();
+  }, [handleSaveMeta]);
 
   return (
     <div className="min-h-screen bg-app-surface">
@@ -432,40 +526,97 @@ const TemplateShareDetailPage: React.FC = () => {
                   </div>
                 </div>
                 {isOwner ? (
-                  <div className="mt-5 space-y-3 rounded-xl bg-muted p-4">
-                    <div className="text-xs font-semibold text-muted-foreground">내 템플릿 관리</div>
-                    {!isPrivateSwitchHidden ? (
-                      <SegmentedButtons
-                        value={template.visibility}
-                        options={[
-                          { label: '비공개', value: 'private' },
-                          { label: '공개', value: 'public' },
-                        ]}
-                        disabled={isUpdatingVisibility}
-                        onChange={(value) => { void handleChangeVisibility(value); }}
-                      />
-                    ) : null}
-                    <div className="flex flex-wrap gap-2">
-                      <Button type="button" variant="outline" onClick={() => navigate(`/create?templateId=${template.id}`)}>
-                        편집
+                  <>
+                    <div className="mt-5">
+                      <Button type="button" variant="outline" onClick={handleOpenManageDialog}>
+                        수정
                       </Button>
-                      {!isDeleteHidden ? (
-                        <Button
-                          type="button"
-                          variant="destructive"
-                          disabled={isDeletingTemplate}
-                          onClick={() => setIsDeleteDialogOpen(true)}
-                        >
-                          삭제
-                        </Button>
-                      ) : null}
                     </div>
-                    {hasRelatedRemixes ? (
-                      <div className="text-xs text-muted-foreground">
-                        리믹스가 존재해 비공개 전환/삭제 액션은 표시하지 않습니다.
-                      </div>
-                    ) : null}
-                  </div>
+                    <Dialog open={isManageDialogOpen} onOpenChange={handleManageDialogOpenChange}>
+                      <DialogContent className="sm:max-w-md">
+                        <DialogHeader>
+                          <DialogTitle>밈플릿 관리</DialogTitle>
+                          <DialogDescription>제목/설명 수정, 공개 상태 변경, 삭제를 관리합니다.</DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="template-title">제목</Label>
+                            <Input
+                              id="template-title"
+                              value={editTitle}
+                              maxLength={100}
+                              disabled={isSavingMeta}
+                              onChange={(event) => setEditTitle(event.target.value)}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="template-description">설명</Label>
+                            <Textarea
+                              id="template-description"
+                              value={editDescription}
+                              maxLength={500}
+                              rows={4}
+                              disabled={isSavingMeta}
+                              onChange={(event) => setEditDescription(event.target.value)}
+                            />
+                          </div>
+                          {!isRelatedLoaded ? (
+                            <div className="text-sm text-muted-foreground">관리 옵션을 확인하는 중입니다.</div>
+                          ) : (
+                            <>
+                              {!isPrivateSwitchHidden ? (
+                                <div className="space-y-2">
+                                  <div className="text-sm font-medium text-foreground">공개 상태</div>
+                                  <SegmentedButtons
+                                    value={template.visibility}
+                                    options={[
+                                      { label: '비공개', value: 'private' },
+                                      { label: '공개', value: 'public' },
+                                    ]}
+                                    disabled={isUpdatingVisibility}
+                                    onChange={(value) => { void handleChangeVisibility(value); }}
+                                  />
+                                </div>
+                              ) : null}
+                              {!isDeleteHidden ? (
+                                <div className="space-y-2">
+                                  <div className="text-sm font-medium text-foreground">삭제</div>
+                                  <Button
+                                    type="button"
+                                    variant="destructive"
+                                    disabled={isDeletingTemplate}
+                                    onClick={() => {
+                                      setIsManageDialogOpen(false);
+                                      setIsDeleteDialogOpen(true);
+                                    }}
+                                  >
+                                    삭제
+                                  </Button>
+                                </div>
+                              ) : null}
+                            </>
+                          )}
+                        </div>
+                        <DialogFooter>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            disabled={isUpdatingVisibility || isDeletingTemplate || isSavingMeta}
+                            onClick={() => setIsManageDialogOpen(false)}
+                          >
+                            취소
+                          </Button>
+                          <Button
+                            type="button"
+                            disabled={isUpdatingVisibility || isDeletingTemplate || isSavingMeta}
+                            onClick={() => { void handleSaveMetaFromDialog(); }}
+                          >
+                            {isSavingMeta ? '저장 중...' : '저장'}
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+                  </>
                 ) : null}
                 <div className="mt-5 flex flex-col gap-2">
                   <Button type="button" onClick={() => { void handleRemixClick(); }}>리믹스</Button>

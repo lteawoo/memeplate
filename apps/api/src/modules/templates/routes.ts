@@ -84,10 +84,11 @@ export const templateRoutes: FastifyPluginAsync = async (app) => {
     if (!template) {
       return reply.code(404).send({ message: 'Template not found.' });
     }
+    const isOwner = Boolean(viewerUserId && template.ownerId && viewerUserId === template.ownerId);
     if (template.visibility === 'private') {
       reply.header('Cache-Control', 'private, no-store');
     }
-    return reply.send({ template });
+    return reply.send({ template, isOwner });
   });
 
   app.post('/templates/s/:shareSlug/view', {

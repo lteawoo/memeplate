@@ -199,6 +199,11 @@
   - [x] 썸네일 하단 텍스트 여백 정렬(#132): `ThumbnailCard`/`TemplateCardSkeletonGrid`에 썸네일 래퍼 `px-4` + 본문 `px-4 pt-3 pb-4`를 공통 적용해 밈플릿/리믹스 카드의 썸네일-텍스트 좌우 기준선/간격 일관화
   - [x] 리믹스 상세 owner 관리 모달 전환(#134): `내 리믹스 관리`를 `수정` 버튼+`Dialog` 패턴으로 전환하고 제목/설명 편집/저장을 모달에서 수행
   - [x] 리믹스 수정 모달 저장 중 닫힘 방지(#135): `Dialog onOpenChange`를 저장 상태 가드로 전환해 저장 중 오버레이/ESC/X 닫힘 차단
+  - [x] 리믹스 상세 owner 액션 단순화/권한 플래시 방지(#137): `내 리믹스 관리` 섹션 제거 후 `수정` 버튼만 노출, owner 가드에 `authInitialized` 포함
+  - [x] 템플릿 상세 owner 액션 단순화/권한 플래시 방지(#138): `내 템플릿 관리` 카드/제목 제거, owner 액션만 노출하고 owner 가드에 `authInitialized` 포함
+  - [x] 템플릿 메타 저장 오검출 수정(2026-02-22): `UpdateTemplateSchema`의 `visibility` 기본값 주입 제거로 제목/설명 PATCH가 비공개 전환으로 오인되는 문제 차단
+  - [x] 템플릿 관리 모달 메타 편집 보강(2026-02-22): owner 모달에 제목/설명 입력/저장 액션 추가, 공개/삭제 제약은 모달 내부에서만 제어
+  - [x] 템플릿 상세 owner 버튼 지연 개선(2026-02-22): 상세 API 응답에 `isOwner`를 포함하고 UI에서 `isOwnerByDetail || isOwnerByAuth` 판별로 `수정` 버튼 노출 지연 완화 + 세션 복구 시 owner UI 고정 차단 방지
   - [x] `apps/web/src`(단, `index.css` 변수명 제외) 클래스 스캔 기준 `slate/blue/on-accent` 직접 클래스 0건 확인
   - [ ] shadcn primitive variant 규칙 재점검(`button/input/card/dropdown/sheet`)
   - [ ] 웹 워커(Web Worker) 기반 내보내기 처리

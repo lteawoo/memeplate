@@ -15,7 +15,13 @@ export const CreateTemplateSchema = z.object({
   visibility: TemplateVisibilitySchema.default('private')
 });
 
-export const UpdateTemplateSchema = CreateTemplateSchema.partial();
+export const UpdateTemplateSchema = z.object({
+  title: SingleLineTitleSchema.optional(),
+  description: DescriptionSchema.optional(),
+  content: z.record(z.string(), z.unknown()).optional(),
+  backgroundDataUrl: z.string().startsWith('data:image/').optional(),
+  visibility: TemplateVisibilitySchema.optional()
+});
 
 export const TemplateIdParamSchema = z.object({
   templateId: z.uuid()

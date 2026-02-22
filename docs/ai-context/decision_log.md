@@ -1,5 +1,71 @@
 # 결정 로그 (Decision Log)
 
+## [2026-02-22] 템플릿 상세 owner 노출 지연 완화를 위한 서버 판별값 사용
+- **결정**:
+  1. `GET /api/v1/templates/s/:shareSlug` 응답에 `isOwner`를 포함해 상세 조회 시점에 owner 여부를 함께 전달함.
+  2. 템플릿 상세 화면의 owner 액션 노출은 `authInitialized` 완료 전이라도 `payload.isOwner`가 있으면 우선 사용함.
+- **이유**:
+  1. 기존 방식은 `/auth/me` 동기화 완료까지 owner 버튼 렌더를 보류해, 소유자에게 `수정` 버튼이 늦게 나타나는 체감이 있었음.
+  2. 상세 응답은 동일 요청 컨텍스트(쿠키 세션)에서 owner를 정확히 판별하므로 추가 라운드트립 없이 빠르고 안전하게 UI를 결정할 수 있음.
+- **구현 요약**:
+  - `apps/api/src/modules/templates/routes.ts`
+    - 상세 응답 payload에 `isOwner` 추가
+  - `apps/web/src/types/template.ts`
+    - `TemplateResponse`에 `isOwner?: boolean` 필드 추가
+  - `apps/web/src/pages/TemplateShareDetailPage.tsx`
+    - `isOwnerFromDetail` 상태 추가 및 상세 응답 값 반영
+    - owner 계산을 `isOwnerByDetail || isOwnerByAuth`로 전환해 상세 응답 `false`가 세션 복구 후 owner 노출을 영구 차단하지 않도록 보정
+- **검증**:
+  - `pnpm --filter memeplate-api build`
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+
+## [2026-02-22] 템플릿 메타 저장 PATCH의 `visibility` 기본값 주입 제거 + 관리 모달 메타 편집 보강
+- **결정**:
+  1. 템플릿 수정 API의 `UpdateTemplateSchema`를 `CreateTemplateSchema.partial()` 재사용 대신 별도 스키마로 분리해 `visibility` 기본값(`private`) 자동 주입을 제거함.
+  2. 템플릿 상세 owner 관리 모달에서 제목/설명 입력/저장을 항상 제공하고, 공개/삭제 제약은 모달 내부 액션 노출로만 제어함.
+- **이유**:
+  1. 기존 스키마는 제목/설명만 수정해도 파싱 결과에 `visibility: private`가 포함되어, 리믹스 존재 템플릿에서 비공개 전환 차단(`409`)이 오검출됨.
+  2. 사용자 의도(메타 수정)와 정책 제약(비공개/삭제 제한)을 분리해 UX 혼선을 줄이기 위함.
+- **구현 요약**:
+  - `apps/api/src/types/template.ts`
+    - `UpdateTemplateSchema`를 명시적 optional 필드 구조로 재정의(`visibility`는 optional, default 없음)
+  - `apps/web/src/pages/TemplateShareDetailPage.tsx`
+    - 관리 모달에 `title/description` 입력과 `저장` 액션 추가
+    - 저장 중 모달 닫힘 가드 적용, 소유자 `수정` 버튼은 상시 노출
+- **검증**:
+  - `pnpm --filter memeplate-api build`
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+
+## [2026-02-22] 템플릿 상세 owner 액션 단순화 및 권한 버튼 플래시 방지 (#138)
+- **결정**:
+  1. 템플릿 상세(`TemplateShareDetailPage`)의 owner 관리 UI에서 카드형 래퍼와 `내 템플릿 관리` 라벨을 제거하고 액션만 노출함.
+  2. owner 판별식에 `authInitialized`를 포함해 인증 초기화 전 owner 액션 UI를 렌더하지 않도록 함.
+- **이유**:
+  1. 리믹스 상세와 동일한 단순 액션 패턴으로 맞춰 상세 정보 패널의 시각 밀도를 낮추고 전역 UX 일관성을 확보하기 위함.
+  2. auth 동기화 이전 상태에서 owner 액션이 잠깐 보이는 플래시를 차단하기 위함.
+- **구현 요약**:
+  - `apps/web/src/pages/TemplateShareDetailPage.tsx`
+    - `isOwner` 계산식에 `authInitialized` 조건 추가
+    - owner UI에서 `rounded-xl bg-muted p-4` 래퍼/라벨 제거 후 액션 블록(`mt-5 space-y-3`)만 유지
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+
+## [2026-02-22] 리믹스 상세 owner 액션 단순화 및 권한 버튼 플래시 방지 (#137)
+- **결정**:
+  1. 리믹스 상세 owner 관리 UI에서 `내 리믹스 관리` 카드형 섹션을 제거하고, `수정` 버튼만 단일 노출함.
+  2. owner 판별식에 `authInitialized`를 포함해 인증 초기화가 끝나기 전 owner 액션 UI를 렌더하지 않도록 함.
+- **이유**:
+  1. 사용자가 원하는 액션은 수정 1개이므로 섹션 래퍼는 불필요한 시각적 밀도를 높임.
+  2. auth store 동기화 이전 상태에서 owner 조건이 잠깐 참으로 보이는 경우가 있어 버튼 플래시가 발생할 수 있음.
+- **구현 요약**:
+  - `apps/web/src/pages/ImageShareDetailPage.tsx`
+    - `isOwner` 계산: `authInitialized` 조건 추가
+    - owner UI: `내 리믹스 관리` 박스 제거 후 `수정` 버튼 단일 렌더
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+
 ## [2026-02-22] 리믹스 상세 수정 모달 저장 중 닫힘 방지 (#135)
 - **결정**:
   1. 리믹스 상세 수정 모달(`ImageShareDetailPage`)의 `onOpenChange`를 저장 상태 가드 함수로 교체함.
