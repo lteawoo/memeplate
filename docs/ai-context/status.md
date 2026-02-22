@@ -1,6 +1,12 @@
 # 프로젝트 상태 (Status)
 
 ## 현재 진행 상황
+- [x] **전역 컨테이너 최대폭 1440 재정렬 (#128, 완료 - 2026-02-22)**
+  - [x] `PageContainer` 최대폭을 `max-w-6xl`에서 `max-w-[1440px]`로 조정
+  - [x] 홈 화면 히어로 래퍼의 `max-w-2xl` 제한 제거 및 `w-full max-w-[1440px]`로 정렬
+  - [x] `pnpm --filter memeplate-web lint`, `pnpm --filter memeplate-web build` 통과
+  - [x] 스크린샷 검증
+    - [x] `docs/ai-context/screenshots/2026-02-22_home_container_max_1440_v1.png`
 - [x] **리믹스 존재 시 밈플릿 비공개 전환/삭제 차단 + 리믹스 상세 제목/설명 수정 (#126, 완료 - 2026-02-22)**
   - [x] 템플릿 API에서 리믹스 존재 시 `public -> private` 전환을 `409`으로 차단
   - [x] 템플릿 API에서 리믹스 존재 시 삭제를 `409`으로 차단
