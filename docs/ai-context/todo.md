@@ -204,6 +204,7 @@
   - [x] 템플릿 메타 저장 오검출 수정(2026-02-22): `UpdateTemplateSchema`의 `visibility` 기본값 주입 제거로 제목/설명 PATCH가 비공개 전환으로 오인되는 문제 차단
   - [x] 템플릿 관리 모달 메타 편집 보강(2026-02-22): owner 모달에 제목/설명 입력/저장 액션 추가, 공개/삭제 제약은 모달 내부에서만 제어
   - [x] 템플릿 상세 owner 버튼 지연 개선(2026-02-22): 상세 API 응답에 `isOwner`를 포함하고 UI에서 `isOwnerByDetail || isOwnerByAuth` 판별로 `수정` 버튼 노출 지연 완화 + 세션 복구 시 owner UI 고정 차단 방지
+  - [x] 내 밈플릿 헤더 단순화(2026-02-22): `내 밈플릿 관리` 타이틀을 `내 밈플릿`으로 정리하고 헤더 설명/`새 밈플릿 만들기` CTA 제거
   - [x] `apps/web/src`(단, `index.css` 변수명 제외) 클래스 스캔 기준 `slate/blue/on-accent` 직접 클래스 0건 확인
   - [ ] shadcn primitive variant 규칙 재점검(`button/input/card/dropdown/sheet`)
   - [ ] 웹 워커(Web Worker) 기반 내보내기 처리

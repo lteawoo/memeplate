@@ -51,9 +51,7 @@ const MyTemplatesPage: React.FC = () => {
 
   return (
     <MySectionLayout
-      title="내 밈플릿 관리"
-      description="내 밈플릿을 확인하고 상세에서 공개 상태/편집/삭제를 관리할 수 있습니다."
-      action={<Button type="button" onClick={() => navigate('/create')}>새 밈플릿 만들기</Button>}
+      title="내 밈플릿"
     >
       {isLoading ? (
         <TemplateCardSkeletonGrid count={6} minItemWidth={240} />

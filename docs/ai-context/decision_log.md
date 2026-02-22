@@ -1,5 +1,19 @@
 # 결정 로그 (Decision Log)
 
+## [2026-02-22] 내 밈플릿 헤더 문구/CTA 단순화
+- **결정**:
+  1. `MyTemplatesPage` 헤더 타이틀을 `내 밈플릿 관리`에서 `내 밈플릿`으로 변경함.
+  2. 헤더 설명 문구와 상단 `새 밈플릿 만들기` 버튼을 제거함.
+- **이유**:
+  1. 상세 관리 동선이 이미 카드 클릭 후 상세 페이지로 통일되어 있어 헤더 설명이 중복 정보를 제공함.
+  2. 상단 CTA를 줄여 목록 탐색 중심 화면 밀도를 낮추기 위함.
+- **구현 요약**:
+  - `apps/web/src/pages/MyTemplatesPage.tsx`
+    - `MySectionLayout` props에서 `description`, `action` 제거
+    - `title`을 `내 밈플릿`으로 변경
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+
 ## [2026-02-22] 템플릿 상세 owner 노출 지연 완화를 위한 서버 판별값 사용
 - **결정**:
   1. `GET /api/v1/templates/s/:shareSlug` 응답에 `isOwner`를 포함해 상세 조회 시점에 owner 여부를 함께 전달함.
