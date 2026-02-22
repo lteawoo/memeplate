@@ -12,7 +12,7 @@ const HomePage: React.FC = () => {
     <div className="min-h-screen bg-app-surface">
       <MainHeader />
       <main className="flex flex-col items-center justify-center p-6">
-        <div className="max-w-2xl text-center">
+        <div className="w-full max-w-[1440px] text-center">
           <h1 className="mb-6 text-6xl font-black tracking-tighter text-foreground">
             Hello World!
           </h1>

@@ -1,5 +1,23 @@
 # 결정 로그 (Decision Log)
 
+## [2026-02-22] 전역 컨테이너 최대폭 1440 재정렬 (#128)
+- **결정**:
+  1. 공통 페이지 컨테이너 최대폭을 `max-w-6xl(1152px)`에서 `max-w-[1440px]`로 조정함.
+  2. 홈 화면 히어로 영역의 `max-w-2xl` 제한을 제거하고 동일 `1440px` 상한으로 맞춤.
+- **이유**:
+  1. 사용자 피드백대로 화면이 좁아 보이는 체감을 줄이면서도 초광폭에서 읽기 폭은 제어할 필요가 있음.
+  2. 페이지마다 다른 상한을 쓰면 레이아웃 일관성이 떨어지므로 공통 기준(`1440`)으로 정렬하는 것이 적절함.
+- **구현 요약**:
+  - `apps/web/src/components/layout/PageContainer.tsx`
+    - `max-w-6xl -> max-w-[1440px]`
+  - `apps/web/src/pages/HomePage.tsx`
+    - `max-w-2xl` 제거, `w-full max-w-[1440px]` 적용
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 스크린샷
+    - `docs/ai-context/screenshots/2026-02-22_home_container_max_1440_v1.png`
+
 ## [2026-02-22] 리믹스 존재 시 밈플릿 비공개 전환/삭제 차단 + 리믹스 상세 메타 수정 (#126)
 - **결정**:
   1. 밈플릿에 리믹스가 1개 이상 있으면 `공개 -> 비공개` 전환을 차단함.

@@ -6,7 +6,7 @@ interface PageContainerProps {
 }
 
 const PageContainer: React.FC<PageContainerProps> = ({ children, className }) => {
-  const classes = ['mx-auto w-full max-w-6xl px-6', className].filter(Boolean).join(' ');
+  const classes = ['mx-auto w-full max-w-[1440px] px-6', className].filter(Boolean).join(' ');
   return <main className={classes}>{children}</main>;
 };
 
