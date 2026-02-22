@@ -25,6 +25,8 @@
     - owner 전용 `내 리믹스 관리` 영역 추가
     - 제목/설명 입력 + 저장(`PATCH /api/v1/images/:imageId`) 추가
     - 공개/비공개/삭제 액션은 추가하지 않음
+  - `apps/web/src/pages/TemplateShareDetailPage.tsx`
+    - 리믹스 섹션 우측 컨테이너의 카드 배경(`bg-card`) 제거
 - **검증**:
   - `pnpm --filter memeplate-web lint`
   - `pnpm --filter memeplate-web build`
@@ -35,6 +37,7 @@
   - 스크린샷
     - `docs/ai-context/screenshots/2026-02-22_template_detail_guard_actions_hidden_with_remixes_v2.png`
     - `docs/ai-context/screenshots/2026-02-22_image_detail_owner_meta_edit_v1.png`
+    - `docs/ai-context/screenshots/2026-02-22_template_detail_remix_section_no_card_bg_v1.png`
 
 ## [2026-02-22] 내 밈플릿 관리 동선 링크 복사 액션 제거 (#124)
 - **결정**:

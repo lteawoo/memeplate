@@ -341,7 +341,7 @@ const TemplateShareDetailPage: React.FC = () => {
       <PageContainer className="py-10">
         {isLoading ? (
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-[340px_minmax(0,1fr)]">
-            <div className="rounded-2xl bg-card p-6">
+            <div className="rounded-2xl p-6">
               <div className="mb-4 space-y-2">
                 <Skeleton className="h-5 w-full rounded bg-border/80" />
                 <Skeleton className="h-4 w-28 rounded bg-border/70" />
@@ -356,7 +356,7 @@ const TemplateShareDetailPage: React.FC = () => {
                 ))}
               </div>
             </div>
-            <div className="rounded-2xl bg-card p-6">
+            <div className="rounded-2xl p-6">
               <div className="mb-4 flex items-end justify-between gap-3">
                 <div className="space-y-2">
                   <Skeleton className="h-5 w-44 rounded bg-border/80" />
