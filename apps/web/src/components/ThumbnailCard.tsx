@@ -54,7 +54,7 @@ const ThumbnailCard: React.FC<ThumbnailCardProps> = ({
         hoverable ? 'transition-shadow hover:shadow-[0_6px_14px_rgba(13,27,42,0.08)]' : ''
       }`}
     >
-      <div className="thumb-card-surface h-52 w-full bg-transparent p-0">
+      <div className="thumb-card-surface h-52 w-full bg-transparent px-4">
         {imageUrl && !hasImageError ? (
           <div className="thumb-card-media-surface relative flex h-full items-center justify-center overflow-hidden rounded-lg bg-transparent">
             {!hasImageLoaded ? (
@@ -88,7 +88,7 @@ const ThumbnailCard: React.FC<ThumbnailCardProps> = ({
           </div>
         )}
       </div>
-      <CardContent className="p-4">
+      <CardContent className="px-4 pt-3 pb-4">
         {children}
       </CardContent>
       {actions?.length ? (
