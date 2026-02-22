@@ -1,5 +1,10 @@
 import { CanvasObject, type CanvasObjectOptions } from './Object';
-import { getFontDeclaration, resolveTextLayout } from './textLayout';
+import {
+  getAdaptiveStrokeWidth,
+  getFontDeclaration,
+  resolveTextContentInsets,
+  resolveTextLayout,
+} from './textLayout';
 
 export interface TextOptions extends CanvasObjectOptions {
   text?: string;
@@ -12,16 +17,7 @@ export interface TextOptions extends CanvasObjectOptions {
   lineHeight?: number;
 }
 
-const MIN_STROKE_PX = 0.35;
-const MAX_STROKE_PX = 8;
-const STROKE_SCALE_PER_FONT_SIZE = 0.03;
 const DEFAULT_TEXT_FILL = '#000000';
-
-const getAdaptiveStrokeWidth = (strokeIntensity: number, fontSize: number) => {
-  if (!isFinite(strokeIntensity) || strokeIntensity <= 0 || !isFinite(fontSize) || fontSize <= 0) return 0;
-  const scaled = strokeIntensity * fontSize * STROKE_SCALE_PER_FONT_SIZE;
-  return Math.max(MIN_STROKE_PX, Math.min(MAX_STROKE_PX, scaled));
-};
 
 export class Textbox extends CanvasObject {
   text: string;
@@ -59,7 +55,7 @@ export class Textbox extends CanvasObject {
       ctx.rect(-this.width / 2, -this.height / 2, this.width, this.height);
       ctx.clip();
 
-      const layout = resolveTextLayout(ctx, {
+      const probeLayout = resolveTextLayout(ctx, {
         text: this.text,
         width: this.width,
         height: this.height,
@@ -71,17 +67,38 @@ export class Textbox extends CanvasObject {
         verticalAlign: this.verticalAlign
       });
 
+      const logicalInsets = resolveTextContentInsets({
+        fontSize: probeLayout.fontSize,
+        strokeIntensity: this.strokeWidth,
+      });
+      const layoutWidth = Math.max(1, this.width - (logicalInsets.horizontal * 2));
+      const layoutHeight = Math.max(1, this.height - (logicalInsets.vertical * 2));
+
+      const layout = resolveTextLayout(ctx, {
+        text: this.text,
+        width: layoutWidth,
+        height: layoutHeight,
+        fontSize: probeLayout.fontSize,
+        fontFamily: this.fontFamily,
+        fontWeight: this.fontWeight,
+        fontStyle: this.fontStyle,
+        lineHeight: this.lineHeight,
+        verticalAlign: this.verticalAlign
+      });
+
       ctx.font = getFontDeclaration(layout.fontSize, this.fontStyle, this.fontWeight, this.fontFamily);
       ctx.fillStyle = this.fill || DEFAULT_TEXT_FILL;
       ctx.textAlign = this.textAlign || 'center';
-      ctx.textBaseline = 'top';
+      ctx.textBaseline = 'alphabetic';
+      ctx.lineJoin = 'round';
+      ctx.lineCap = 'round';
 
       let x = 0;
-      if (this.textAlign === 'left') x = -this.width / 2;
-      else if (this.textAlign === 'right') x = this.width / 2;
+      if (this.textAlign === 'left') x = -layoutWidth / 2;
+      else if (this.textAlign === 'right') x = layoutWidth / 2;
 
       layout.lines.forEach((line, index) => {
-        const y = layout.startY + index * layout.lineHeightPx;
+        const y = layout.startY + layout.baselineOffsetPx + index * layout.lineHeightPx;
         ctx.fillText(line, x, y);
 
         if (this.stroke && this.stroke !== 'transparent' && this.strokeWidth > 0) {

@@ -20,6 +20,9 @@
   - [x] 고정 틀(Fixed Container) 방식: 내용 변경 시 크기 유지
   - [x] 리사이즈 시 fontSize 보존 (Scale 대신 Width/Height 조절)
   - [x] 세로 정렬: 상단(Top) 고정
+  - [x] glyph metric(ascent/descent) + stroke/inset 반영으로 텍스트 상/하단 클리핑 완화
+  - [x] 최소 폰트(8px) 미적합 시 1px까지 autoshrink fallback으로 줄바꿈 이후 높이 clipping 방지
+  - [x] 편집 오버레이 textarea box-model 보정(border->outline, 상하 안전 여백)으로 편집 상태 clipping 완화
 - [x] **렌더링 시스템 최적화**
   - [x] Dirty Flag (`needsRedraw`) 기반 렌더링 루프
   - [x] 비동기 이미지 로딩 대응 (로딩 중 자동 재렌더링)

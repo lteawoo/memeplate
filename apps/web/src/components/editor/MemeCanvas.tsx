@@ -2,7 +2,7 @@ import React from 'react';
 import Icon from '@mdi/react';
 import { mdiImage } from '@mdi/js';
 import { Canvas, Textbox } from '../../core/canvas';
-import { resolveTextLayout } from '../../core/canvas/textLayout';
+import { resolveTextContentInsets, resolveTextLayout } from '../../core/canvas/textLayout';
 import { MAX_RENDER_CANVAS_AREA_PX, MAX_RENDER_CANVAS_EDGE_PX } from '../../constants/canvasLimits';
 import { resolveCssVarColor } from '../../theme/theme';
 
@@ -405,14 +405,16 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
     const viewportZoom = viewportTransform.zoom;
     const screenX = (editingObject.left * viewportZoom) + viewportTransform.panX;
     const screenY = (editingObject.top * viewportZoom) + viewportTransform.panY;
-    const width = editingObject.width * editingObject.scaleX * viewportZoom * cssPerScreenX;
-    const height = editingObject.height * editingObject.scaleY * viewportZoom * cssPerScreenY;
+    const logicalScaleX = Math.abs(editingObject.scaleX || 1);
+    const logicalScaleY = Math.abs(editingObject.scaleY || 1);
+    const width = editingObject.width * logicalScaleX * viewportZoom * cssPerScreenX;
+    const height = editingObject.height * logicalScaleY * viewportZoom * cssPerScreenY;
 
     const left = canvasCssOffset.left + (screenX * cssPerScreenX) - (width / 2);
     const top = canvasCssOffset.top + (screenY * cssPerScreenY) - (height / 2);
 
     const measureCtx = document.createElement('canvas').getContext('2d');
-    const layout = measureCtx ? resolveTextLayout(measureCtx, {
+    const probeLayout = measureCtx ? resolveTextLayout(measureCtx, {
       text: editingText,
       width: editingObject.width,
       height: editingObject.height,
@@ -423,14 +425,40 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
       lineHeight: editingObject.lineHeight,
       verticalAlign: editingObject.verticalAlign,
     }) : null;
-    const fittedLogicalFontSize = layout?.fontSize || editingObject.fontSize || 40;
-    const displayFontSize = Math.max(8, fittedLogicalFontSize * editingObject.scaleY * viewportZoom * cssPerScreenY);
-    const contentHeight = (layout?.totalHeight || 0) * editingObject.scaleY * viewportZoom * cssPerScreenY;
-    const verticalPadding = editingObject.verticalAlign === 'middle'
-      ? Math.max(0, (height - contentHeight) / 2)
+    const logicalInsets = resolveTextContentInsets({
+      fontSize: probeLayout?.fontSize || editingObject.fontSize || 40,
+      strokeIntensity: editingObject.strokeWidth,
+    });
+    const innerLogicalWidth = Math.max(1, editingObject.width - (logicalInsets.horizontal * 2));
+    const innerLogicalHeight = Math.max(1, editingObject.height - (logicalInsets.vertical * 2));
+    const layout = measureCtx ? resolveTextLayout(measureCtx, {
+      text: editingText,
+      width: innerLogicalWidth,
+      height: innerLogicalHeight,
+      fontSize: probeLayout?.fontSize || editingObject.fontSize,
+      fontFamily: editingObject.fontFamily,
+      fontWeight: editingObject.fontWeight,
+      fontStyle: editingObject.fontStyle,
+      lineHeight: editingObject.lineHeight,
+      verticalAlign: editingObject.verticalAlign,
+    }) : null;
+    const fittedLogicalFontSize = layout?.fontSize || probeLayout?.fontSize || editingObject.fontSize || 40;
+    const displayFontSize = Math.max(8, fittedLogicalFontSize * logicalScaleY * viewportZoom * cssPerScreenY);
+    const insetX = logicalInsets.horizontal * logicalScaleX * viewportZoom * cssPerScreenX;
+    const insetY = logicalInsets.vertical * logicalScaleY * viewportZoom * cssPerScreenY;
+    const editorSafetyInsetY = 1;
+    const innerDisplayHeight = Math.max(0, height - (insetY * 2) - (editorSafetyInsetY * 2));
+    const contentHeight = (layout?.totalHeight || 0) * logicalScaleY * viewportZoom * cssPerScreenY;
+    const verticalInnerPadding = editingObject.verticalAlign === 'middle'
+      ? Math.max(0, (innerDisplayHeight - contentHeight) / 2)
       : editingObject.verticalAlign === 'bottom'
-        ? Math.max(0, height - contentHeight)
+        ? Math.max(0, innerDisplayHeight - contentHeight)
         : 0;
+    const verticalPadding = editingObject.verticalAlign === 'middle'
+      ? insetY + verticalInnerPadding + editorSafetyInsetY
+      : editingObject.verticalAlign === 'bottom'
+        ? insetY + verticalInnerPadding + editorSafetyInsetY
+        : insetY + editorSafetyInsetY;
     const textColor = editingObject.fill || resolveCssVarColor('--canvas-text-default', '#f9f9f8');
     const luminance = getLuminance(textColor);
     const contrastBg = luminance > 0.6 ? 'rgba(0, 0, 0, 0.28)' : 'rgba(255, 255, 255, 0.24)';
@@ -448,15 +476,16 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
       textAlign: editingObject.textAlign || ('center' as const),
       lineHeight: editingObject.lineHeight || 1.2,
       background: contrastBg,
-      border: `1px dashed ${toRgba(overlayBorderColor, 0.8)}`,
-      outline: 'none',
+      border: 'none',
+      outline: `1px dashed ${toRgba(overlayBorderColor, 0.8)}`,
+      outlineOffset: '-1px',
       borderRadius: '6px',
       resize: 'none' as const,
       overflow: 'hidden',
       paddingTop: `${verticalPadding}px`,
-      paddingRight: '0px',
-      paddingBottom: '0px',
-      paddingLeft: '0px',
+      paddingRight: `${insetX}px`,
+      paddingBottom: `${insetY + editorSafetyInsetY}px`,
+      paddingLeft: `${insetX}px`,
       margin: 0,
       zIndex: 1000,
       transform: `rotate(${editingObject.angle}deg)`,
@@ -515,6 +544,7 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
           <textarea
             ref={textareaRef}
             style={getTextareaStyle()}
+            spellCheck={false}
             value={editingText}
             onChange={(e) => {
               setEditingText(e.target.value);
