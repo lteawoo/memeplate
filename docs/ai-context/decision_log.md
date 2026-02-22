@@ -1,5 +1,21 @@
 # 결정 로그 (Decision Log)
 
+## [2026-02-22] 내 밈플릿 관리 동선 링크 복사 액션 제거 (#124)
+- **결정**:
+  1. `TemplateShareDetailPage`의 owner 관리 액션에서 `링크 복사` 버튼을 제거함.
+  2. `편집`, `삭제`, `공개/비공개 전환`은 유지해 관리 핵심 액션만 남김.
+- **이유**:
+  1. 내 밈플릿 관리 동선은 공유보다는 편집/정리 중심이며, 링크 복사는 액션 밀도를 높여 우선순위를 흐림.
+  2. 링크 복사 기능은 기존 에디터 공유 탭에서 여전히 제공되므로 기능 단절 없이 관리 화면만 단순화 가능함.
+- **구현 요약**:
+  - `apps/web/src/pages/TemplateShareDetailPage.tsx`
+    - owner 관리 영역의 `링크 복사` 버튼 및 clipboard 핸들러 제거
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 스크린샷
+    - `docs/ai-context/screenshots/2026-02-22_my_templates_remove_copy_link_public_view_v1.png`
+
 ## [2026-02-22] 템플릿 상세 접근권한 보강 + 내 밈플릿 상세 진입 동선 통합 (#122)
 - **결정**:
   1. `내 밈플릿` 카드 클릭은 로컬 상세 패널 대신 기존 템플릿 상세 경로(`/templates/s/:shareSlug`)로 통일함.

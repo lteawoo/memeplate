@@ -438,19 +438,6 @@ const TemplateShareDetailPage: React.FC = () => {
                       </Button>
                       <Button
                         type="button"
-                        variant="outline"
-                        disabled={template.visibility !== 'public'}
-                        onClick={() => {
-                          const url = `${window.location.origin}/templates/s/${template.shareSlug}`;
-                          void navigator.clipboard.writeText(url)
-                            .then(() => toast.success('공유 링크를 복사했습니다.'))
-                            .catch(() => toast.error('링크 복사에 실패했습니다.'));
-                        }}
-                      >
-                        링크 복사
-                      </Button>
-                      <Button
-                        type="button"
                         variant="destructive"
                         disabled={isDeletingTemplate}
                         onClick={() => setIsDeleteDialogOpen(true)}
