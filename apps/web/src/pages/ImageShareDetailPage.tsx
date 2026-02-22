@@ -149,15 +149,13 @@ const ImageShareDetailPage: React.FC = () => {
       <MainHeader />
       <PageContainer className="py-10">
         {isLoading ? (
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
-            <div className="rounded-2xl bg-card p-6">
-              <div className="mb-6 space-y-2">
-                <Skeleton className="h-6 w-full rounded bg-border/80" />
-                <Skeleton className="h-4 w-44 rounded bg-border/70" />
-              </div>
-              <PreviewFrame alt="공유 이미지 로딩" loadingPlaceholder contentClassName="h-[480px]" />
+          <div className="rounded-2xl bg-card p-6">
+            <div className="mb-6 space-y-2">
+              <Skeleton className="h-6 w-full rounded bg-border/80" />
+              <Skeleton className="h-4 w-44 rounded bg-border/70" />
             </div>
-            <div className="rounded-2xl bg-card p-6">
+            <PreviewFrame alt="공유 이미지 로딩" loadingPlaceholder contentClassName="h-[480px]" />
+            <div className="mt-6">
               <Skeleton className="mb-4 h-5 w-24 rounded bg-border/70" />
               <div className="space-y-3">
                 {Array.from({ length: 7 }, (_, idx) => (
@@ -175,33 +173,31 @@ const ImageShareDetailPage: React.FC = () => {
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         ) : image ? (
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
-            <div className="rounded-2xl bg-card p-6">
-              <div className="mb-6">
-                <h2 className="mb-2 text-3xl font-bold text-foreground">{image.title}</h2>
-                {image.description ? (
-                  <div className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground">{image.description}</div>
-                ) : null}
-              </div>
-              <PreviewFrame
-                imageUrl={image.imageUrl}
-                alt={image.title}
-                imageRef={mainImageRef}
-                imageKey={image.imageUrl}
-                isImageLoaded={isMainImageLoaded}
-                isImageError={isMainImageError}
-                maxImageHeightClassName="max-h-[640px]"
-                onLoad={() => {
-                  setIsMainImageError(false);
-                  setIsMainImageLoaded(true);
-                }}
-                onError={() => {
-                  setIsMainImageLoaded(false);
-                  setIsMainImageError(true);
-                }}
-              />
+          <div className="rounded-2xl bg-card p-6">
+            <div className="mb-6">
+              <h2 className="mb-2 text-3xl font-bold text-foreground">{image.title}</h2>
+              {image.description ? (
+                <div className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground">{image.description}</div>
+              ) : null}
             </div>
-            <div className="rounded-2xl bg-card p-6">
+            <PreviewFrame
+              imageUrl={image.imageUrl}
+              alt={image.title}
+              imageRef={mainImageRef}
+              imageKey={image.imageUrl}
+              isImageLoaded={isMainImageLoaded}
+              isImageError={isMainImageError}
+              maxImageHeightClassName="max-h-[640px]"
+              onLoad={() => {
+                setIsMainImageError(false);
+                setIsMainImageLoaded(true);
+              }}
+              onError={() => {
+                setIsMainImageLoaded(false);
+                setIsMainImageError(true);
+              }}
+            />
+            <div className="mt-6">
               <h3 className="mb-4 text-base font-semibold text-foreground">상세 정보</h3>
               <div className="space-y-3 text-sm">
                 <div className="flex items-start justify-between gap-3">
@@ -235,39 +231,39 @@ const ImageShareDetailPage: React.FC = () => {
                   <span className="text-right font-medium text-foreground">{(image.likeCount ?? 0).toLocaleString()}</span>
                 </div>
               </div>
-              {isOwner ? (
-                <div className="mt-5 space-y-3 rounded-xl bg-muted p-4">
-                  <div className="text-xs font-semibold text-muted-foreground">내 리믹스 관리</div>
-                  <div className="space-y-2">
-                    <Label htmlFor="remix-title">제목</Label>
-                    <Input
-                      id="remix-title"
-                      value={editTitle}
-                      maxLength={100}
-                      onChange={(event) => setEditTitle(event.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="remix-description">설명</Label>
-                    <Textarea
-                      id="remix-description"
-                      value={editDescription}
-                      maxLength={500}
-                      rows={4}
-                      onChange={(event) => setEditDescription(event.target.value)}
-                    />
-                  </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    disabled={isSavingMeta}
-                    onClick={() => { void handleSaveMeta(); }}
-                  >
-                    {isSavingMeta ? '저장 중...' : '제목/설명 저장'}
-                  </Button>
-                </div>
-              ) : null}
             </div>
+            {isOwner ? (
+              <div className="mt-5 space-y-3 rounded-xl bg-muted p-4">
+                <div className="text-xs font-semibold text-muted-foreground">내 리믹스 관리</div>
+                <div className="space-y-2">
+                  <Label htmlFor="remix-title">제목</Label>
+                  <Input
+                    id="remix-title"
+                    value={editTitle}
+                    maxLength={100}
+                    onChange={(event) => setEditTitle(event.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="remix-description">설명</Label>
+                  <Textarea
+                    id="remix-description"
+                    value={editDescription}
+                    maxLength={500}
+                    rows={4}
+                    onChange={(event) => setEditDescription(event.target.value)}
+                  />
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={isSavingMeta}
+                  onClick={() => { void handleSaveMeta(); }}
+                >
+                  {isSavingMeta ? '저장 중...' : '제목/설명 저장'}
+                </Button>
+              </div>
+            ) : null}
           </div>
         ) : null}
       </PageContainer>
