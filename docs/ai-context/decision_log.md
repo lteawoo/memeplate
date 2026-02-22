@@ -1,5 +1,22 @@
 # 결정 로그 (Decision Log)
 
+## [2026-02-22] 밈플릿/리믹스 썸네일 하단 텍스트 여백 규격 통일 (#132)
+- **결정**:
+  1. `ThumbnailCard`의 본문 패딩을 `p-4`에서 `px-4 pt-3 pb-4`로 조정하고, 썸네일 래퍼에도 `px-4`를 적용해 썸네일/텍스트의 좌우 기준선을 동일화함.
+  2. `TemplateCardSkeletonGrid`도 동일 규격(썸네일 래퍼 `px-4`, 본문 `px-4 pt-3 pb-4`)을 적용해 로딩/완료 상태 간 여백 체감을 일치시킴.
+- **이유**:
+  1. 밈플릿 목록과 리믹스 목록 카드에서 썸네일-텍스트 간격이 다르게 느껴진다는 피드백이 있어, 카드 본문 상단 여백을 명시적으로 통일할 필요가 있었음.
+  2. 실카드와 스켈레톤의 간격 규칙이 다르면 화면 전환 시 점프처럼 보여 일관성이 떨어짐.
+- **구현 요약**:
+  - `apps/web/src/components/ThumbnailCard.tsx`
+    - 썸네일 래퍼 패딩: `p-0 -> px-4`
+    - `CardContent` 패딩: `p-4 -> px-4 pt-3 pb-4`
+  - `apps/web/src/components/TemplateCardSkeletonGrid.tsx`
+    - 썸네일 래퍼 패딩: `p-0 -> px-4`
+    - 본문 패딩: `p-4 -> px-4 pt-3 pb-4`
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+
 ## [2026-02-22] 에디터 맞춤 배율 headroom 적용
 - **결정**:
   1. 에디터 `fit` 계산 결과에 headroom 비율 `0.94`를 곱해 기본 맞춤 상태가 화면 가장자리에 꽉 차지 않도록 조정함.

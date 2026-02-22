@@ -1,6 +1,10 @@
 # 프로젝트 상태 (Status)
 
 ## 현재 진행 상황
+- [x] **밈플릿/리믹스 썸네일 하단 텍스트 여백 규격 통일 (#132, 완료 - 2026-02-22)**
+  - [x] `ThumbnailCard` 본문 패딩을 `px-4 pt-3 pb-4`로 조정하고 썸네일 래퍼에 `px-4`를 적용해 썸네일/텍스트 좌우 기준선 정렬
+  - [x] `TemplateCardSkeletonGrid`도 썸네일 래퍼(`px-4`) + 본문 패딩(`px-4 pt-3 pb-4`)을 동일 적용해 로딩/완료 상태 정렬
+  - [x] `pnpm --filter memeplate-web lint` 통과
 - [x] **에디터 맞춤 배율 headroom 적용 (완료 - 2026-02-22)**
   - [x] `MemeCanvas`의 `fitScale` 계산 결과에 `0.94` headroom 비율을 적용
   - [x] `맞춤` 상태에서 캔버스가 화면 가장자리에 과도하게 밀착되는 체감 완화
