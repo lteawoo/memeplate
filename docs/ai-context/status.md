@@ -1,6 +1,23 @@
 # 프로젝트 상태 (Status)
 
 ## 현재 진행 상황
+- [x] **에디터 캔버스 hover/터치 레이어 외곽선 표시 규칙 적용 (완료 - 2026-02-22)**
+  - [x] 캔버스 hover(PC) 또는 캔버스 터치 활성(모바일) 상태에서 배경 제외 모든 레이어에 얇은 외곽선 표시
+  - [x] 레이어 외곽선 스타일을 실선에서 점선으로 변경
+  - [x] 레이어 선택 시 hover 얇은 외곽선은 숨기고, 선택 조절 박스 외곽선은 점선으로 통일
+  - [x] 선택 조절 박스 외곽선 두께를 소폭 상향(`1.5 * sceneScale`)해 hover 외곽선과 시각적 위계를 강화
+  - [x] hover/선택 점선 패턴 길이를 소폭 확대(hover: `3.2/2.4`, 선택: `4.6/3.2`, sceneScale 배율 기준)
+  - [x] 객체 선택/터치 시 기존 조절점(리사이즈/회전 핸들) 노출 동작 유지
+  - [x] 캔버스 이탈 시(`mouseleave` + 전역 `mousemove` 외부 감지) 외곽선 즉시 숨김
+  - [x] 캔버스 외부 터치/`touchcancel` 시 터치 hover 상태 해제
+  - [x] `pnpm --filter memeplate-web lint`, `pnpm --filter memeplate-web build` 통과
+  - [x] 스크린샷 검증
+    - [x] `docs/ai-context/screenshots/2026-02-22_canvas_hover_outline_dashed_nonhover_v1.png`
+    - [x] `docs/ai-context/screenshots/2026-02-22_canvas_hover_outline_dashed_hover_v1.png`
+    - [x] `docs/ai-context/screenshots/2026-02-22_selected_dashed_outline_hide_thin_nonhover_v1.png`
+    - [x] `docs/ai-context/screenshots/2026-02-22_selected_dashed_outline_hide_thin_hover_v1.png`
+    - [x] `docs/ai-context/screenshots/2026-02-22_canvas_hover_outline_dashsize_tuned_v2.png`
+    - [x] `docs/ai-context/screenshots/2026-02-22_canvas_selected_outline_thicker_dashsize_tuned_v2.png`
 - [x] **리믹스/밈플릿 상세 이미지 스켈레톤 정합화 2차 (완료 - 2026-02-22)**
   - [x] 리믹스 상세/밈플릿 상세에서 `밈플릿 목록으로` 버튼 제거
   - [x] `PreviewFrame`에 페이지 로딩용 `loadingPlaceholder` 옵션 추가(실제 이미지 로딩 스켈레톤과 동일 마크업 재사용)

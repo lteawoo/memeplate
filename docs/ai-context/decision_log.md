@@ -1,5 +1,57 @@
 # 결정 로그 (Decision Log)
 
+## [2026-02-22] 캔버스 점선 외곽선 가시성 미세 조정(두께/대시 길이)
+- **결정**:
+  1. 선택 객체 조절 박스 외곽선은 기존보다 약간 더 두껍게 표시함.
+  2. hover 얇은 외곽선과 선택 외곽선 모두 점선 dash/gap 길이를 소폭 확대함.
+- **이유**:
+  1. 사용자 피드백대로 선택 상태와 hover 상태의 시각적 위계를 더 명확하게 구분할 필요가 있었음.
+  2. 기존 점선 패턴이 촘촘해 축소/원거리 시 인지성이 떨어지는 구간이 있어 dash 크기를 약간 키우는 편이 안정적이었음.
+- **구현 요약**:
+  - `apps/web/src/core/canvas/Canvas.ts`
+    - `drawControls` 선택 외곽선 두께: `Math.max(1.5 * scale, 1.1)`
+    - `drawControls` 선택 점선 패턴: `[Math.max(4.6 * scale, 1.9), Math.max(3.2 * scale, 1.4)]`
+    - `drawHoverOutline` hover 점선 패턴: `[Math.max(3.2 * scale, 1.4), Math.max(2.4 * scale, 1.1)]`
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 스크린샷
+    - `docs/ai-context/screenshots/2026-02-22_canvas_hover_outline_dashsize_tuned_v2.png`
+    - `docs/ai-context/screenshots/2026-02-22_canvas_selected_outline_thicker_dashsize_tuned_v2.png`
+
+## [2026-02-22] 에디터 캔버스 hover/터치 레이어 외곽선 표시 규칙 적용
+- **결정**:
+  1. 캔버스 hover(PC) 또는 캔버스 터치 hover 활성(모바일) 상태에서 배경 레이어를 제외한 모든 레이어에 얇은 외곽선을 표시함.
+  2. 레이어 외곽선은 실선 대신 점선(`setLineDash`) 스타일을 적용함.
+  3. 객체 조절점(리사이즈/회전 핸들)은 기존 선택 객체 기준 동작을 유지함(객체 선택/터치 시 노출).
+  4. 외곽선 노출 상태는 `mouseleave`와 전역 `mousemove` 외부 감지, 전역 외부 `touchstart`, `touchcancel`로 해제함.
+  5. 선택 레이어가 존재할 때는 hover 얇은 외곽선 렌더를 중지하고, 선택 조절 박스 외곽선만 점선으로 노출함.
+- **이유**:
+  1. 사용자가 요청한 UX(캔버스 hover 시 전체 레이어 경계 인지 + 객체 조작 시 조절점 유지)를 동시에 만족해야 함.
+  2. `mouseleave` 누락 환경에서도 외곽선 잔상을 남기지 않으려면 전역 외부 포인터 감지가 필요함.
+  3. 모바일은 hover 개념이 없으므로 터치 기반 hover 상태를 별도 도입해야 동일 인지성을 제공할 수 있음.
+- **구현 요약**:
+  - `apps/web/src/core/canvas/Canvas.ts`
+    - 상태 추가: `isCanvasMouseHovering`, `isCanvasTouchHovering`
+    - 이벤트 추가:
+      - 캔버스: `mouseenter`, `mouseleave`
+      - 전역: `mousemove`(캔버스 외부 이탈 감지), `touchstart`(외부 터치 감지), `touchcancel`
+    - 렌더 보강:
+      - `drawHoverOutline` 추가
+      - hover/touch 활성 시 배경 제외 모든 visible 레이어 외곽선 렌더
+      - 외곽선 점선 패턴 적용(`setLineDash`)
+      - `activeObject` 존재 시 hover 얇은 외곽선 렌더 스킵
+      - `drawControls` 바운딩 박스 외곽선을 점선으로 변경(핸들 라인은 기존 유지)
+      - 선택 객체 조절점 렌더는 기존 정책 유지
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 스크린샷:
+    - `docs/ai-context/screenshots/2026-02-22_canvas_hover_outline_dashed_nonhover_v1.png`
+    - `docs/ai-context/screenshots/2026-02-22_canvas_hover_outline_dashed_hover_v1.png`
+    - `docs/ai-context/screenshots/2026-02-22_selected_dashed_outline_hide_thin_nonhover_v1.png`
+    - `docs/ai-context/screenshots/2026-02-22_selected_dashed_outline_hide_thin_hover_v1.png`
+
 ## [2026-02-22] 상세/목록 이미지 스켈레톤 규칙 통일 2차
 - **결정**:
   1. 페이지 초기 로딩에서 쓰는 프리뷰 스켈레톤과 실제 이미지 로딩 중 스켈레톤을 `PreviewFrame` 단일 마크업으로 통일함.
