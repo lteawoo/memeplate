@@ -1,6 +1,12 @@
 # 프로젝트 상태 (Status)
 
 ## 현재 진행 상황
+- [x] **내 밈플릿 관리 동선 링크 복사 액션 제거 (#124, 완료 - 2026-02-22)**
+  - [x] `TemplateShareDetailPage` owner 관리 영역에서 `링크 복사` 버튼 제거
+  - [x] `편집/삭제/공개전환` 액션은 기존 동작 유지
+  - [x] `pnpm --filter memeplate-web lint`, `pnpm --filter memeplate-web build` 통과
+  - [x] UI 스냅샷 캡처
+    - [x] `docs/ai-context/screenshots/2026-02-22_my_templates_remove_copy_link_public_view_v1.png`
 - [x] **템플릿 상세 접근권한 보강 + 내 밈플릿 상세 진입 동선 통합 (#122, 완료 - 2026-02-22)**
   - [x] `/api/v1/templates/s/:shareSlug` 상세 조회 권한을 `public 또는 owner` 허용 정책으로 확장
   - [x] 비소유 private 템플릿 접근 시 404 유지(존재 여부 노출 억제)
