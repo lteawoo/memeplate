@@ -6,6 +6,8 @@ import { resolveTextContentInsets, resolveTextLayout } from '../../core/canvas/t
 import { MAX_RENDER_CANVAS_AREA_PX, MAX_RENDER_CANVAS_EDGE_PX } from '../../constants/canvasLimits';
 import { resolveCssVarColor } from '../../theme/theme';
 
+const FIT_HEADROOM_RATIO = 0.94;
+
 const toRgba = (hexColor: string, alpha: number) => {
   const raw = hexColor.replace('#', '').trim();
   const normalized = raw.length === 3 ? raw.split('').map((c) => c + c).join('') : raw;
@@ -81,13 +83,13 @@ const MemeCanvas: React.FC<MemeCanvasProps> = ({
       return 1;
     }
     if (isMobileViewport) {
-      return Math.max(0.01, viewportScreenWidth / intrinsicWidth);
+      return Math.max(0.01, (viewportScreenWidth / intrinsicWidth) * FIT_HEADROOM_RATIO);
     }
     const viewportScale = Math.min(
       viewportScreenWidth / intrinsicWidth,
       viewportScreenHeight / intrinsicHeight,
     );
-    return Math.max(0.01, viewportScale);
+    return Math.max(0.01, viewportScale * FIT_HEADROOM_RATIO);
   }, [
     intrinsicWidth,
     intrinsicHeight,

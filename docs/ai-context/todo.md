@@ -88,6 +88,7 @@
   - [x] `MemeCanvas.tsx`: `Ctrl/Cmd + Wheel` 줌을 커서 앵커 기준으로 보정(줌 중심점 고정)
   - [x] `MemeCanvas.tsx`/`MemeEditor.tsx`: 캔버스 스테이지 데스크탑 패딩/라운드 제거 + 좌측 영역 무여백 full-fill 정렬
   - [x] `index.css`: 캔버스 스테이지를 에디터 톤(그리드)으로 정렬하고 캔버스 라운드/그림자 제거
+  - [x] `MemeCanvas.tsx`: `fitScale`에 headroom 비율(`0.94`)을 적용해 기본 맞춤 상태 과밀(꽉 참) 완화
   - [x] `MemeCanvas.tsx`: 업로드 후 캔버스 흰 바탕 노출 제거(`bg-card -> bg-transparent`)
   - [x] `Canvas.ts`: 에디터 배경(그리드/워크스페이스 프레임) 렌더를 캔버스 내부로 이관
   - [x] `MemeCanvas.tsx`: `스페이스 + 좌클릭 드래그`, `중클릭 드래그` 팬 인터랙션 추가
