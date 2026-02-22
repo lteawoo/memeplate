@@ -1,6 +1,25 @@
 # 프로젝트 상태 (Status)
 
 ## 현재 진행 상황
+- [x] **리믹스/밈플릿 상세 이미지 스켈레톤 정합화 2차 (완료 - 2026-02-22)**
+  - [x] 리믹스 상세/밈플릿 상세에서 `밈플릿 목록으로` 버튼 제거
+  - [x] `PreviewFrame`에 페이지 로딩용 `loadingPlaceholder` 옵션 추가(실제 이미지 로딩 스켈레톤과 동일 마크업 재사용)
+  - [x] 리믹스 상세/밈플릿 상세 초기 로딩 이미지 영역을 `PreviewFrame` 기반 스켈레톤으로 전환
+  - [x] 목록 스켈레톤(`TemplateCardSkeletonGrid`) 썸네일 구조를 실제 카드(`ThumbnailCard`) 로딩 구조와 동일하게 정렬
+  - [x] 썸네일 카드/스켈레톤의 썸 영역 배경(`bg-card`, `bg-muted`, `bg-muted/80`) 제거
+  - [x] `ThumbnailCard` 이미지 로드 상태를 `onLoad` 단일 의존에서 `img.complete + naturalWidth` 보정 방식으로 강화
+  - [x] `ImageShareDetailPage` 메인 이미지에도 `imageRef + imageKey + onError/isImageError` 동기화 보정 적용
+  - [x] `pnpm --filter memeplate-web lint` 통과
+  - [x] 스크린샷 검증
+    - [x] `docs/ai-context/screenshots/2026-02-22_image_share_detail_loading_skeleton_v1.png`
+    - [x] `docs/ai-context/screenshots/2026-02-22_template_detail_loading_skeleton_v2.png`
+    - [x] `docs/ai-context/screenshots/2026-02-22_templates_loading_skeleton_v2.png`
+    - [x] `docs/ai-context/screenshots/2026-02-22_thumbnail_card_no_background_templates_v1.png`
+    - [x] `docs/ai-context/screenshots/2026-02-22_thumbnail_card_no_background_detail_remix_v1.png`
+    - [x] `docs/ai-context/screenshots/2026-02-22_related_thumbnail_sticky_skeleton_check_loading_v1.png`
+    - [x] `docs/ai-context/screenshots/2026-02-22_related_thumbnail_sticky_skeleton_check_loaded_v1.png`
+    - [x] `docs/ai-context/screenshots/2026-02-22_remove_templates_list_button_template_detail_v1.png`
+    - [x] `docs/ai-context/screenshots/2026-02-22_remove_templates_list_button_image_detail_v1.png`
 - [x] **인증 리다이렉트 `next` 플로우 통합 1차 (#109~#115, 완료 - 2026-02-21)**
   - [x] 템플릿 상세 `리믹스` 버튼 비로그인 가드 (`/login?next=/create?shareSlug=...`)
   - [x] `/create?shareSlug|templateId` 직접 진입 비로그인 가드

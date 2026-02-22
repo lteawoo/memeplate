@@ -1,6 +1,5 @@
 import React from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
+import { useParams } from 'react-router-dom';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import MainHeader from '../components/layout/MainHeader';
@@ -21,11 +20,12 @@ const formatBytes = (bytes: number) => {
 };
 
 const ImageShareDetailPage: React.FC = () => {
-  const navigate = useNavigate();
   const { shareSlug } = useParams<{ shareSlug: string }>();
   const viewedSlugRef = React.useRef<string | null>(null);
   const [image, setImage] = React.useState<MemeImageRecord | null>(null);
   const [isMainImageLoaded, setIsMainImageLoaded] = React.useState(false);
+  const [isMainImageError, setIsMainImageError] = React.useState(false);
+  const mainImageRef = React.useRef<HTMLImageElement | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
 
@@ -54,6 +54,12 @@ const ImageShareDetailPage: React.FC = () => {
   }, [shareSlug]);
 
   React.useEffect(() => {
+    setIsMainImageError(false);
+    const imageEl = mainImageRef.current;
+    if (imageEl && imageEl.complete && imageEl.naturalWidth > 0) {
+      setIsMainImageLoaded(true);
+      return;
+    }
     setIsMainImageLoaded(false);
   }, [image?.imageUrl]);
 
@@ -86,9 +92,7 @@ const ImageShareDetailPage: React.FC = () => {
                 <Skeleton className="h-6 w-full rounded bg-border/80" />
                 <Skeleton className="h-4 w-44 rounded bg-border/70" />
               </div>
-              <div className="h-[480px] rounded-xl bg-transparent p-4">
-                <Skeleton className="h-full w-full rounded-lg border border-border bg-muted" />
-              </div>
+              <PreviewFrame alt="공유 이미지 로딩" loadingPlaceholder contentClassName="h-[480px]" />
             </div>
             <div className="rounded-2xl bg-card p-6">
               <Skeleton className="mb-4 h-5 w-24 rounded bg-border/70" />
@@ -112,7 +116,6 @@ const ImageShareDetailPage: React.FC = () => {
             <div className="rounded-2xl bg-card p-6">
               <div className="mb-6">
                 <h2 className="mb-2 text-3xl font-bold text-foreground">{image.title}</h2>
-                <p className="text-sm text-muted-foreground">공유 이미지를 확인할 수 있습니다.</p>
                 {image.description ? (
                   <div className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground">{image.description}</div>
                 ) : null}
@@ -120,14 +123,20 @@ const ImageShareDetailPage: React.FC = () => {
               <PreviewFrame
                 imageUrl={image.imageUrl}
                 alt={image.title}
+                imageRef={mainImageRef}
+                imageKey={image.imageUrl}
                 isImageLoaded={isMainImageLoaded}
+                isImageError={isMainImageError}
                 maxImageHeightClassName="max-h-[640px]"
-                onLoad={() => setIsMainImageLoaded(true)}
+                onLoad={() => {
+                  setIsMainImageError(false);
+                  setIsMainImageLoaded(true);
+                }}
+                onError={() => {
+                  setIsMainImageLoaded(false);
+                  setIsMainImageError(true);
+                }}
               />
-              <div className="mt-6 flex flex-wrap gap-2">
-                <Button type="button" onClick={() => navigate('/create')}>새 밈플릿 만들기</Button>
-                <Button type="button" variant="outline" onClick={() => navigate('/templates')}>밈플릿 목록으로</Button>
-              </div>
             </div>
             <div className="rounded-2xl bg-card p-6">
               <h3 className="mb-4 text-base font-semibold text-foreground">상세 정보</h3>

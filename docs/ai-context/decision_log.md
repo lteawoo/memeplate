@@ -1,5 +1,53 @@
 # 결정 로그 (Decision Log)
 
+## [2026-02-22] 상세/목록 이미지 스켈레톤 규칙 통일 2차
+- **결정**:
+  1. 페이지 초기 로딩에서 쓰는 프리뷰 스켈레톤과 실제 이미지 로딩 중 스켈레톤을 `PreviewFrame` 단일 마크업으로 통일함.
+  2. 목록 페이지 스켈레톤(`TemplateCardSkeletonGrid`)의 썸네일 영역을 실제 카드(`ThumbnailCard`) 로딩 구조와 동일한 surface/layout으로 통일함.
+  3. 리믹스 상세 CTA는 하단 보조 액션(`밈플릿 목록으로`)을 제거해 핵심 행동만 남김.
+  4. 썸네일 카드(`ThumbnailCard`)와 목록 스켈레톤(`TemplateCardSkeletonGrid`)의 썸 영역 배경은 모두 제거함.
+  5. 리믹스 목록 썸네일의 간헐적 스켈레톤 고착을 줄이기 위해 `ThumbnailCard`에 `img.complete && naturalWidth` 기반 선확인 로직을 추가함.
+  6. 리믹스 상세 메인 이미지(`ImageShareDetailPage`)에도 템플릿 상세와 동일한 로드/에러 상태 동기화(`imageRef`, `imageKey`, `onError`)를 적용함.
+  7. 상세 화면 CTA 단순화를 위해 밈플릿 상세/리믹스 상세의 `밈플릿 목록으로` 버튼을 제거함.
+- **이유**:
+  1. 사용자 피드백대로 페이지 로딩 스켈레톤과 실이미지 로딩 스켈레톤이 다르게 보이면 전환 시 이질감이 발생함.
+  2. 동일한 역할(썸네일 로딩) UI는 화면/상태와 무관하게 동일 시각 언어를 유지해야 함.
+  3. 리믹스 상세의 주요 행동 흐름은 생성 진입보다 목록 복귀가 우선이라 CTA 단순화가 맞음.
+- **구현 요약**:
+  - `apps/web/src/components/PreviewFrame.tsx`
+    - `loadingPlaceholder` prop 추가
+    - 이미지 URL이 없는 초기 로딩에서도 실제 이미지 로딩과 동일한 스켈레톤 구조 렌더 지원
+  - `apps/web/src/pages/ImageShareDetailPage.tsx`
+    - 초기 로딩 이미지 스켈레톤을 `PreviewFrame` 기반으로 전환
+    - 하단 보조 CTA(`밈플릿 목록으로`) 제거
+  - `apps/web/src/pages/TemplateShareDetailPage.tsx`
+    - 초기 로딩 좌측 프리뷰 스켈레톤을 `PreviewFrame` 기반으로 전환
+  - `apps/web/src/components/TemplateCardSkeletonGrid.tsx`
+    - 썸네일 스켈레톤 마크업을 `ThumbnailCard` 실로딩 구조(`thumb-card-surface`, `thumb-card-media-surface`)와 동일하게 정렬
+    - 카드/썸 표면 배경 클래스(`bg-card`, `bg-muted`, `bg-muted/80`) 제거
+  - `apps/web/src/components/ThumbnailCard.tsx`
+    - 카드/썸 표면 배경 클래스(`bg-card`, `bg-muted`, `bg-muted/80`) 제거
+    - `onLoad` 이벤트 단일 의존을 보완하기 위해 `imageRef`와 `img.complete` 선확인 로직 추가
+    - URL 전환 시 상태 재평가를 위해 `<img key={imageUrl}>` 적용
+  - `apps/web/src/pages/ImageShareDetailPage.tsx`
+    - 메인 이미지 로딩 상태를 `isMainImageLoaded + isMainImageError`로 분리
+    - `mainImageRef` 기반 `img.complete` 동기화 및 `PreviewFrame`에 `imageRef/imageKey/onError` 전달
+    - 하단 `밈플릿 목록으로` 버튼 제거
+  - `apps/web/src/pages/TemplateShareDetailPage.tsx`
+    - 하단 `밈플릿 목록으로` 버튼 제거
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - 스크린샷
+    - `docs/ai-context/screenshots/2026-02-22_image_share_detail_loading_skeleton_v1.png`
+    - `docs/ai-context/screenshots/2026-02-22_template_detail_loading_skeleton_v2.png`
+    - `docs/ai-context/screenshots/2026-02-22_templates_loading_skeleton_v2.png`
+    - `docs/ai-context/screenshots/2026-02-22_thumbnail_card_no_background_templates_v1.png`
+    - `docs/ai-context/screenshots/2026-02-22_thumbnail_card_no_background_detail_remix_v1.png`
+    - `docs/ai-context/screenshots/2026-02-22_related_thumbnail_sticky_skeleton_check_loading_v1.png`
+    - `docs/ai-context/screenshots/2026-02-22_related_thumbnail_sticky_skeleton_check_loaded_v1.png`
+    - `docs/ai-context/screenshots/2026-02-22_remove_templates_list_button_template_detail_v1.png`
+    - `docs/ai-context/screenshots/2026-02-22_remove_templates_list_button_image_detail_v1.png`
+
 ## [2026-02-21] 인증 리다이렉트 `next` 플로우 통합 (로그인 유도/복귀)
 - **결정**:
   1. 비로그인 상태에서 리믹스/에디터 보호 진입/헤더 로그인 진입 시 모두 `/login?next=...` 규칙으로 통일함.
