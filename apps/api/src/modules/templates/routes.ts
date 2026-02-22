@@ -181,6 +181,21 @@ export const templateRoutes: FastifyPluginAsync = async (app) => {
       });
     }
 
+    const existing = await repository.getMineById(req.authUser!.id, paramsParsed.data.templateId);
+    if (!existing) {
+      return reply.code(404).send({ message: 'Template not found.' });
+    }
+
+    const isPublicToPrivate = parsed.data.visibility === 'private' && existing.visibility === 'public';
+    if (isPublicToPrivate) {
+      const remixCount = await repository.countRemixesByTemplateId(existing.id);
+      if (remixCount > 0) {
+        return reply.code(409).send({
+          message: '리믹스가 1개 이상 있는 밈플릿은 비공개로 전환할 수 없습니다.'
+        });
+      }
+    }
+
     const { backgroundDataUrl, ...input } = parsed.data;
     const backgroundUrl = backgroundDataUrl
       ? await uploadTemplateBackgroundDataUrl(req.authUser!.id, backgroundDataUrl)
@@ -207,6 +222,18 @@ export const templateRoutes: FastifyPluginAsync = async (app) => {
       return reply.code(400).send({
         message: 'Invalid template id',
         issues: paramsParsed.error.issues
+      });
+    }
+
+    const existing = await repository.getMineById(req.authUser!.id, paramsParsed.data.templateId);
+    if (!existing) {
+      return reply.code(404).send({ message: 'Template not found.' });
+    }
+
+    const remixCount = await repository.countRemixesByTemplateId(existing.id);
+    if (remixCount > 0) {
+      return reply.code(409).send({
+        message: '리믹스가 1개 이상 있는 밈플릿은 삭제할 수 없습니다.'
       });
     }
 

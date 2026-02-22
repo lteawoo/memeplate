@@ -19,6 +19,7 @@ export interface TemplateRecord {
 export interface TemplateRepository {
   listMine(userId: string): Promise<TemplateRecord[]>;
   getMineById(userId: string, templateId: string): Promise<TemplateRecord | null>;
+  countRemixesByTemplateId(templateId: string): Promise<number>;
   listPublic(limit: number): Promise<TemplateRecord[]>;
   getDetailByShareSlug(shareSlug: string, viewerUserId?: string | null): Promise<TemplateRecord | null>;
   getPublicDetailByShareSlug(shareSlug: string): Promise<TemplateRecord | null>;

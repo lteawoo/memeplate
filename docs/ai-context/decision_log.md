@@ -1,5 +1,115 @@
 # 결정 로그 (Decision Log)
 
+## [2026-02-22] 리믹스 존재 시 밈플릿 비공개 전환/삭제 차단 + 리믹스 상세 메타 수정 (#126)
+- **결정**:
+  1. 밈플릿에 리믹스가 1개 이상 있으면 `공개 -> 비공개` 전환을 차단함.
+  2. 밈플릿에 리믹스가 1개 이상 있으면 삭제를 차단함.
+  3. 위 두 제약은 클라이언트 UX 가드뿐 아니라 서버 API에서 `409 Conflict`로 강제함.
+  4. 리믹스 상세(`/images/s/:shareSlug`)의 owner 관리는 공개설정/삭제 없이 `제목/설명 수정`만 제공함.
+- **이유**:
+  1. 이미 파생 리믹스가 생긴 밈플릿을 비공개 또는 삭제하면 공유 링크/연관 데이터 일관성이 깨질 수 있음.
+  2. 권한/제약은 프론트 단독 처리 시 우회 가능하므로 API 단에서 동일 규칙을 강제해야 함.
+  3. 리믹스 상세 관리는 최소 기능(메타 수정)에 집중해 UX 복잡도를 낮추는 것이 현재 요구사항에 부합함.
+- **구현 요약**:
+  - `apps/api/src/modules/templates/repository.ts`
+    - `countRemixesByTemplateId(templateId)` 계약 추가
+  - `apps/api/src/modules/templates/supabaseRepository.ts`
+    - `meme_images` 기준 리믹스 개수 조회 구현(`deleted_at is null`)
+  - `apps/api/src/modules/templates/routes.ts`
+    - 템플릿 PATCH: `public -> private` 전환 시 리믹스 존재하면 `409`
+    - 템플릿 DELETE: 리믹스 존재하면 `409`
+  - `apps/web/src/pages/TemplateShareDetailPage.tsx`
+    - 리믹스 존재 시 `비공개`/`삭제` 액션 미노출 + 안내 문구
+    - `비공개` 전환 시도 가드 및 토스트 메시지
+  - `apps/web/src/pages/ImageShareDetailPage.tsx`
+    - owner 전용 `내 리믹스 관리` 영역 추가
+    - 제목/설명 입력 + 저장(`PATCH /api/v1/images/:imageId`) 추가
+    - 공개/비공개/삭제 액션은 추가하지 않음
+  - `apps/web/src/pages/TemplateShareDetailPage.tsx`
+    - 리믹스 섹션 우측 컨테이너의 카드 배경(`bg-card`) 제거
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - `pnpm --filter memeplate-api build`
+  - API 응답 확인
+    - `PATCH /api/v1/templates/:templateId` -> `409 Conflict` (`비공개 전환 차단`)
+    - `DELETE /api/v1/templates/:templateId` -> `409 Conflict` (`삭제 차단`)
+  - 스크린샷
+    - `docs/ai-context/screenshots/2026-02-22_template_detail_guard_actions_hidden_with_remixes_v2.png`
+    - `docs/ai-context/screenshots/2026-02-22_image_detail_owner_meta_edit_v1.png`
+    - `docs/ai-context/screenshots/2026-02-22_template_detail_remix_section_no_card_bg_v2.png`
+
+## [2026-02-22] 리믹스 상세 정보 좌측 단일 컬럼 정렬 (#126 추가)
+- **결정**:
+  1. 리믹스 상세(`/images/s/:shareSlug`)의 상세 정보 영역을 우측 분리 패널 대신 본문 좌측 단일 컬럼 흐름으로 배치함.
+  2. 배치 순서는 `제목/설명 -> 이미지 프리뷰 -> 상세 정보 -> 내 리믹스 관리(소유자)`로 고정함.
+- **이유**:
+  1. 템플릿 상세와 정보 읽기 흐름을 맞춰 시선 이동을 줄이고, 작은 화면에서도 정보 단절 없이 확인 가능하도록 하기 위함.
+  2. 동일 카드 내부에서 정보를 순차 배치하면 화면 밀도가 낮아지고 상세 컨텍스트 파악이 더 빠름.
+- **구현 요약**:
+  - `apps/web/src/pages/ImageShareDetailPage.tsx`
+    - 2열 레이아웃(`main + aside`)을 단일 카드/단일 컬럼으로 전환
+    - 로딩 스켈레톤도 단일 컬럼 구조로 정렬
+    - `상세 정보`와 owner 관리 블록을 이미지 하단으로 이동
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 스크린샷
+    - `docs/ai-context/screenshots/2026-02-22_image_detail_info_left_layout_v1.png`
+
+## [2026-02-22] 리믹스 상세 정보 우측 패널 복귀 (#126 추가 조정)
+- **결정**:
+  1. 리믹스 상세(`/images/s/:shareSlug`)의 상세 정보는 데스크톱 기준 우측 패널에 배치함.
+  2. 본문은 `좌측(제목/설명 + 이미지)`, 보조 정보/관리는 `우측(상세 정보 + 내 리믹스 관리)`로 분리함.
+- **이유**:
+  1. 사용자 피드백 기준으로 좌측 단일 컬럼보다 우측 분리 패널이 정보 탐색/편집 동선에 더 적합했음.
+  2. 이미지 시야를 유지하면서 메타 정보와 관리 액션을 동시에 확인하기 쉬움.
+- **구현 요약**:
+  - `apps/web/src/pages/ImageShareDetailPage.tsx`
+    - 로딩/완료 상태 레이아웃을 `grid-cols-1 + lg:grid-cols-[minmax(0,1fr)_300px]`로 구성
+    - `상세 정보`, `내 리믹스 관리` 블록을 우측 카드로 이동
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 스크린샷
+    - `docs/ai-context/screenshots/2026-02-22_image_detail_info_right_panel_desktop_v1.png`
+
+## [2026-02-22] 리믹스 상세 정보 좌측 패널 재조정 (#126 추가 조정)
+- **결정**:
+  1. 리믹스 상세(`/images/s/:shareSlug`)의 상세 정보/관리 카드를 데스크톱 기준 좌측 패널로 배치함.
+  2. 본문 레이아웃을 `좌측(상세 정보 + 내 리믹스 관리)`, `우측(제목/설명 + 이미지)`로 정렬함.
+- **이유**:
+  1. 사용자 피드백 기준으로 정보 패널의 우선 확인 위치를 좌측으로 두는 흐름이 더 적합했음.
+  2. 메타 확인/수정 작업을 먼저 한 뒤 이미지를 확인하는 순차 동선이 명확해짐.
+- **구현 요약**:
+  - `apps/web/src/pages/ImageShareDetailPage.tsx`
+    - 로딩/완료 상태 그리드 순서를 좌측 정보 패널 우선으로 재배치
+    - `lg:grid-cols-[300px_minmax(0,1fr)]` 구조에서 정보 카드 DOM 순서를 앞에 배치
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - 스크린샷
+    - `docs/ai-context/screenshots/2026-02-22_image_detail_info_left_panel_desktop_v1.png`
+
+## [2026-02-22] 밈플릿 상세 리믹스 목록 썸네일 스타일 일원화 (#126 추가 조정)
+- **결정**:
+  1. 밈플릿 상세의 리믹스 카드 UI를 `/templates` 목록 카드 규격과 동일하게 맞춤.
+  2. 리믹스 카드에 `hoverSurfaceOnly`를 적용하고, 카드 최소 폭/스켈레톤 폭을 `240px`로 통일함.
+  3. 카드 메타를 `작성자 + 조회수 + 좋아요`(아이콘 포함) 구조로 통일함.
+- **이유**:
+  1. 사용자 피드백대로 밈플릿/리믹스 목록 간 시각 규칙 차이를 제거해 전역 UI 일관성을 높이기 위함.
+  2. 동일 역할(썸네일 목록)의 정보 구조가 다르면 화면 전환 시 인지 비용이 증가함.
+- **구현 요약**:
+  - `apps/web/src/pages/TemplateShareDetailPage.tsx`
+    - 리믹스 목록 그리드 폭: `minmax(220px, 1fr) -> minmax(240px, 1fr)`
+    - 리믹스 스켈레톤 폭: `minItemWidth={220} -> 240`
+    - 리믹스 카드에 `hoverSurfaceOnly` 추가
+    - 메타 영역을 템플릿 목록과 동일한 `조회/좋아요 아이콘` 레이아웃으로 변경
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 스크린샷
+    - `docs/ai-context/screenshots/2026-02-22_template_detail_remix_list_unify_with_templates_v1.png`
+
 ## [2026-02-22] 내 밈플릿 관리 동선 링크 복사 액션 제거 (#124)
 - **결정**:
   1. `TemplateShareDetailPage`의 owner 관리 액션에서 `링크 복사` 버튼을 제거함.

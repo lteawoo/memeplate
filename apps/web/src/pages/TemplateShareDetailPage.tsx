@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Icon from '@mdi/react';
-import { mdiImageOffOutline } from '@mdi/js';
+import { mdiEyeOutline, mdiHeartOutline, mdiImageOffOutline } from '@mdi/js';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -112,6 +112,9 @@ const TemplateShareDetailPage: React.FC = () => {
   const [isDeletingTemplate, setIsDeletingTemplate] = React.useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
   const isOwner = Boolean(authUser?.id && template?.ownerId && authUser.id === template.ownerId);
+  const hasRelatedRemixes = relatedImages.length > 0;
+  const isPrivateSwitchHidden = hasRelatedRemixes && template?.visibility === 'public';
+  const isDeleteHidden = hasRelatedRemixes;
 
   const sortedRelatedImages = React.useMemo(() => {
     const next = [...relatedImages];
@@ -280,6 +283,10 @@ const TemplateShareDetailPage: React.FC = () => {
 
   const handleChangeVisibility = React.useCallback(async (nextVisibility: TemplateVisibility) => {
     if (!template || !isOwner || template.visibility === nextVisibility) return;
+    if (template.visibility === 'public' && nextVisibility === 'private' && hasRelatedRemixes) {
+      toast.error('리믹스가 1개 이상 있는 밈플릿은 비공개로 전환할 수 없습니다.');
+      return;
+    }
 
     setIsUpdatingVisibility(true);
     try {
@@ -301,10 +308,14 @@ const TemplateShareDetailPage: React.FC = () => {
     } finally {
       setIsUpdatingVisibility(false);
     }
-  }, [isOwner, template]);
+  }, [hasRelatedRemixes, isOwner, template]);
 
   const handleDeleteTemplate = React.useCallback(async () => {
     if (!template || !isOwner) return;
+    if (hasRelatedRemixes) {
+      toast.error('리믹스가 1개 이상 있는 밈플릿은 삭제할 수 없습니다.');
+      return;
+    }
 
     setIsDeletingTemplate(true);
     try {
@@ -322,7 +333,7 @@ const TemplateShareDetailPage: React.FC = () => {
     } finally {
       setIsDeletingTemplate(false);
     }
-  }, [isOwner, navigate, template]);
+  }, [hasRelatedRemixes, isOwner, navigate, template]);
 
   return (
     <div className="min-h-screen bg-app-surface">
@@ -345,7 +356,7 @@ const TemplateShareDetailPage: React.FC = () => {
                 ))}
               </div>
             </div>
-            <div className="rounded-2xl bg-card p-6">
+            <div className="rounded-2xl p-6">
               <div className="mb-4 flex items-end justify-between gap-3">
                 <div className="space-y-2">
                   <Skeleton className="h-5 w-44 rounded bg-border/80" />
@@ -354,7 +365,7 @@ const TemplateShareDetailPage: React.FC = () => {
                 <Skeleton className="h-8 w-28 rounded bg-border/70" />
               </div>
               <div className="min-h-[280px]">
-                <TemplateCardSkeletonGrid count={DETAIL_RELATED_SKELETON_COUNT} minItemWidth={220} />
+                <TemplateCardSkeletonGrid count={DETAIL_RELATED_SKELETON_COUNT} minItemWidth={240} />
               </div>
             </div>
           </div>
@@ -423,28 +434,37 @@ const TemplateShareDetailPage: React.FC = () => {
                 {isOwner ? (
                   <div className="mt-5 space-y-3 rounded-xl bg-muted p-4">
                     <div className="text-xs font-semibold text-muted-foreground">내 템플릿 관리</div>
-                    <SegmentedButtons
-                      value={template.visibility}
-                      options={[
-                        { label: '비공개', value: 'private' },
-                        { label: '공개', value: 'public' },
-                      ]}
-                      disabled={isUpdatingVisibility}
-                      onChange={(value) => { void handleChangeVisibility(value); }}
-                    />
+                    {!isPrivateSwitchHidden ? (
+                      <SegmentedButtons
+                        value={template.visibility}
+                        options={[
+                          { label: '비공개', value: 'private' },
+                          { label: '공개', value: 'public' },
+                        ]}
+                        disabled={isUpdatingVisibility}
+                        onChange={(value) => { void handleChangeVisibility(value); }}
+                      />
+                    ) : null}
                     <div className="flex flex-wrap gap-2">
                       <Button type="button" variant="outline" onClick={() => navigate(`/create?templateId=${template.id}`)}>
                         편집
                       </Button>
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        disabled={isDeletingTemplate}
-                        onClick={() => setIsDeleteDialogOpen(true)}
-                      >
-                        삭제
-                      </Button>
+                      {!isDeleteHidden ? (
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          disabled={isDeletingTemplate}
+                          onClick={() => setIsDeleteDialogOpen(true)}
+                        >
+                          삭제
+                        </Button>
+                      ) : null}
                     </div>
+                    {hasRelatedRemixes ? (
+                      <div className="text-xs text-muted-foreground">
+                        리믹스가 존재해 비공개 전환/삭제 액션은 표시하지 않습니다.
+                      </div>
+                    ) : null}
                   </div>
                 ) : null}
                 <div className="mt-5 flex flex-col gap-2">
@@ -453,7 +473,7 @@ const TemplateShareDetailPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="rounded-2xl bg-card p-6">
+            <div className="rounded-2xl p-6">
               <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
                 <div>
                   <h4 className="mb-1 text-xl font-bold text-foreground">리믹스</h4>
@@ -479,7 +499,7 @@ const TemplateShareDetailPage: React.FC = () => {
 
               {isRelatedLoading ? (
                 <div className="min-h-[280px]">
-                  <TemplateCardSkeletonGrid count={DETAIL_RELATED_SKELETON_COUNT} minItemWidth={220} />
+                  <TemplateCardSkeletonGrid count={DETAIL_RELATED_SKELETON_COUNT} minItemWidth={240} />
                 </div>
               ) : relatedError ? (
                 <Alert variant="destructive">
@@ -493,20 +513,30 @@ const TemplateShareDetailPage: React.FC = () => {
                   <div className="text-xs text-muted-foreground">첫 리믹스를 만들어보세요.</div>
                 </div>
               ) : (
-                <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' }}>
+                <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))' }}>
                   {sortedRelatedImages.map((image) => (
                     <ThumbnailCard
                       key={image.id}
                       imageUrl={image.imageUrl}
                       title={image.title}
                       hoverable
+                      hoverSurfaceOnly
                       onClick={() => navigate(`/images/s/${image.shareSlug}`)}
                     >
                       <div className="space-y-1">
                         <div className="line-clamp-1 text-sm font-semibold text-foreground">{image.title}</div>
                         <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
                           <span className="truncate">{image.ownerDisplayName || '-'}</span>
-                          <span className="shrink-0">조회 {(image.viewCount ?? 0).toLocaleString()}</span>
+                          <span className="inline-flex shrink-0 items-center gap-2">
+                            <span className="inline-flex items-center gap-1">
+                              <Icon path={mdiEyeOutline} size={0.55} />
+                              {(image.viewCount ?? 0).toLocaleString()}
+                            </span>
+                            <span className="inline-flex items-center gap-1">
+                              <Icon path={mdiHeartOutline} size={0.55} />
+                              {(image.likeCount ?? 0).toLocaleString()}
+                            </span>
+                          </span>
                         </div>
                       </div>
                     </ThumbnailCard>

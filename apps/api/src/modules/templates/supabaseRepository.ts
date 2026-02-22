@@ -101,6 +101,17 @@ export const createSupabaseTemplateRepository = (): TemplateRepository => {
       return toRecord(row, extractDisplayName(row.users));
     },
 
+    async countRemixesByTemplateId(templateId) {
+      const { count, error } = await supabase
+        .from('meme_images')
+        .select('id', { count: 'exact', head: true })
+        .eq('template_id', templateId)
+        .is('deleted_at', null);
+
+      if (error) throw error;
+      return count ?? 0;
+    },
+
     async listPublic(limit) {
       const { data, error } = await supabase
         .from('templates')

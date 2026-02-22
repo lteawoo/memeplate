@@ -1,6 +1,26 @@
 # 프로젝트 상태 (Status)
 
 ## 현재 진행 상황
+- [x] **리믹스 존재 시 밈플릿 비공개 전환/삭제 차단 + 리믹스 상세 제목/설명 수정 (#126, 완료 - 2026-02-22)**
+  - [x] 템플릿 API에서 리믹스 존재 시 `public -> private` 전환을 `409`으로 차단
+  - [x] 템플릿 API에서 리믹스 존재 시 삭제를 `409`으로 차단
+  - [x] 템플릿 상세 owner 관리 UI에서 리믹스 존재 시 `비공개`/`삭제` 액션 미노출 + 안내 문구 노출
+  - [x] 템플릿 상세 owner 관리 UI에서 `비공개` 전환 시도 서버 `409` 메시지 안내(우회 호출 방어)
+  - [x] 리믹스 상세 owner 관리 영역에 `제목/설명 수정` 기능 추가(`PATCH /api/v1/images/:imageId`)
+  - [x] 리믹스 상세에는 공개/비공개 토글/삭제 액션 미노출 유지
+  - [x] 밈플릿 상세의 리믹스 섹션 컨테이너 `bg-card` 제거(카드 배경 미노출)
+  - [x] 밈플릿 상세 리믹스 목록 썸네일 스타일을 `/templates` 목록과 동일 규격으로 정렬(hoverSurfaceOnly, 240px 카드폭, 조회/좋아요 메타)
+  - [x] 리믹스 상세 레이아웃을 데스크톱 기준 `좌측 상세정보/관리 패널 + 우측 이미지` 구조로 정렬
+  - [x] `pnpm --filter memeplate-web lint`, `pnpm --filter memeplate-web build`, `pnpm --filter memeplate-api build` 통과
+  - [x] 수동 API 검증(`409` 응답)
+    - [x] `PATCH /api/v1/templates/:templateId { visibility: \"private\" }`
+    - [x] `DELETE /api/v1/templates/:templateId`
+  - [x] 스크린샷 검증
+    - [x] `docs/ai-context/screenshots/2026-02-22_template_detail_guard_actions_hidden_with_remixes_v2.png`
+    - [x] `docs/ai-context/screenshots/2026-02-22_image_detail_owner_meta_edit_v1.png`
+    - [x] `docs/ai-context/screenshots/2026-02-22_template_detail_remix_section_no_card_bg_v2.png`
+    - [x] `docs/ai-context/screenshots/2026-02-22_template_detail_remix_list_unify_with_templates_v1.png`
+    - [x] `docs/ai-context/screenshots/2026-02-22_image_detail_info_left_panel_desktop_v1.png`
 - [x] **내 밈플릿 관리 동선 링크 복사 액션 제거 (#124, 완료 - 2026-02-22)**
   - [x] `TemplateShareDetailPage` owner 관리 영역에서 `링크 복사` 버튼 제거
   - [x] `편집/삭제/공개전환` 액션은 기존 동작 유지
