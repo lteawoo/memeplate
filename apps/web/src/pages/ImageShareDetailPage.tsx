@@ -50,7 +50,7 @@ const ImageShareDetailPage: React.FC = () => {
   const [editDescription, setEditDescription] = React.useState('');
   const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
   const [isSavingMeta, setIsSavingMeta] = React.useState(false);
-  const isOwner = Boolean(authUser?.id && image?.ownerId && authUser.id === image.ownerId);
+  const isOwner = Boolean(authInitialized && authUser?.id && image?.ownerId && authUser.id === image.ownerId);
 
   React.useEffect(() => {
     if (!authInitialized) {
@@ -242,8 +242,7 @@ const ImageShareDetailPage: React.FC = () => {
               </div>
               {isOwner ? (
                 <>
-                  <div className="mt-5 space-y-3 rounded-xl bg-muted p-4">
-                    <div className="text-xs font-semibold text-muted-foreground">내 리믹스 관리</div>
+                  <div className="mt-5">
                     <Button type="button" variant="outline" onClick={handleOpenEditDialog}>수정</Button>
                   </div>
                   <Dialog open={isEditDialogOpen} onOpenChange={handleEditDialogOpenChange}>

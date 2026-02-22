@@ -1,6 +1,23 @@
 # 프로젝트 상태 (Status)
 
 ## 현재 진행 상황
+- [x] **템플릿 상세 owner 버튼 지연 개선 (완료 - 2026-02-22)**
+  - [x] `/api/v1/templates/s/:shareSlug` 응답에 `isOwner` 포함
+  - [x] `TemplateShareDetailPage`에서 `isOwner`를 상세 응답 기반으로 즉시 판별(인증 동기화 완료 대기 완화)
+  - [x] owner 계산을 `isOwnerByDetail || isOwnerByAuth`로 보정해 상세 응답 `false`가 세션 복구 후 owner UI를 고정 차단하지 않도록 수정
+  - [x] `pnpm --filter memeplate-api build`, `pnpm --filter memeplate-web lint`, `pnpm --filter memeplate-web build` 통과
+- [x] **템플릿 메타 저장 시 비공개 전환 오인 차단 + 관리 모달 메타 편집 보강 (완료 - 2026-02-22)**
+  - [x] `UpdateTemplateSchema`에서 `visibility` 기본값 주입 제거(제목/설명 PATCH 시 `visibility=private` 오인 차단)
+  - [x] `TemplateShareDetailPage` 관리 모달에 제목/설명 입력 및 저장 액션 추가(소유자는 항상 메타 수정 가능)
+  - [x] `pnpm --filter memeplate-api build`, `pnpm --filter memeplate-web lint`, `pnpm --filter memeplate-web build` 통과
+- [x] **템플릿 상세 owner 액션 UI 단순화 + 권한 버튼 플래시 방지 (#138, 완료 - 2026-02-22)**
+  - [x] `TemplateShareDetailPage`에서 `내 템플릿 관리` 카드/제목 제거 후 owner 액션만 간결하게 노출
+  - [x] owner 판별식에 `authInitialized`를 포함해 인증 초기화 전 owner 액션 일시 노출(플래시) 차단
+  - [x] `pnpm --filter memeplate-web lint` 통과
+- [x] **리믹스 상세 owner 액션 UI 단순화 + 권한 버튼 플래시 방지 (#137, 완료 - 2026-02-22)**
+  - [x] `ImageShareDetailPage`에서 `내 리믹스 관리` 카드형 섹션 제거, owner 액션을 `수정` 버튼 단일 노출로 단순화
+  - [x] owner 판별식에 `authInitialized`를 포함해 인증 초기화 전 `수정` 버튼 일시 노출(플래시) 차단
+  - [x] `pnpm --filter memeplate-web lint` 통과
 - [x] **리믹스 상세 수정 모달 저장 중 닫힘 방지 (#135, 완료 - 2026-02-22)**
   - [x] `ImageShareDetailPage` 수정 모달 `Dialog onOpenChange`를 저장 상태 가드로 전환
   - [x] 저장 중에는 오버레이 클릭/ESC/닫기(X) 경로의 닫힘 요청을 무시하도록 처리

@@ -18,6 +18,7 @@ export type TemplateRecord = {
 
 export type TemplateResponse = {
   template: TemplateRecord;
+  isOwner?: boolean;
 };
 
 export type TemplatesResponse = {
