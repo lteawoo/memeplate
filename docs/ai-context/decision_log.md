@@ -57,6 +57,59 @@
   - 스크린샷
     - `docs/ai-context/screenshots/2026-02-22_image_detail_info_left_layout_v1.png`
 
+## [2026-02-22] 리믹스 상세 정보 우측 패널 복귀 (#126 추가 조정)
+- **결정**:
+  1. 리믹스 상세(`/images/s/:shareSlug`)의 상세 정보는 데스크톱 기준 우측 패널에 배치함.
+  2. 본문은 `좌측(제목/설명 + 이미지)`, 보조 정보/관리는 `우측(상세 정보 + 내 리믹스 관리)`로 분리함.
+- **이유**:
+  1. 사용자 피드백 기준으로 좌측 단일 컬럼보다 우측 분리 패널이 정보 탐색/편집 동선에 더 적합했음.
+  2. 이미지 시야를 유지하면서 메타 정보와 관리 액션을 동시에 확인하기 쉬움.
+- **구현 요약**:
+  - `apps/web/src/pages/ImageShareDetailPage.tsx`
+    - 로딩/완료 상태 레이아웃을 `grid-cols-1 + lg:grid-cols-[minmax(0,1fr)_300px]`로 구성
+    - `상세 정보`, `내 리믹스 관리` 블록을 우측 카드로 이동
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 스크린샷
+    - `docs/ai-context/screenshots/2026-02-22_image_detail_info_right_panel_desktop_v1.png`
+
+## [2026-02-22] 리믹스 상세 정보 좌측 패널 재조정 (#126 추가 조정)
+- **결정**:
+  1. 리믹스 상세(`/images/s/:shareSlug`)의 상세 정보/관리 카드를 데스크톱 기준 좌측 패널로 배치함.
+  2. 본문 레이아웃을 `좌측(상세 정보 + 내 리믹스 관리)`, `우측(제목/설명 + 이미지)`로 정렬함.
+- **이유**:
+  1. 사용자 피드백 기준으로 정보 패널의 우선 확인 위치를 좌측으로 두는 흐름이 더 적합했음.
+  2. 메타 확인/수정 작업을 먼저 한 뒤 이미지를 확인하는 순차 동선이 명확해짐.
+- **구현 요약**:
+  - `apps/web/src/pages/ImageShareDetailPage.tsx`
+    - 로딩/완료 상태 그리드 순서를 좌측 정보 패널 우선으로 재배치
+    - `lg:grid-cols-[300px_minmax(0,1fr)]` 구조에서 정보 카드 DOM 순서를 앞에 배치
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - 스크린샷
+    - `docs/ai-context/screenshots/2026-02-22_image_detail_info_left_panel_desktop_v1.png`
+
+## [2026-02-22] 밈플릿 상세 리믹스 목록 썸네일 스타일 일원화 (#126 추가 조정)
+- **결정**:
+  1. 밈플릿 상세의 리믹스 카드 UI를 `/templates` 목록 카드 규격과 동일하게 맞춤.
+  2. 리믹스 카드에 `hoverSurfaceOnly`를 적용하고, 카드 최소 폭/스켈레톤 폭을 `240px`로 통일함.
+  3. 카드 메타를 `작성자 + 조회수 + 좋아요`(아이콘 포함) 구조로 통일함.
+- **이유**:
+  1. 사용자 피드백대로 밈플릿/리믹스 목록 간 시각 규칙 차이를 제거해 전역 UI 일관성을 높이기 위함.
+  2. 동일 역할(썸네일 목록)의 정보 구조가 다르면 화면 전환 시 인지 비용이 증가함.
+- **구현 요약**:
+  - `apps/web/src/pages/TemplateShareDetailPage.tsx`
+    - 리믹스 목록 그리드 폭: `minmax(220px, 1fr) -> minmax(240px, 1fr)`
+    - 리믹스 스켈레톤 폭: `minItemWidth={220} -> 240`
+    - 리믹스 카드에 `hoverSurfaceOnly` 추가
+    - 메타 영역을 템플릿 목록과 동일한 `조회/좋아요 아이콘` 레이아웃으로 변경
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 스크린샷
+    - `docs/ai-context/screenshots/2026-02-22_template_detail_remix_list_unify_with_templates_v1.png`
+
 ## [2026-02-22] 내 밈플릿 관리 동선 링크 복사 액션 제거 (#124)
 - **결정**:
   1. `TemplateShareDetailPage`의 owner 관리 액션에서 `링크 복사` 버튼을 제거함.

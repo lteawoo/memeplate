@@ -193,7 +193,7 @@
   - [x] 상세/마이 페이지(`TemplateShareDetailPage`, `ImageShareDetailPage`, `MyTemplatesPage`, `MyPage`, `MySectionLayout`) `slate/blue` 직접 클래스 semantic alias 2차 치환
   - [x] 마이 섹션 UI/UX 일원화 1차(#121): `MySectionLayout` 컨테이너/모바일 탭 정렬, `MyPage`/`MyTemplatesPage` 상태뷰·액션·삭제확인 플로우 공통화, 썸네일 카드 패딩 8-grid 정렬, 내 밈플릿 목록 카드 UI를 `/templates`와 동일 구조로 정렬 + 관리 액션 상세보기/소유자 노출 제한
   - [x] 내 밈플릿 관리 동선 액션 단순화(#124): 템플릿 상세 owner 관리 영역의 `링크 복사` 제거(편집/삭제/공개전환 유지)
-  - [x] 밈플릿-리믹스 관리 규칙 강화(#126): 리믹스 존재 시 템플릿 `비공개 전환/삭제` 차단(`409`), 리믹스 상세 owner 메타(제목/설명) 수정 기능 추가, 밈플릿 상세 리믹스 섹션 카드 배경 제거, 리믹스 상세를 좌측 단일 컬럼(상세정보/관리 하단 배치)으로 정렬
+  - [x] 밈플릿-리믹스 관리 규칙 강화(#126): 리믹스 존재 시 템플릿 `비공개 전환/삭제` 차단(`409`), 리믹스 상세 owner 메타(제목/설명) 수정 기능 추가, 밈플릿 상세 리믹스 섹션 카드 배경 제거, 리믹스 상세 데스크톱 레이아웃을 `좌측 상세정보/관리 + 우측 이미지`로 정렬, 리믹스 목록 썸네일 스타일을 `/templates` 목록 규격(hover/폭/메타)으로 통일
   - [x] `apps/web/src`(단, `index.css` 변수명 제외) 클래스 스캔 기준 `slate/blue/on-accent` 직접 클래스 0건 확인
   - [ ] shadcn primitive variant 규칙 재점검(`button/input/card/dropdown/sheet`)
   - [ ] 웹 워커(Web Worker) 기반 내보내기 처리
