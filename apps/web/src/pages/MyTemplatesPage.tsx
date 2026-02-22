@@ -1,80 +1,16 @@
 import React from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
+import { useQuery } from '@tanstack/react-query';
+import { useLocation, useNavigate } from 'react-router-dom';
+import Icon from '@mdi/react';
+import { mdiEyeOutline, mdiHeartOutline } from '@mdi/js';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet';
+import { buildLoginPath, getPathWithSearchAndHash } from '@/lib/loginNavigation';
 import MySectionLayout from '../components/layout/MySectionLayout';
+import TemplateCardSkeletonGrid from '../components/TemplateCardSkeletonGrid';
 import TemplateThumbnailCard from '../components/TemplateThumbnailCard';
-import PreviewFrame from '../components/PreviewFrame';
-import type { TemplateRecord, TemplatesResponse, TemplateVisibility } from '../types/template';
+import type { TemplateRecord, TemplatesResponse } from '../types/template';
 import { apiFetch } from '../lib/apiFetch';
-
-type ImageMeta = {
-  format: string;
-  resolution: string;
-  fileSize: string;
-};
-
-type SegmentedOption = {
-  label: React.ReactNode;
-  value: string;
-};
-
-interface SegmentedButtonsProps {
-  value: string;
-  options: SegmentedOption[];
-  onChange: (value: string) => void;
-  disabled?: boolean;
-}
-
-const SegmentedButtons: React.FC<SegmentedButtonsProps> = ({ value, options, onChange, disabled }) => (
-  <div className="grid w-full grid-cols-2 gap-1 rounded-xl border border-border bg-muted p-1">
-    {options.map((option) => {
-      const active = option.value === value;
-      return (
-        <button
-          key={option.value}
-          type="button"
-          disabled={disabled}
-          onClick={() => onChange(option.value)}
-          className={`h-9 rounded-lg px-3 text-xs font-bold transition-colors ${
-            active ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent hover:text-foreground'
-          } disabled:cursor-not-allowed disabled:opacity-60`}
-        >
-          {option.label}
-        </button>
-      );
-    })}
-  </div>
-);
-
-const formatBytes = (bytes: number) => {
-  if (!Number.isFinite(bytes) || bytes <= 0) return '-';
-  const units = ['B', 'KB', 'MB', 'GB'];
-  let value = bytes;
-  let unitIndex = 0;
-  while (value >= 1024 && unitIndex < units.length - 1) {
-    value /= 1024;
-    unitIndex += 1;
-  }
-  return `${value.toFixed(unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`;
-};
-
-const formatMimeToLabel = (contentType: string | null, fallbackUrl?: string) => {
-  if (contentType?.includes('/')) {
-    return contentType.split('/')[1].toUpperCase();
-  }
-  if (!fallbackUrl) return '-';
-  const ext = fallbackUrl.split('?')[0].split('.').pop();
-  return ext ? ext.toUpperCase() : '-';
-};
 
 class AuthRequiredError extends Error {}
 
@@ -92,241 +28,85 @@ const fetchMyTemplates = async (): Promise<TemplateRecord[]> => {
 
 const MyTemplatesPage: React.FC = () => {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const [detailTarget, setDetailTarget] = React.useState<TemplateRecord | null>(null);
-  const [detailMetaLoading, setDetailMetaLoading] = React.useState(false);
-  const [detailMeta, setDetailMeta] = React.useState<ImageMeta>({
-    format: '-',
-    resolution: '-',
-    fileSize: '-',
-  });
-
+  const location = useLocation();
   const {
     data: templates = [],
     isLoading,
     error,
+    refetch,
   } = useQuery({
     queryKey: ['templates', 'mine'],
     queryFn: fetchMyTemplates,
   });
+  const loginPath = React.useMemo(
+    () => buildLoginPath(getPathWithSearchAndHash(location)),
+    [location]
+  );
 
   React.useEffect(() => {
     if (error instanceof AuthRequiredError) {
-      navigate('/');
+      navigate(loginPath, { replace: true });
     }
-  }, [error, navigate]);
-
-  const updateVisibilityMutation = useMutation({
-    mutationFn: async ({ templateId, visibility }: { templateId: string; visibility: TemplateVisibility }) => {
-      const res = await apiFetch(`/api/v1/templates/${templateId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ visibility }),
-      });
-      if (!res.ok) {
-        const payload = (await res.json().catch(() => ({}))) as { message?: string };
-        throw new Error(payload.message || '공개 상태 변경에 실패했습니다.');
-      }
-    },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['templates', 'mine'] });
-    },
-  });
-
-  const deleteTemplateMutation = useMutation({
-    mutationFn: async (templateId: string) => {
-      const res = await apiFetch(`/api/v1/templates/${templateId}`, { method: 'DELETE' });
-      if (!res.ok) {
-        const payload = (await res.json().catch(() => ({}))) as { message?: string };
-        throw new Error(payload.message || '밈플릿 삭제에 실패했습니다.');
-      }
-    },
-    onSuccess: async (_data, templateId) => {
-      if (detailTarget?.id === templateId) {
-        setDetailTarget(null);
-      }
-      await queryClient.invalidateQueries({ queryKey: ['templates', 'mine'] });
-    },
-  });
-
-  React.useEffect(() => {
-    const loadDetailMeta = async () => {
-      const thumbnailUrl = detailTarget?.thumbnailUrl;
-      if (!thumbnailUrl) {
-        setDetailMeta({ format: '-', resolution: '-', fileSize: '-' });
-        return;
-      }
-
-      setDetailMetaLoading(true);
-      try {
-        const [imageInfo, response] = await Promise.all([
-          new Promise<{ width: number; height: number }>((resolve, reject) => {
-            const image = new Image();
-            image.onload = () => resolve({ width: image.naturalWidth, height: image.naturalHeight });
-            image.onerror = reject;
-            image.src = thumbnailUrl;
-          }),
-          fetch(thumbnailUrl),
-        ]);
-
-        const blob = await response.blob();
-        setDetailMeta({
-          format: formatMimeToLabel(response.headers.get('content-type'), thumbnailUrl),
-          resolution: `${imageInfo.width} x ${imageInfo.height}`,
-          fileSize: formatBytes(blob.size),
-        });
-      } catch {
-        setDetailMeta({
-          format: formatMimeToLabel(null, thumbnailUrl),
-          resolution: '-',
-          fileSize: '-',
-        });
-      } finally {
-        setDetailMetaLoading(false);
-      }
-    };
-
-    void loadDetailMeta();
-  }, [detailTarget]);
+  }, [error, loginPath, navigate]);
 
   return (
     <MySectionLayout
       title="내 밈플릿 관리"
-      description="공개 여부를 변경하고, 공유 링크를 복사하거나 삭제할 수 있습니다."
+      description="내 밈플릿을 확인하고 상세에서 공개 상태/편집/삭제를 관리할 수 있습니다."
       action={<Button type="button" onClick={() => navigate('/create')}>새 밈플릿 만들기</Button>}
     >
       {isLoading ? (
-        <div className="py-20 text-center">
-          <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-border border-t-foreground/60" />
-        </div>
+        <TemplateCardSkeletonGrid count={6} minItemWidth={240} />
       ) : error ? (
         <Alert variant="destructive">
           <AlertTitle>목록 로딩 실패</AlertTitle>
-          <AlertDescription>{error instanceof Error ? error.message : '내 밈플릿 목록을 불러오지 못했습니다.'}</AlertDescription>
+          <AlertDescription className="flex flex-wrap items-center justify-between gap-3">
+            <span>{error instanceof Error ? error.message : '내 밈플릿 목록을 불러오지 못했습니다.'}</span>
+            <Button type="button" variant="outline" onClick={() => void refetch()}>
+              다시 시도
+            </Button>
+          </AlertDescription>
         </Alert>
       ) : templates.length === 0 ? (
-        <div className="rounded-2xl border border-border bg-card p-10 text-center text-sm text-muted-foreground">저장된 밈플릿이 없습니다.</div>
+        <div className="rounded-2xl border border-border bg-card p-10 text-center">
+          <p className="mb-3 text-sm text-muted-foreground">저장된 밈플릿이 없습니다.</p>
+          <Button type="button" variant="outline" onClick={() => navigate('/create')}>
+            첫 밈플릿 만들기
+          </Button>
+        </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div
+          className="grid gap-4"
+          style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))' }}
+        >
           {templates.map((template) => (
             <TemplateThumbnailCard
               key={template.id}
               template={template}
+              hoverable
+              hoverSurfaceOnly
+              onClick={() => navigate(`/templates/s/${template.shareSlug}`)}
             >
-              <div className="flex flex-col gap-3">
-                <div>
-                  <h4 className="mb-1 text-base font-bold text-foreground">{template.title}</h4>
-                  <p className="m-0 text-xs text-muted-foreground">{template.updatedAt ? `업데이트: ${new Date(template.updatedAt).toLocaleString()}` : ''}</p>
-                </div>
-
-                <SegmentedButtons
-                  value={template.visibility}
-                  options={[
-                    { label: '비공개', value: 'private' },
-                    { label: '공개', value: 'public' },
-                  ]}
-                  disabled={updateVisibilityMutation.isPending}
-                  onChange={(value) => {
-                    void updateVisibilityMutation.mutateAsync({
-                      templateId: template.id,
-                      visibility: value as TemplateVisibility,
-                    })
-                      .then(() => {
-                        toast.success('공개 상태를 변경했습니다.');
-                      })
-                      .catch((err: unknown) => {
-                        toast.error(err instanceof Error ? err.message : '공개 상태 변경에 실패했습니다.');
-                      });
-                  }}
-                />
-
-                <div className="flex flex-wrap gap-2">
-                  <Button type="button" variant="outline" onClick={() => setDetailTarget(template)}>상세정보</Button>
-                  <Button type="button" variant="outline" onClick={() => navigate(`/create?templateId=${template.id}`)}>편집</Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    disabled={template.visibility !== 'public'}
-                    onClick={() => {
-                      const url = `${window.location.origin}/templates/s/${template.shareSlug}`;
-                      void navigator.clipboard.writeText(url)
-                        .then(() => toast.success('공유 링크를 복사했습니다.'))
-                        .catch(() => toast.error('링크 복사에 실패했습니다.'));
-                    }}
-                  >
-                    링크 복사
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="border-destructive/25 text-destructive hover:border-destructive/45 hover:bg-destructive/10 hover:text-destructive"
-                    disabled={deleteTemplateMutation.isPending}
-                    onClick={() => {
-                      const confirmed = window.confirm('밈플릿을 삭제하시겠습니까? 삭제 후 복구할 수 없습니다.');
-                      if (!confirmed) return;
-                      void deleteTemplateMutation.mutateAsync(template.id)
-                        .then(() => {
-                          toast.success('밈플릿을 삭제했습니다.');
-                        })
-                        .catch((err: unknown) => {
-                          toast.error(err instanceof Error ? err.message : '밈플릿 삭제에 실패했습니다.');
-                        });
-                    }}
-                  >
-                    삭제
-                  </Button>
+              <div className="space-y-1">
+                <div className="line-clamp-1 text-sm font-semibold text-foreground">{template.title}</div>
+                <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                  <span className="truncate">{template.ownerDisplayName || '-'}</span>
+                  <span className="inline-flex shrink-0 items-center gap-2">
+                    <span className="inline-flex items-center gap-1">
+                      <Icon path={mdiEyeOutline} size={0.55} />
+                      {(template.viewCount ?? 0).toLocaleString()}
+                    </span>
+                    <span className="inline-flex items-center gap-1">
+                      <Icon path={mdiHeartOutline} size={0.55} />
+                      {(template.likeCount ?? 0).toLocaleString()}
+                    </span>
+                  </span>
                 </div>
               </div>
             </TemplateThumbnailCard>
           ))}
         </div>
       )}
-
-      <Sheet open={Boolean(detailTarget)} onOpenChange={(open) => { if (!open) setDetailTarget(null); }}>
-        <SheetContent side="right" className="w-full max-w-[420px] overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle>{detailTarget ? `${detailTarget.title} 상세정보` : '상세정보'}</SheetTitle>
-          </SheetHeader>
-          {detailTarget ? (
-            <div className="space-y-4 px-1 pb-6 pt-3">
-              <PreviewFrame
-                imageUrl={detailTarget.thumbnailUrl}
-                alt={detailTarget.title}
-                maxImageHeightClassName="max-h-[360px]"
-                contentClassName="p-3"
-              />
-              {detailMetaLoading ? (
-                <div className="py-6 text-center">
-                  <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-border border-t-foreground/60" />
-                </div>
-              ) : (
-                <div className="space-y-3 text-sm">
-                  <div className="flex items-start justify-between gap-3">
-                    <span className="text-muted-foreground">만든 사람</span>
-                    <span className="text-right font-medium text-foreground">{detailTarget.ownerDisplayName || detailTarget.ownerId || '-'}</span>
-                  </div>
-                  <div className="flex items-start justify-between gap-3">
-                    <span className="text-muted-foreground">생성일</span>
-                    <span className="text-right font-medium text-foreground">{detailTarget.createdAt ? new Date(detailTarget.createdAt).toLocaleString() : '-'}</span>
-                  </div>
-                  <div className="flex items-start justify-between gap-3">
-                    <span className="text-muted-foreground">이미지 포맷</span>
-                    <span className="text-right font-medium text-foreground">{detailMeta.format}</span>
-                  </div>
-                  <div className="flex items-start justify-between gap-3">
-                    <span className="text-muted-foreground">해상도</span>
-                    <span className="text-right font-medium text-foreground">{detailMeta.resolution}</span>
-                  </div>
-                  <div className="flex items-start justify-between gap-3">
-                    <span className="text-muted-foreground">파일 사이즈</span>
-                    <span className="text-right font-medium text-foreground">{detailMeta.fileSize}</span>
-                  </div>
-                </div>
-              )}
-            </div>
-          ) : null}
-        </SheetContent>
-      </Sheet>
     </MySectionLayout>
   );
 };

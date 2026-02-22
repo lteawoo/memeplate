@@ -2,6 +2,7 @@ import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import MainHeader from './MainHeader';
+import PageContainer from './PageContainer';
 
 interface MySectionLayoutProps {
   title: React.ReactNode;
@@ -30,40 +31,56 @@ const MySectionLayout: React.FC<MySectionLayoutProps> = ({
   return (
     <div className="min-h-screen bg-app-surface">
       <MainHeader />
-      <div className="flex w-full bg-app-surface-elevated">
-        <aside
-          className="hidden w-[220px] border-r border-border bg-app-surface-elevated md:block"
-        >
-          <div className="px-4 py-5 text-xs font-bold uppercase tracking-wider text-muted-foreground">My</div>
-          <nav className="flex flex-col gap-1 px-2 pb-4">
-            {menuItems.map((item) => (
-              <Button
-                key={item.key}
-                type="button"
-                variant={selectedKey === item.key ? 'secondary' : 'ghost'}
-                className="justify-start"
-                onClick={() => navigate(item.key)}
-              >
-                {item.label}
-              </Button>
-            ))}
-          </nav>
-        </aside>
-        <main className="w-full bg-app-surface-elevated">
-          <div className="py-8">
-            <div className="mb-6 flex items-end justify-between gap-3 px-6 md:px-8">
-              <div>
-                <h1 className="mb-1 text-3xl font-bold text-foreground">{title}</h1>
-                {description ? <p className="m-0 text-sm text-muted-foreground">{description}</p> : null}
-              </div>
-              {action}
+      <PageContainer className="py-8">
+        <div className="grid gap-6 md:grid-cols-[224px_minmax(0,1fr)] md:gap-8">
+          <aside className="hidden md:block">
+            <div className="rounded-2xl bg-card p-3">
+              <div className="px-2 py-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">My</div>
+              <nav className="flex flex-col gap-1">
+                {menuItems.map((item) => (
+                  <Button
+                    key={item.key}
+                    type="button"
+                    variant={selectedKey === item.key ? 'secondary' : 'ghost'}
+                    className="h-10 justify-start px-3"
+                    onClick={() => navigate(item.key)}
+                  >
+                    {item.label}
+                  </Button>
+                ))}
+              </nav>
             </div>
-            <div className="px-6 md:px-8">
+          </aside>
+
+          <main className="min-w-0 space-y-6">
+            <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+              <div className="space-y-1">
+                <h1 className="text-2xl font-bold text-foreground md:text-3xl">{title}</h1>
+                {description ? <p className="text-sm text-muted-foreground">{description}</p> : null}
+              </div>
+              {action ? <div className="shrink-0">{action}</div> : null}
+            </div>
+
+            <nav className="grid grid-cols-2 gap-2 rounded-xl bg-muted p-2 md:hidden">
+              {menuItems.map((item) => (
+                <Button
+                  key={item.key}
+                  type="button"
+                  variant={selectedKey === item.key ? 'secondary' : 'ghost'}
+                  className="h-10 rounded-lg"
+                  onClick={() => navigate(item.key)}
+                >
+                  {item.label}
+                </Button>
+              ))}
+            </nav>
+
+            <div>
               {children}
             </div>
-          </div>
-        </main>
-      </div>
+          </main>
+        </div>
+      </PageContainer>
     </div>
   );
 };

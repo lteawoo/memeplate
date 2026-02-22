@@ -115,6 +115,26 @@ export const createSupabaseTemplateRepository = (): TemplateRepository => {
       return rows.map((row) => toRecord(row, extractDisplayName(row.users), { includeContent: false }));
     },
 
+    async getDetailByShareSlug(shareSlug, viewerUserId) {
+      const { data, error } = await supabase
+        .from('templates')
+        .select('id, owner_id, title, description, content, view_count, like_count, visibility, share_slug, created_at, updated_at, users!templates_owner_id_fkey(display_name)')
+        .eq('share_slug', shareSlug)
+        .is('deleted_at', null)
+        .maybeSingle();
+
+      if (error) throw error;
+      if (!data) return null;
+      const row = data as TemplateRow;
+
+      const canView = row.visibility === 'public' || (typeof viewerUserId === 'string' && viewerUserId.length > 0 && row.owner_id === viewerUserId);
+      if (!canView) {
+        return null;
+      }
+
+      return toRecord(row, extractDisplayName(row.users), { includeContent: false });
+    },
+
     async getPublicDetailByShareSlug(shareSlug) {
       const { data, error } = await supabase
         .from('templates')

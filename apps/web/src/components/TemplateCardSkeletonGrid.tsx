@@ -16,7 +16,7 @@ const TemplateCardSkeletonGrid: React.FC<TemplateCardSkeletonGridProps> = ({ cou
               <Skeleton className="absolute inset-0 rounded-lg bg-border/70" />
             </div>
           </div>
-          <div className="space-y-2 p-[10px_12px]">
+          <div className="space-y-2 p-4">
             <Skeleton className="h-4 w-full rounded bg-border/80" />
             <div className="flex items-center gap-2">
               <Skeleton className="h-4 flex-1 rounded bg-border/70" />

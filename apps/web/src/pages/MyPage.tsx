@@ -1,25 +1,33 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Skeleton } from '@/components/ui/skeleton';
+import { buildLoginPath, getPathWithSearchAndHash } from '@/lib/loginNavigation';
 import MySectionLayout from '../components/layout/MySectionLayout';
 import { useAuthStore } from '../stores/authStore';
 
 const MyPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [isSaving, setIsSaving] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [successMessage, setSuccessMessage] = React.useState<string | null>(null);
   const [displayName, setDisplayName] = React.useState('');
+  const [reloadToken, setReloadToken] = React.useState(0);
 
   const user = useAuthStore((state) => state.user);
   const isLoading = useAuthStore((state) => state.isLoading);
   const initialized = useAuthStore((state) => state.initialized);
   const syncSession = useAuthStore((state) => state.syncSession);
   const updateDisplayName = useAuthStore((state) => state.updateDisplayName);
+  const loginPath = React.useMemo(
+    () => buildLoginPath(getPathWithSearchAndHash(location)),
+    [location]
+  );
 
   React.useEffect(() => {
     const loadMe = async () => {
@@ -30,7 +38,7 @@ const MyPage: React.FC = () => {
         }
         const nextUser = useAuthStore.getState().user;
         if (!nextUser) {
-          navigate('/');
+          navigate(loginPath, { replace: true });
           return;
         }
         setDisplayName(nextUser.displayName ?? '');
@@ -41,7 +49,7 @@ const MyPage: React.FC = () => {
     };
 
     void loadMe();
-  }, [initialized, navigate, syncSession]);
+  }, [initialized, loginPath, navigate, reloadToken, syncSession]);
 
   const onSaveProfile = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -64,7 +72,7 @@ const MyPage: React.FC = () => {
     } catch (err) {
       const msg = err instanceof Error ? err.message : '내 정보 저장에 실패했습니다.';
       if (msg.includes('만료')) {
-        navigate('/');
+        navigate(loginPath, { replace: true });
         return;
       }
       setError(msg);
@@ -73,27 +81,47 @@ const MyPage: React.FC = () => {
     }
   };
 
+  const actionButton = !isLoading && !error ? (
+    <Button type="submit" form="my-profile-form" disabled={isSaving}>
+      {isSaving ? '저장 중...' : '내 정보 수정'}
+    </Button>
+  ) : undefined;
+
   return (
     <MySectionLayout
       title="마이페이지"
       description="내 계정 정보를 확인하고 수정할 수 있습니다."
+      action={actionButton}
     >
       {isLoading ? (
-        <div className="py-20 text-center">
-          <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-border border-t-foreground/60" />
-        </div>
+        <Card>
+          <CardContent className="space-y-4 p-6">
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-32" />
+            <Skeleton className="h-4 w-20" />
+            <Skeleton className="h-6 w-64" />
+          </CardContent>
+        </Card>
       ) : error ? (
         <Alert variant="destructive">
           <AlertTitle>오류</AlertTitle>
           <AlertDescription className="flex flex-col gap-3">
             <span>{error}</span>
-            <Button type="button" className="w-fit" onClick={() => navigate('/login')}>로그인</Button>
+            <div className="flex flex-wrap gap-2">
+              <Button type="button" variant="outline" onClick={() => setReloadToken((prev) => prev + 1)}>
+                다시 시도
+              </Button>
+              <Button type="button" variant="outline" onClick={() => navigate(loginPath)}>
+                로그인
+              </Button>
+            </div>
           </AlertDescription>
         </Alert>
       ) : (
-        <Card className="border-border bg-card shadow-none">
-          <CardContent className="flex flex-col gap-4 p-6">
-            <form className="flex flex-col gap-4" onSubmit={onSaveProfile}>
+        <Card>
+          <CardContent className="space-y-5 p-6">
+            <form id="my-profile-form" className="space-y-4" onSubmit={onSaveProfile}>
               <div className="space-y-2">
                 <Label htmlFor="displayName">이름</Label>
                 <Input
@@ -103,11 +131,6 @@ const MyPage: React.FC = () => {
                   value={displayName}
                   onChange={(event) => setDisplayName(event.target.value)}
                 />
-              </div>
-              <div>
-                <Button type="submit" disabled={isSaving}>
-                  {isSaving ? '저장 중...' : '내 정보 수정'}
-                </Button>
               </div>
             </form>
             {successMessage ? (
