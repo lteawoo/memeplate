@@ -53,6 +53,10 @@ const ImageShareDetailPage: React.FC = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
   const [isSavingMeta, setIsSavingMeta] = React.useState(false);
   const [isLikingImage, setIsLikingImage] = React.useState(false);
+  const imageLikeLockRef = React.useRef(false);
+  const imageLikeRequestSeqRef = React.useRef(0);
+  const imageLikeAbortRef = React.useRef<AbortController | null>(null);
+  const [likedImageByMe, setLikedImageByMe] = React.useState(false);
   const isOwner = Boolean(authInitialized && authUser?.id && image?.ownerId && authUser.id === image.ownerId);
 
   React.useEffect(() => {
@@ -69,13 +73,14 @@ const ImageShareDetailPage: React.FC = () => {
         return;
       }
       try {
-        const res = await fetch(`/api/v1/images/s/${shareSlug}`);
+        const res = await fetch(`/api/v1/remixes/s/${shareSlug}`);
         if (!res.ok) {
           const payload = (await res.json().catch(() => ({}))) as { message?: string };
           throw new Error(payload.message || '이미지를 불러오지 못했습니다.');
         }
         const payload = (await res.json()) as MemeImageResponse;
         setImage(payload.image);
+        setLikedImageByMe(payload.likedByMe === true);
       } catch (err) {
         setError(err instanceof Error ? err.message : '이미지를 불러오지 못했습니다.');
       } finally {
@@ -83,8 +88,20 @@ const ImageShareDetailPage: React.FC = () => {
       }
     };
     setIsLikingImage(false);
+    imageLikeAbortRef.current?.abort();
+    imageLikeAbortRef.current = null;
+    imageLikeRequestSeqRef.current += 1;
+    imageLikeLockRef.current = false;
+    setLikedImageByMe(false);
     void load();
   }, [shareSlug]);
+
+  React.useEffect(() => {
+    return () => {
+      imageLikeAbortRef.current?.abort();
+      imageLikeAbortRef.current = null;
+    };
+  }, []);
 
   React.useEffect(() => {
     setIsMainImageError(false);
@@ -107,7 +124,7 @@ const ImageShareDetailPage: React.FC = () => {
     viewedSlugRef.current = shareSlug;
     const incrementView = async () => {
       try {
-        const res = await fetch(`/api/v1/images/s/${shareSlug}/view`, { method: 'POST' });
+        const res = await fetch(`/api/v1/remixes/s/${shareSlug}/view`, { method: 'POST' });
         if (!res.ok) return;
         const payload = (await res.json().catch(() => ({}))) as { viewCount?: number };
         if (typeof payload.viewCount !== 'number') return;
@@ -120,29 +137,61 @@ const ImageShareDetailPage: React.FC = () => {
   }, [shareSlug, image]);
 
   const handleLikeImage = React.useCallback(async () => {
-    if (!image?.shareSlug || image.visibility !== 'public' || isLikingImage) return;
+    if (!image?.shareSlug || image.visibility !== 'public' || imageLikeLockRef.current) return;
 
+    const targetShareSlug = image.shareSlug;
+    const requestSeq = imageLikeRequestSeqRef.current + 1;
+    imageLikeRequestSeqRef.current = requestSeq;
+    const controller = new AbortController();
+    imageLikeAbortRef.current?.abort();
+    imageLikeAbortRef.current = controller;
+    imageLikeLockRef.current = true;
     setIsLikingImage(true);
     try {
-      const res = await fetch(`/api/v1/images/s/${image.shareSlug}/like`, {
+      const res = await fetch(`/api/v1/remixes/s/${targetShareSlug}/like`, {
         method: 'POST',
+        signal: controller.signal,
       });
       if (!res.ok) {
         const payload = (await res.json().catch(() => ({}))) as { message?: string };
         throw new Error(payload.message || '좋아요 처리에 실패했습니다.');
       }
-      const payload = (await res.json().catch(() => ({}))) as { likeCount?: number };
+      const payload = (await res.json().catch(() => ({}))) as { likeCount?: number; liked?: boolean };
+      if (imageLikeRequestSeqRef.current !== requestSeq) return;
       if (typeof payload.likeCount === 'number') {
-        setImage((prev) => (prev ? { ...prev, likeCount: payload.likeCount } : prev));
+        setImage((prev) => (
+          prev && prev.shareSlug === targetShareSlug ? { ...prev, likeCount: payload.likeCount } : prev
+        ));
       } else {
-        setImage((prev) => (prev ? { ...prev, likeCount: (prev.likeCount ?? 0) + 1 } : prev));
+        setImage((prev) => (
+          prev && prev.shareSlug === targetShareSlug
+            ? { ...prev, likeCount: Math.max(0, (prev.likeCount ?? 0) + (likedImageByMe ? -1 : 1)) }
+            : prev
+        ));
+      }
+      if (typeof payload.liked === 'boolean') {
+        setLikedImageByMe(payload.liked);
+      } else {
+        setLikedImageByMe((prev) => !prev);
       }
     } catch (err) {
+      if (imageLikeRequestSeqRef.current !== requestSeq) {
+        return;
+      }
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        return;
+      }
       toast.error(err instanceof Error ? err.message : '좋아요 처리에 실패했습니다.');
     } finally {
-      setIsLikingImage(false);
+      if (imageLikeAbortRef.current === controller) {
+        imageLikeAbortRef.current = null;
+      }
+      if (imageLikeRequestSeqRef.current === requestSeq) {
+        imageLikeLockRef.current = false;
+        setIsLikingImage(false);
+      }
     }
-  }, [image?.shareSlug, image?.visibility, isLikingImage]);
+  }, [image?.shareSlug, image?.visibility, likedImageByMe]);
 
   const handleSaveMeta = React.useCallback(async () => {
     if (!image || !isOwner) return false;
@@ -156,7 +205,7 @@ const ImageShareDetailPage: React.FC = () => {
 
     setIsSavingMeta(true);
     try {
-      const res = await apiFetch(`/api/v1/images/${image.id}`, {
+      const res = await apiFetch(`/api/v1/remixes/${image.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -269,10 +318,11 @@ const ImageShareDetailPage: React.FC = () => {
                 <Button
                   type="button"
                   variant="outline"
-                  className="gap-1.5"
+                  className={`gap-1.5 ${likedImageByMe ? 'border-primary bg-primary/15 text-primary' : ''}`}
                   onClick={() => { void handleLikeImage(); }}
                   disabled={isLikingImage || image.visibility !== 'public'}
                   aria-label="좋아요"
+                  aria-pressed={likedImageByMe}
                 >
                   <Icon path={mdiThumbUpOutline} size={0.75} />
                   {(image.likeCount ?? 0).toLocaleString()}

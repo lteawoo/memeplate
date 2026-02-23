@@ -867,7 +867,7 @@ export const useMemeEditor = (options?: UseMemeEditorOptions) => {
       const imageMime = parseDataUrlMime(imageDataUrl);
       const imageBytes = estimateDataUrlBytes(imageDataUrl);
 
-      const res = await apiFetch('/api/v1/images', {
+      const res = await apiFetch('/api/v1/remixes', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -893,7 +893,7 @@ export const useMemeEditor = (options?: UseMemeEditorOptions) => {
       }
 
       const payload = (await res.json()) as CreatedImageResponse;
-      const shareUrl = `${window.location.origin}/images/s/${payload.image.shareSlug}`;
+      const shareUrl = `${window.location.origin}/remixes/s/${payload.image.shareSlug}`;
       try {
         await navigator.clipboard.writeText(shareUrl);
         toast.success('리믹스를 게시했고 링크를 복사했습니다.');
@@ -978,8 +978,8 @@ export const useMemeEditor = (options?: UseMemeEditorOptions) => {
       });
 
       const endpoint = savedTemplate
-        ? `/api/v1/templates/${savedTemplate.id}`
-        : '/api/v1/templates';
+        ? `/api/v1/memeplates/${savedTemplate.id}`
+        : '/api/v1/memeplates';
       const method = savedTemplate ? 'PATCH' : 'POST';
 
       const res = await apiFetch(endpoint, {
@@ -1023,7 +1023,7 @@ export const useMemeEditor = (options?: UseMemeEditorOptions) => {
       toast.warning('공유 가능한 밈플릿이 없습니다.');
       return;
     }
-    const shareUrl = `${window.location.origin}/templates/s/${savedTemplate.shareSlug}`;
+    const shareUrl = `${window.location.origin}/memeplates/s/${savedTemplate.shareSlug}`;
     try {
       await navigator.clipboard.writeText(shareUrl);
       toast.success('밈플릿 공유 링크가 복사되었습니다.');

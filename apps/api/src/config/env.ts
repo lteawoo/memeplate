@@ -22,6 +22,15 @@ const optionalUrl = z.preprocess((value) => {
   return trimmed.length === 0 ? undefined : trimmed;
 }, z.string().url().optional());
 
+const booleanFromEnv = z.preprocess((value) => {
+  if (typeof value === 'boolean') return value;
+  if (typeof value !== 'string') return value;
+  const normalized = value.trim().toLowerCase();
+  if (['1', 'true', 'yes', 'on'].includes(normalized)) return true;
+  if (['0', 'false', 'no', 'off', ''].includes(normalized)) return false;
+  return value;
+}, z.boolean());
+
 const EnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   API_PORT: z.coerce.number().int().positive().default(8080),
@@ -48,6 +57,8 @@ const EnvSchema = z.object({
   R2_PUBLIC_BASE_URL: optionalUrl,
   R2_UPLOAD_MAX_MB: z.coerce.number().int().positive().optional(),
   R2_UPLOAD_ALLOWED_MIME: optionalString,
+  TRUST_PROXY: booleanFromEnv.default(false),
+  METRIC_ACTOR_HASH_SECRET: optionalString,
   RATE_LIMIT_MAX_PER_MINUTE: z.coerce.number().int().positive().optional(),
   AUTH_RATE_LIMIT_MAX_PER_MINUTE: z.coerce.number().int().positive().optional(),
   VIEW_RATE_LIMIT_MAX_PER_MINUTE: z.coerce.number().int().positive().optional()

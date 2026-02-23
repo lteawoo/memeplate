@@ -20,6 +20,8 @@ pnpm --filter memeplate-api dev
 - `WEB_DIST_DIR`: 프로덕션에서 SPA 정적 파일 경로 (기본값 `../web/dist`)
 - `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`: JWT 서명 키
 - `JWT_ACCESS_TTL_SECONDS`, `JWT_REFRESH_TTL_SECONDS`: JWT 만료 시간(초)
+- `TRUST_PROXY`: 프록시 뒤에서 실행 시 클라이언트 IP 신뢰 여부 (`true|false`)
+- `METRIC_ACTOR_HASH_SECRET`: 조회수/좋아요 actor 해시 생성용 시크릿(HMAC)
 
 ## 엔드포인트
 
@@ -30,10 +32,14 @@ pnpm --filter memeplate-api dev
 - `GET /api/v1/auth/me` (access JWT check)
 - `POST /api/v1/auth/refresh` (refresh JWT rotation)
 - `POST /api/v1/auth/logout` (refresh revoke + cookie clear)
-- `GET /api/v1/templates/me` (placeholder)
-- `POST /api/v1/templates` (payload zod 검증 포함)
-- `PATCH /api/v1/templates/:templateId` (payload zod 검증 포함)
-- `DELETE /api/v1/templates/:templateId` (placeholder)
+- `GET /api/v1/memeplates/me`
+- `POST /api/v1/memeplates`
+- `PATCH /api/v1/memeplates/:templateId`
+- `DELETE /api/v1/memeplates/:templateId`
+- `GET /api/v1/remixes/me`
+- `POST /api/v1/remixes`
+- `PATCH /api/v1/remixes/:imageId`
+- `DELETE /api/v1/remixes/:imageId`
 
 ## 구조
 

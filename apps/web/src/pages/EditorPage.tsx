@@ -49,8 +49,8 @@ const EditorPage: React.FC = () => {
       setLoadError(null);
 
       const endpoint = templateId
-        ? `/api/v1/templates/${templateId}`
-        : `/api/v1/templates/s/${shareSlug}/edit`;
+        ? `/api/v1/memeplates/${templateId}`
+        : `/api/v1/memeplates/s/${shareSlug}/edit`;
 
       try {
         const res = templateId

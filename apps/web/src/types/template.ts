@@ -21,6 +21,7 @@ export type TemplateRecord = {
 export type TemplateResponse = {
   template: TemplateRecord;
   isOwner?: boolean;
+  likedByMe?: boolean;
 };
 
 export type TemplatesResponse = {

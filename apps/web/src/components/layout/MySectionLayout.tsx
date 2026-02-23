@@ -13,7 +13,7 @@ interface MySectionLayoutProps {
 
 const menuItems = [
   { key: '/my', label: '내 프로필' },
-  { key: '/my/templates', label: '내 밈플릿' }
+  { key: '/my/memeplates', label: '내 밈플릿' }
 ];
 
 const MySectionLayout: React.FC<MySectionLayoutProps> = ({
@@ -24,8 +24,8 @@ const MySectionLayout: React.FC<MySectionLayoutProps> = ({
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const selectedKey = location.pathname.startsWith('/my/templates')
-    ? '/my/templates'
+  const selectedKey = location.pathname.startsWith('/my/memeplates')
+    ? '/my/memeplates'
     : '/my';
 
   return (

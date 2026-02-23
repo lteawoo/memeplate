@@ -33,8 +33,9 @@ export interface TemplateRepository {
   getDetailByShareSlug(shareSlug: string, viewerUserId?: string | null): Promise<TemplateRecord | null>;
   getPublicDetailByShareSlug(shareSlug: string): Promise<TemplateRecord | null>;
   getPublicByShareSlug(shareSlug: string): Promise<TemplateRecord | null>;
-  incrementViewCountByShareSlug(shareSlug: string): Promise<number | null>;
-  incrementLikeCountByShareSlug(shareSlug: string): Promise<number | null>;
+  getLikeStateByShareSlug(shareSlug: string, actorKey: string): Promise<boolean | null>;
+  incrementViewCountByShareSlug(shareSlug: string, actorKey: string): Promise<number | null>;
+  toggleLikeByShareSlug(shareSlug: string, actorKey: string): Promise<{ likeCount: number; liked: boolean } | null>;
   create(userId: string, input: CreateTemplateInput): Promise<TemplateRecord>;
   update(userId: string, templateId: string, input: UpdateTemplateInput): Promise<TemplateRecord>;
   remove(userId: string, templateId: string): Promise<void>;

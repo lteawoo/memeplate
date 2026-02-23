@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import HomePage from './pages/HomePage';
 import EditorPage from './pages/EditorPage';
 import LoginPage from './pages/LoginPage';
@@ -16,11 +16,11 @@ const App: React.FC = () => {
         <Route path="/" element={<HomePage />} />
         <Route path="/create" element={<EditorPage />} />
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/templates" element={<TemplatesPage />} />
-        <Route path="/templates/s/:shareSlug" element={<TemplateShareDetailPage />} />
-        <Route path="/images/s/:shareSlug" element={<ImageShareDetailPage />} />
+        <Route path="/memeplates" element={<TemplatesPage />} />
+        <Route path="/memeplates/s/:shareSlug" element={<TemplateShareDetailPage />} />
+        <Route path="/remixes/s/:shareSlug" element={<ImageShareDetailPage />} />
         <Route path="/my" element={<MyPage />} />
-        <Route path="/my/templates" element={<MyTemplatesPage />} />
+        <Route path="/my/memeplates" element={<MyTemplatesPage />} />
       </Routes>
     </BrowserRouter>
   );

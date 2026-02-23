@@ -115,6 +115,10 @@ const TemplateShareDetailPage: React.FC = () => {
   const [isDeletingTemplate, setIsDeletingTemplate] = React.useState(false);
   const [isSavingMeta, setIsSavingMeta] = React.useState(false);
   const [isLikingTemplate, setIsLikingTemplate] = React.useState(false);
+  const templateLikeLockRef = React.useRef(false);
+  const templateLikeRequestSeqRef = React.useRef(0);
+  const templateLikeAbortRef = React.useRef<AbortController | null>(null);
+  const [likedTemplateByMe, setLikedTemplateByMe] = React.useState(false);
   const [isManageDialogOpen, setIsManageDialogOpen] = React.useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
   const [isRelatedLoaded, setIsRelatedLoaded] = React.useState(false);
@@ -179,6 +183,11 @@ const TemplateShareDetailPage: React.FC = () => {
     setEditTitle('');
     setEditDescription('');
     setIsLikingTemplate(false);
+    templateLikeAbortRef.current?.abort();
+    templateLikeAbortRef.current = null;
+    templateLikeRequestSeqRef.current += 1;
+    templateLikeLockRef.current = false;
+    setLikedTemplateByMe(false);
 
     const load = async () => {
       if (!shareSlug) {
@@ -187,7 +196,7 @@ const TemplateShareDetailPage: React.FC = () => {
         return;
       }
       try {
-        const res = await fetch(`/api/v1/templates/s/${shareSlug}`);
+        const res = await fetch(`/api/v1/memeplates/s/${shareSlug}`);
         if (!res.ok) {
           const payload = (await res.json().catch(() => ({}))) as { message?: string };
           throw new Error(payload.message || '밈플릿을 불러오지 못했습니다.');
@@ -195,6 +204,7 @@ const TemplateShareDetailPage: React.FC = () => {
         const payload = (await res.json()) as TemplateResponse;
         setTemplate(payload.template);
         setIsOwnerFromDetail(typeof payload.isOwner === 'boolean' ? payload.isOwner : null);
+        setLikedTemplateByMe(payload.likedByMe === true);
       } catch (err) {
         setError(err instanceof Error ? err.message : '밈플릿을 불러오지 못했습니다.');
       } finally {
@@ -203,6 +213,13 @@ const TemplateShareDetailPage: React.FC = () => {
     };
     void load();
   }, [shareSlug]);
+
+  React.useEffect(() => {
+    return () => {
+      templateLikeAbortRef.current?.abort();
+      templateLikeAbortRef.current = null;
+    };
+  }, []);
 
   React.useEffect(() => {
     const loadImageMeta = async () => {
@@ -255,7 +272,7 @@ const TemplateShareDetailPage: React.FC = () => {
       setIsRelatedLoaded(false);
       setRelatedError(null);
       try {
-        const res = await fetch(`/api/v1/images/public?limit=30&templateId=${template.id}`);
+        const res = await fetch(`/api/v1/remixes/public?limit=30&templateId=${template.id}`);
         if (!res.ok) {
           throw new Error('연관 이미지를 불러오지 못했습니다.');
         }
@@ -295,7 +312,7 @@ const TemplateShareDetailPage: React.FC = () => {
     viewedSlugRef.current = shareSlug;
     const incrementView = async () => {
       try {
-        const res = await fetch(`/api/v1/templates/s/${shareSlug}/view`, {
+        const res = await fetch(`/api/v1/memeplates/s/${shareSlug}/view`, {
           method: 'POST',
         });
         if (!res.ok) return;
@@ -331,29 +348,61 @@ const TemplateShareDetailPage: React.FC = () => {
   }, [authInitialized, authUser, navigate, syncSession, template?.shareSlug]);
 
   const handleLikeTemplate = React.useCallback(async () => {
-    if (!template?.shareSlug || template.visibility !== 'public' || isLikingTemplate) return;
+    if (!template?.shareSlug || template.visibility !== 'public' || templateLikeLockRef.current) return;
 
+    const targetShareSlug = template.shareSlug;
+    const requestSeq = templateLikeRequestSeqRef.current + 1;
+    templateLikeRequestSeqRef.current = requestSeq;
+    const controller = new AbortController();
+    templateLikeAbortRef.current?.abort();
+    templateLikeAbortRef.current = controller;
+    templateLikeLockRef.current = true;
     setIsLikingTemplate(true);
     try {
-      const res = await fetch(`/api/v1/templates/s/${template.shareSlug}/like`, {
+      const res = await fetch(`/api/v1/memeplates/s/${targetShareSlug}/like`, {
         method: 'POST',
+        signal: controller.signal,
       });
       if (!res.ok) {
         const payload = (await res.json().catch(() => ({}))) as { message?: string };
         throw new Error(payload.message || '좋아요 처리에 실패했습니다.');
       }
-      const payload = (await res.json().catch(() => ({}))) as { likeCount?: number };
+      const payload = (await res.json().catch(() => ({}))) as { likeCount?: number; liked?: boolean };
+      if (templateLikeRequestSeqRef.current !== requestSeq) return;
       if (typeof payload.likeCount === 'number') {
-        setTemplate((prev) => (prev ? { ...prev, likeCount: payload.likeCount } : prev));
+        setTemplate((prev) => (
+          prev && prev.shareSlug === targetShareSlug ? { ...prev, likeCount: payload.likeCount } : prev
+        ));
       } else {
-        setTemplate((prev) => (prev ? { ...prev, likeCount: (prev.likeCount ?? 0) + 1 } : prev));
+        setTemplate((prev) => (
+          prev && prev.shareSlug === targetShareSlug
+            ? { ...prev, likeCount: Math.max(0, (prev.likeCount ?? 0) + (likedTemplateByMe ? -1 : 1)) }
+            : prev
+        ));
+      }
+      if (typeof payload.liked === 'boolean') {
+        setLikedTemplateByMe(payload.liked);
+      } else {
+        setLikedTemplateByMe((prev) => !prev);
       }
     } catch (err) {
+      if (templateLikeRequestSeqRef.current !== requestSeq) {
+        return;
+      }
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        return;
+      }
       toast.error(err instanceof Error ? err.message : '좋아요 처리에 실패했습니다.');
     } finally {
-      setIsLikingTemplate(false);
+      if (templateLikeAbortRef.current === controller) {
+        templateLikeAbortRef.current = null;
+      }
+      if (templateLikeRequestSeqRef.current === requestSeq) {
+        templateLikeLockRef.current = false;
+        setIsLikingTemplate(false);
+      }
     }
-  }, [isLikingTemplate, template?.shareSlug, template?.visibility]);
+  }, [likedTemplateByMe, template?.shareSlug, template?.visibility]);
 
   const handleChangeVisibility = React.useCallback(async (nextVisibility: TemplateVisibility) => {
     if (!template || !isOwner || template.visibility === nextVisibility) return;
@@ -364,7 +413,7 @@ const TemplateShareDetailPage: React.FC = () => {
 
     setIsUpdatingVisibility(true);
     try {
-      const res = await apiFetch(`/api/v1/templates/${template.id}`, {
+      const res = await apiFetch(`/api/v1/memeplates/${template.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ visibility: nextVisibility }),
@@ -393,7 +442,7 @@ const TemplateShareDetailPage: React.FC = () => {
 
     setIsDeletingTemplate(true);
     try {
-      const res = await apiFetch(`/api/v1/templates/${template.id}`, { method: 'DELETE' });
+      const res = await apiFetch(`/api/v1/memeplates/${template.id}`, { method: 'DELETE' });
       if (!res.ok) {
         const payload = (await res.json().catch(() => ({}))) as { message?: string };
         throw new Error(payload.message || '밈플릿 삭제에 실패했습니다.');
@@ -402,7 +451,7 @@ const TemplateShareDetailPage: React.FC = () => {
       toast.success('밈플릿을 삭제했습니다.');
       setIsManageDialogOpen(false);
       setIsDeleteDialogOpen(false);
-      navigate('/my/templates');
+      navigate('/my/memeplates');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : '밈플릿 삭제에 실패했습니다.');
     } finally {
@@ -422,7 +471,7 @@ const TemplateShareDetailPage: React.FC = () => {
 
     setIsSavingMeta(true);
     try {
-      const res = await apiFetch(`/api/v1/templates/${template.id}`, {
+      const res = await apiFetch(`/api/v1/memeplates/${template.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -566,10 +615,11 @@ const TemplateShareDetailPage: React.FC = () => {
                   <Button
                     type="button"
                     variant="outline"
-                    className="gap-1.5"
+                    className={`gap-1.5 ${likedTemplateByMe ? 'border-primary bg-primary/15 text-primary' : ''}`}
                     onClick={() => { void handleLikeTemplate(); }}
                     disabled={isLikingTemplate || template.visibility !== 'public'}
                     aria-label="좋아요"
+                    aria-pressed={likedTemplateByMe}
                   >
                     <Icon path={mdiThumbUpOutline} size={0.75} />
                     {(template.likeCount ?? 0).toLocaleString()}
@@ -730,7 +780,7 @@ const TemplateShareDetailPage: React.FC = () => {
                       title={image.title}
                       hoverable
                       hoverSurfaceOnly
-                      onClick={() => navigate(`/images/s/${image.shareSlug}`)}
+                      onClick={() => navigate(`/remixes/s/${image.shareSlug}`)}
                     >
                       <div className="space-y-1">
                         <div className="line-clamp-1 text-sm font-semibold text-foreground">{image.title}</div>
