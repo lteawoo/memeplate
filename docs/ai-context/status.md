@@ -1,6 +1,42 @@
 # 프로젝트 상태 (Status)
 
 ## 현재 진행 상황
+- [x] **내 밈플릿 정렬/기간 컨트롤 추가 (완료 - 2026-02-22)**
+  - [x] `/my/templates`에 목록과 동일한 정렬 버튼(`최신/좋아요/조회`) + 기간 셀렉트(`24시간/7일/30일/1년/전체`) 추가
+  - [x] 내 밈플릿 목록은 클라이언트에서 기간 필터 + 정렬(`latest/likes/views`) 적용
+  - [x] 기간 필터 결과 0건이어도 정렬/기간 컨트롤은 유지되도록 분기 보정
+  - [x] `pnpm --filter memeplate-web lint`, `pnpm --filter memeplate-web build` 통과
+  - [ ] 스크린샷 검증
+    - [ ] 인증 미보유로 `/my/templates` 접근 시 `/login?next=%2Fmy%2Ftemplates` 리다이렉트되어 UI 캡처 미수행
+- [x] **밈플릿 목록/상세 정렬 라벨 3옵션 통일 (완료 - 2026-02-22)**
+  - [x] `/templates` 정렬 버튼 라벨을 `최신/좋아요/조회`로 변경
+  - [x] `/templates` 상단 정렬 영역의 `정렬` 텍스트 라벨 제거
+  - [x] 밈플릿 상세 리믹스 정렬에 `조회` 옵션 추가하고 라벨을 `최신/좋아요/조회`로 통일
+  - [x] 밈플릿 상세 리믹스 정렬 값 체계를 `latest/likes/views`로 정렬
+  - [x] 템플릿 공개 목록 정렬 구현의 `any` 타입 제거(정렬 쿼리 inline 분기)
+  - [x] 밈플릿 상세 리믹스 정렬 버튼 `aria-pressed` 추가(접근성 상태 전달)
+  - [x] `pnpm --filter memeplate-web lint`, `pnpm --filter memeplate-web build` 통과
+  - [x] 스크린샷 검증
+    - [x] `docs/ai-context/screenshots/2026-02-22_templates_sort_labels_latest_likes_views_v1.png`
+    - [x] `docs/ai-context/screenshots/2026-02-22_template_detail_sort_labels_latest_likes_views_v1.png`
+- [x] **밈플릿 목록 정렬 UI 텍스트형 전환 (완료 - 2026-02-22)**
+  - [x] `/templates` 정렬 컨트롤을 셀렉트에서 텍스트형 버튼(`최신순/인기순/조회순`)으로 전환
+  - [x] 구분점(`·`)을 제거하고 각 항목을 독립 버튼(텍스트만 노출)으로 정렬
+  - [x] 정렬 버튼 스타일을 밈플릿 상세 리믹스 정렬(`최신순/인기순`)과 동일 토글 UI(`rounded-xl bg-muted p-1 + h-8 pill`)로 통일
+  - [x] 기간 필터는 셀렉트 유지(`24시간/7일/30일/1년/전체`)
+  - [x] `pnpm --filter memeplate-web lint`, `pnpm --filter memeplate-web build` 통과
+  - [x] 스크린샷 검증
+    - [x] `docs/ai-context/screenshots/2026-02-22_templates_sort_text_buttons_v1.png`
+    - [x] `docs/ai-context/screenshots/2026-02-22_templates_sort_text_button_like_v1.png`
+    - [x] `docs/ai-context/screenshots/2026-02-22_templates_sort_match_detail_style_v1.png`
+- [x] **밈플릿 목록 Sort by/기간 필터 추가 (#142, 완료 - 2026-02-22)**
+  - [x] `GET /api/v1/templates/public`에 `sortBy(latest/likes/views)`, `period(24h/7d/30d/1y/all)` 쿼리 파라미터 추가
+  - [x] 잘못된 쿼리값은 `sortBy=latest`, `period=all`로 안전 기본값 처리
+  - [x] `/templates` 우측 상단에 `Sort by` + 기간 셀렉트 박스(`24시간/7일/30일/1년/전체`) 추가
+  - [x] 필터 변경 시 React Query key를 `sortBy/period` 기준으로 분리해 목록 재조회 동기화
+  - [x] `pnpm --filter memeplate-api build`, `pnpm --filter memeplate-web lint`, `pnpm --filter memeplate-web build` 통과
+  - [x] 스크린샷 검증
+    - [x] `docs/ai-context/screenshots/2026-02-22_templates_sort_period_controls_v1.png`
 - [x] **내 밈플릿 헤더 문구/CTA 정리 (완료 - 2026-02-22)**
   - [x] `MyTemplatesPage` 타이틀을 `내 밈플릿 관리`에서 `내 밈플릿`으로 변경
   - [x] 헤더 설명 문구 제거

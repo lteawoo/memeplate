@@ -1,5 +1,120 @@
 # 결정 로그 (Decision Log)
 
+## [2026-02-22] 정렬 기능 후속 보완(타입 안정성/접근성)
+- **결정**:
+  1. 템플릿 공개 목록 정렬 구현에서 사용하던 `any` 헬퍼를 제거하고 `listPublic` 내부에서 정렬 분기를 명시적으로 구성함.
+  2. 밈플릿 상세 리믹스 정렬 버튼 3종(`최신/좋아요/조회`)에 `aria-pressed`를 추가함.
+- **이유**:
+  1. `any`는 리팩터링 시점의 타입 안전성을 떨어뜨리므로 제거가 바람직함.
+  2. 토글형 버튼은 선택 상태를 보조기기에 전달해야 접근성이 유지됨.
+- **구현 요약**:
+  - `apps/api/src/modules/templates/supabaseRepository.ts`
+    - `applyPublicSort(any)` 헬퍼 삭제
+    - `listPublic` 내부 `sortBy` 분기(`latest/likes/views`)로 정렬 쿼리 구성
+  - `apps/web/src/pages/TemplateShareDetailPage.tsx`
+    - 정렬 버튼 3개에 `aria-pressed` 속성 추가
+- **검증**:
+  - `pnpm --filter memeplate-api build`
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+
+## [2026-02-22] 내 밈플릿에 목록과 동일한 정렬/기간 컨트롤 적용
+- **결정**:
+  1. `/my/templates`에도 `최신/좋아요/조회` 정렬 토글과 기간 셀렉트(`24시간/7일/30일/1년/전체`)를 추가함.
+  2. 내 밈플릿 API(`GET /templates/me`)는 변경하지 않고, 클라이언트에서 기간 필터 + 정렬을 적용함.
+  3. 기간 필터 결과가 0건일 때도 상단 정렬/기간 컨트롤은 유지하고 목록 영역만 빈 상태로 렌더함.
+- **이유**:
+  1. 밈플릿 목록과 내 밈플릿의 탐색 UX를 일관되게 맞추기 위함.
+  2. 기존 API 계약을 유지하면 백엔드 변경/리스크 없이 빠르게 UI 요구를 반영할 수 있음.
+  3. 필터 결과 0건 상태에서 컨트롤이 사라지면 사용자가 조건을 되돌리기 어려워 UX가 저하됨.
+- **구현 요약**:
+  - `apps/web/src/pages/MyTemplatesPage.tsx`
+    - 정렬/기간 옵션 상수 추가
+    - `sortBy`, `period` 상태 추가
+    - `filteredAndSortedTemplates` 메모 계산 추가(`latest/likes/views` + 기간 cutoff)
+    - 목록 상단에 정렬 토글/기간 셀렉트 UI 추가
+    - 필터 결과 0건 분기에서 컨트롤 유지 + 빈 상태만 노출
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 수동 화면 확인은 인증 미보유로 `/my/templates -> /login?next=...` 리다이렉트되어 미수행
+
+## [2026-02-22] 밈플릿 목록/상세 정렬 라벨을 `최신/좋아요/조회`로 통일
+- **결정**:
+  1. 밈플릿 목록(`/templates`) 정렬 라벨을 `최신/좋아요/조회`로 변경함.
+  2. 밈플릿 상세 리믹스 정렬도 동일하게 `최신/좋아요/조회` 3버튼으로 통일함.
+  3. 밈플릿 상세 리믹스 정렬 값 체계를 `latest/likes/views`로 정리하고 `views` 정렬 분기를 추가함.
+  4. 밈플릿 목록 정렬 영역의 `정렬` 텍스트 라벨은 제거하고 버튼 그룹만 노출함.
+- **이유**:
+  1. 목록과 상세의 정렬 용어를 통일해 사용자 인지 부하를 줄이기 위함.
+  2. 기존 `인기` 표현은 의미가 넓어 `좋아요` 지표 기반 정렬이라는 의미를 명확히 드러내기 어려움.
+  3. 상세에도 `조회` 정렬을 추가해 목록에서 기대한 정렬 축을 동일하게 제공하기 위함.
+  4. 버튼 자체가 정렬 의미를 충분히 전달하므로 라벨 텍스트를 제거해 상단 밀도를 낮추기 위함.
+- **구현 요약**:
+  - `apps/web/src/pages/TemplatesPage.tsx`
+    - 정렬 버튼 라벨: `최신/좋아요/조회`
+    - 정렬 영역의 `정렬` 텍스트 라벨 제거
+  - `apps/web/src/pages/TemplateShareDetailPage.tsx`
+    - `relatedSort` 타입: `'latest' | 'likes' | 'views'`
+    - 정렬 로직: `likes`(좋아요 우선), `views`(조회 우선), `latest`(최신) 분기
+    - 버튼 라벨/액션: `최신`, `좋아요`, `조회`
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 스크린샷
+    - `docs/ai-context/screenshots/2026-02-22_templates_sort_labels_latest_likes_views_v1.png`
+    - `docs/ai-context/screenshots/2026-02-22_template_detail_sort_labels_latest_likes_views_v1.png`
+
+## [2026-02-22] 밈플릿 목록 정렬 컨트롤 텍스트형 전환
+- **결정**:
+  1. `/templates`의 정렬 컨트롤(`최신순/인기순/조회순`)을 셀렉트박스에서 텍스트형 단일선택 버튼으로 전환함.
+  2. 기간 컨트롤(`24시간/7일/30일/1년/전체`)은 셀렉트 형태를 유지함.
+  3. 정렬 버튼 스타일은 밈플릿 상세의 리믹스 정렬 버튼(`최신순/인기순`)과 동일한 토글 스타일로 통일함.
+- **이유**:
+  1. 정렬 항목은 짧고 빈번히 전환되는 옵션이라 드롭다운보다 즉시 클릭 가능한 텍스트형 UI가 탐색 속도와 가시성에 유리함.
+  2. 기간은 옵션 수가 더 많고 길이가 제각각이라 드롭다운 유지가 공간 효율과 밀도 측면에서 안정적임.
+- **구현 요약**:
+  - `apps/web/src/pages/TemplatesPage.tsx`
+    - 정렬 셀렉트를 제거하고 텍스트 버튼 그룹(`최신순/인기순/조회순`) 추가
+    - 구분점 없이 독립 버튼형으로 구성
+    - 버튼 스타일을 상세 페이지와 동일하게 적용(`rounded-xl bg-muted p-1` 컨테이너 + `h-8 rounded-lg px-3 text-xs font-bold` 토글 버튼)
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 스크린샷
+    - `docs/ai-context/screenshots/2026-02-22_templates_sort_text_buttons_v1.png`
+    - `docs/ai-context/screenshots/2026-02-22_templates_sort_text_button_like_v1.png`
+    - `docs/ai-context/screenshots/2026-02-22_templates_sort_match_detail_style_v1.png`
+
+## [2026-02-22] 밈플릿 목록 정렬/기간 필터 도입 (#142)
+- **결정**:
+  1. 공개 밈플릿 목록 API(`GET /api/v1/templates/public`)에 `sortBy(latest/likes/views)`와 `period(24h/7d/30d/1y/all)` 쿼리 파라미터를 추가함.
+  2. `/templates` 우측 상단에 `Sort by` + 기간 셀렉트 박스를 배치하고, 선택값을 React Query key에 포함해 필터 변경 시 목록을 즉시 재조회함.
+  3. 잘못된 쿼리값은 `400`으로 실패시키지 않고 `sortBy=latest`, `period=all` 기본값으로 안전하게 폴백함.
+- **이유**:
+  1. 사용자 요구대로 최신순 외에도 좋아요/조회수 기준 탐색과 기간 범위 탐색을 동일 화면에서 빠르게 전환할 필요가 있음.
+  2. 정렬/기간이 서버 집계 기준에 반영되어야 카드 순서와 지표 의미가 일관됨.
+  3. 잘못된 쿼리값으로 목록 자체가 깨지지 않도록 공개 목록 API는 복원력 중심으로 처리하는 편이 UX에 유리함.
+- **구현 요약**:
+  - `apps/api/src/types/template.ts`
+    - `TemplatePublicSortBySchema`, `TemplatePublicPeriodSchema` 및 타입 추가
+  - `apps/api/src/modules/templates/routes.ts`
+    - `sortBy/period` 쿼리 파싱 + 스키마 검증 + 기본값 폴백 추가
+  - `apps/api/src/modules/templates/repository.ts`
+    - `listPublic` 인터페이스를 `options(limit, sortBy, period)` 형태로 확장
+  - `apps/api/src/modules/templates/supabaseRepository.ts`
+    - 기간 cutoff(`24h/7d/30d/1y`) 필터 및 정렬 분기(`latest/likes/views`) 구현
+  - `apps/web/src/pages/TemplatesPage.tsx`
+    - 우측 상단 필터 UI 추가 및 API 요청 파라미터 연동
+  - `apps/web/src/types/template.ts`
+    - 프론트용 `TemplatePublicSortBy`, `TemplatePublicPeriod` 타입 추가
+- **검증**:
+  - `pnpm --filter memeplate-api build`
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 스크린샷
+    - `docs/ai-context/screenshots/2026-02-22_templates_sort_period_controls_v1.png`
+
 ## [2026-02-22] 내 밈플릿 헤더 문구/CTA 단순화
 - **결정**:
   1. `MyTemplatesPage` 헤더 타이틀을 `내 밈플릿 관리`에서 `내 밈플릿`으로 변경함.

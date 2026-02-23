@@ -1,6 +1,8 @@
 import { z } from 'zod';
 
 export const TemplateVisibilitySchema = z.enum(['private', 'public']);
+export const TemplatePublicSortBySchema = z.enum(['latest', 'likes', 'views']);
+export const TemplatePublicPeriodSchema = z.enum(['24h', '7d', '30d', '1y', 'all']);
 const SingleLineTitleSchema = z.string().trim().min(1).max(100).refine(
   (value) => !/[\r\n]/.test(value),
   { message: 'title must be a single line' }
@@ -33,3 +35,5 @@ export const TemplateShareSlugParamSchema = z.object({
 
 export type CreateTemplateInput = z.infer<typeof CreateTemplateSchema>;
 export type UpdateTemplateInput = z.infer<typeof UpdateTemplateSchema>;
+export type TemplatePublicSortBy = z.infer<typeof TemplatePublicSortBySchema>;
+export type TemplatePublicPeriod = z.infer<typeof TemplatePublicPeriodSchema>;
