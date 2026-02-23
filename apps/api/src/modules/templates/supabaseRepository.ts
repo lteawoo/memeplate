@@ -75,17 +75,6 @@ const extractDisplayName = (users: TemplateRow['users']) => {
 
 const generateShareSlug = () => `tmpl_${randomBytes(6).toString('base64url')}`;
 
-const isMissingLikeRpcError = (error: unknown) => {
-  if (!error || typeof error !== 'object') return false;
-  const code = 'code' in error && typeof (error as { code?: unknown }).code === 'string'
-    ? (error as { code: string }).code
-    : '';
-  const message = 'message' in error && typeof (error as { message?: unknown }).message === 'string'
-    ? (error as { message: string }).message
-    : '';
-  return code === 'PGRST202' || message.includes('increment_template_like_count');
-};
-
 const getPeriodCutoffIso = (period: TemplatePublicPeriod) => {
   if (period === 'all') return null;
   const now = Date.now();
@@ -96,6 +85,40 @@ const getPeriodCutoffIso = (period: TemplatePublicPeriod) => {
     '1y': 365 * 24 * 60 * 60 * 1000
   };
   return new Date(now - cutoffMsByPeriod[period]).toISOString();
+};
+
+const parseToggleLikeResult = (payload: unknown): { likeCount: number; liked: boolean } | null => {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return null;
+  const likeCountRaw = 'likeCount' in payload ? (payload as { likeCount?: unknown }).likeCount : undefined;
+  const likedRaw = 'liked' in payload ? (payload as { liked?: unknown }).liked : undefined;
+  const likeCount = Number(likeCountRaw);
+  if (!Number.isFinite(likeCount) || typeof likedRaw !== 'boolean') return null;
+  return {
+    likeCount: Math.max(0, Math.floor(likeCount)),
+    liked: likedRaw
+  };
+};
+
+const isMissingToggleLikeRpcError = (error: unknown) => {
+  if (!error || typeof error !== 'object') return false;
+  const code = 'code' in error && typeof (error as { code?: unknown }).code === 'string'
+    ? (error as { code: string }).code
+    : '';
+  const message = 'message' in error && typeof (error as { message?: unknown }).message === 'string'
+    ? (error as { message: string }).message
+    : '';
+  return code === 'PGRST202' || message.includes('toggle_template_like_count');
+};
+
+const isMissingMetricActorStatesError = (error: unknown) => {
+  if (!error || typeof error !== 'object') return false;
+  const code = 'code' in error && typeof (error as { code?: unknown }).code === 'string'
+    ? (error as { code: string }).code
+    : '';
+  const message = 'message' in error && typeof (error as { message?: unknown }).message === 'string'
+    ? (error as { message: string }).message
+    : '';
+  return code === 'PGRST205' || code === '42P01' || message.includes('metric_actor_states');
 };
 
 export const createSupabaseTemplateRepository = (): TemplateRepository => {
@@ -220,9 +243,38 @@ export const createSupabaseTemplateRepository = (): TemplateRepository => {
       return toRecord(row, extractDisplayName(row.users));
     },
 
-    async incrementViewCountByShareSlug(shareSlug) {
-      const { data, error } = await supabase.rpc('increment_template_view_count', {
-        p_share_slug: shareSlug
+    async getLikeStateByShareSlug(shareSlug, actorKey) {
+      const safeActorKey = actorKey.trim();
+      if (!safeActorKey) return false;
+
+      const { data: templateRow, error: templateError } = await supabase
+        .from('templates')
+        .select('id')
+        .eq('share_slug', shareSlug)
+        .eq('visibility', 'public')
+        .is('deleted_at', null)
+        .maybeSingle();
+      if (templateError) throw templateError;
+      if (!templateRow?.id) return null;
+
+      const { data: metricRow, error: metricError } = await supabase
+        .from('metric_actor_states')
+        .select('liked_at')
+        .eq('resource_type', 'template')
+        .eq('resource_id', templateRow.id)
+        .eq('actor_key', safeActorKey)
+        .maybeSingle();
+      if (metricError) {
+        if (isMissingMetricActorStatesError(metricError)) return false;
+        throw metricError;
+      }
+      return Boolean(metricRow?.liked_at);
+    },
+
+    async incrementViewCountByShareSlug(shareSlug, actorKey) {
+      const { data, error } = await supabase.rpc('increment_template_view_count_dedup', {
+        p_share_slug: shareSlug,
+        p_actor_key: actorKey
       });
 
       if (error) throw error;
@@ -231,24 +283,33 @@ export const createSupabaseTemplateRepository = (): TemplateRepository => {
       return Number.isFinite(next) ? next : null;
     },
 
-    async incrementLikeCountByShareSlug(shareSlug) {
-      const { data, error } = await supabase.rpc('increment_template_like_count', {
-        p_share_slug: shareSlug
+    async toggleLikeByShareSlug(shareSlug, actorKey) {
+      const { data, error } = await supabase.rpc('toggle_template_like_count', {
+        p_share_slug: shareSlug,
+        p_actor_key: actorKey
       });
 
-      if (error) {
-        if (!isMissingLikeRpcError(error)) throw error;
+      if (!error) {
+        if (data === null || data === undefined) return null;
+        const parsed = parseToggleLikeResult(data);
+        if (!parsed) throw new Error('Invalid toggle template like RPC response.');
+        return parsed;
+      }
 
-        const { data: existing, error: existingError } = await supabase
-          .from('templates')
-          .select('id, like_count')
-          .eq('share_slug', shareSlug)
-          .eq('visibility', 'public')
-          .is('deleted_at', null)
-          .maybeSingle();
-        if (existingError) throw existingError;
-        if (!existing) return null;
+      if (!isMissingToggleLikeRpcError(error)) throw error;
 
+      const { data: existing, error: existingError } = await supabase
+        .from('templates')
+        .select('id, like_count')
+        .eq('share_slug', shareSlug)
+        .eq('visibility', 'public')
+        .is('deleted_at', null)
+        .maybeSingle();
+      if (existingError) throw existingError;
+      if (!existing) return null;
+
+      const safeActorKey = actorKey.trim();
+      if (!safeActorKey) {
         const nextLikeCount = Math.max(0, Number(existing.like_count ?? 0) + 1);
         const { data: updated, error: updateError } = await supabase
           .from('templates')
@@ -258,14 +319,63 @@ export const createSupabaseTemplateRepository = (): TemplateRepository => {
           .select('like_count')
           .maybeSingle();
         if (updateError) throw updateError;
-
-        if (updated?.like_count === null || updated?.like_count === undefined) return nextLikeCount;
-        const fallbackNext = Number(updated.like_count);
-        return Number.isFinite(fallbackNext) ? fallbackNext : nextLikeCount;
+        const likeCount = Number(updated?.like_count ?? nextLikeCount);
+        return { likeCount: Number.isFinite(likeCount) ? likeCount : nextLikeCount, liked: true };
       }
-      if (data === null || data === undefined) return null;
-      const next = Number(data);
-      return Number.isFinite(next) ? next : null;
+
+      const { data: metricState, error: metricStateError } = await supabase
+        .from('metric_actor_states')
+        .select('liked_at')
+        .eq('resource_type', 'template')
+        .eq('resource_id', existing.id)
+        .eq('actor_key', safeActorKey)
+        .maybeSingle();
+      if (metricStateError && !isMissingMetricActorStatesError(metricStateError)) throw metricStateError;
+
+      if (metricStateError && isMissingMetricActorStatesError(metricStateError)) {
+        const nextLikeCount = Math.max(0, Number(existing.like_count ?? 0) + 1);
+        const { data: updated, error: updateError } = await supabase
+          .from('templates')
+          .update({ like_count: nextLikeCount })
+          .eq('id', existing.id)
+          .is('deleted_at', null)
+          .select('like_count')
+          .maybeSingle();
+        if (updateError) throw updateError;
+        const fallbackLikeCount = Number(updated?.like_count ?? nextLikeCount);
+        return { likeCount: Number.isFinite(fallbackLikeCount) ? fallbackLikeCount : nextLikeCount, liked: true };
+      }
+
+      const wasLiked = Boolean(metricState?.liked_at);
+
+      const { error: metricUpsertError } = await supabase
+        .from('metric_actor_states')
+        .upsert({
+          resource_type: 'template',
+          resource_id: existing.id,
+          actor_key: safeActorKey,
+          liked_at: wasLiked ? null : new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }, {
+          onConflict: 'resource_type,resource_id,actor_key'
+        });
+      if (metricUpsertError) throw metricUpsertError;
+
+      const nextLikeCount = Math.max(0, Number(existing.like_count ?? 0) + (wasLiked ? -1 : 1));
+      const { data: updated, error: updateError } = await supabase
+        .from('templates')
+        .update({ like_count: nextLikeCount })
+        .eq('id', existing.id)
+        .is('deleted_at', null)
+        .select('like_count')
+        .maybeSingle();
+      if (updateError) throw updateError;
+
+      const fallbackLikeCount = Number(updated?.like_count ?? nextLikeCount);
+      return {
+        likeCount: Number.isFinite(fallbackLikeCount) ? fallbackLikeCount : nextLikeCount,
+        liked: !wasLiked
+      };
     },
 
     async create(userId, input) {

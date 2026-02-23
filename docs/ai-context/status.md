@@ -1,6 +1,60 @@
 # 프로젝트 상태 (Status)
 
 ## 현재 진행 상황
+- [x] **상세 좋아요 stale 응답 반영 차단 (완료 - 2026-02-23)**
+  - [x] 밈플릿/리믹스 상세 좋아요 요청에 `AbortController` 적용
+  - [x] 요청 시퀀스(ref) 가드 추가로 라우트 전환 후 지연 응답의 상태 덮어쓰기 차단
+  - [x] stale 실패 응답의 에러 토스트 노출도 시퀀스 가드로 차단
+  - [x] 검증
+    - [x] `pnpm --filter memeplate-web lint`
+    - [x] `pnpm --filter memeplate-web build`
+- [x] **상세 좋아요 버튼 중복 클릭 레이스 차단 (완료 - 2026-02-23)**
+  - [x] `TemplateShareDetailPage`, `ImageShareDetailPage`에 like 요청 즉시락(`useRef`) 추가
+  - [x] state 반영 전 초고속 연속 클릭에서도 API 중복 호출이 발생하지 않도록 보강
+  - [x] 검증
+    - [x] `pnpm --filter memeplate-web lint`
+    - [x] `pnpm --filter memeplate-web build`
+- [x] **조회수/좋아요 actor 중복 방지 1차 (#147, 완료 - 2026-02-23)**
+  - [x] `view`: 동일 actor 기준 24시간 dedupe 적용 (`/memeplates`, `/remixes`)
+  - [x] `like`: 동일 actor 기준 토글 적용(좋아요/취소, `/memeplates`, `/remixes`)
+  - [x] actor 식별값은 원문 IP 저장 없이 HMAC 해시 키로 처리 (`metricActorKey`)
+  - [x] Fastify `trustProxy`를 env(`TRUST_PROXY`)로 제어
+  - [x] SQL 추가: `docs/ai-context/sql/2026-02-23_actor_metric_dedupe.sql`
+  - [x] 상세 응답에 `likedByMe` 추가(`GET /api/v1/memeplates/s/:shareSlug`, `GET /api/v1/remixes/s/:shareSlug`)
+  - [x] env example/README에 `TRUST_PROXY`, `METRIC_ACTOR_HASH_SECRET` 문서화
+  - [x] 검증
+    - [x] `pnpm --filter memeplate-api build`
+    - [x] `pnpm --filter memeplate-web lint`
+    - [x] `pnpm --filter memeplate-web build`
+- [x] **프론트 라우팅 경로 일원화 3차 (구경로 제거) (완료 - 2026-02-23)**
+  - [x] 웹 라우트 기준 경로를 `/memeplates`, `/memeplates/s/:shareSlug`, `/remixes/s/:shareSlug`, `/my/memeplates`로 단일화
+  - [x] `App.tsx`에서 구경로(`/templates`, `/templates/s/:shareSlug`, `/images/s/:shareSlug`, `/my/templates`) 리다이렉트 제거
+  - [x] 웹 소스 기준 구경로 문자열(`/templates`, `/images`, `/my/templates`) 참조 제거 확인
+  - [x] 검증
+    - [x] `pnpm --filter memeplate-web lint`
+    - [x] `pnpm --filter memeplate-web build`
+- [x] **API 리소스 경로 일원화 2차 (구경로 삭제) (완료 - 2026-02-23)**
+  - [x] 템플릿 API 구경로(`/api/v1/templates/*`) 등록 제거
+  - [x] 리믹스 API 구경로(`/api/v1/images/*`) 등록 제거
+  - [x] API는 `/api/v1/memeplates/*`, `/api/v1/remixes/*`만 지원하도록 정리
+  - [x] 웹 API 호출은 신규 경로 유지(`memeplates/remixes`)
+  - [x] `apps/api/README.md`에서 구경로 호환 문구 제거
+  - [x] 검증
+    - [x] `pnpm --filter memeplate-api build`
+    - [x] `pnpm --filter memeplate-web lint`
+    - [x] `pnpm --filter memeplate-web build`
+    - [x] 수동 API 확인: 신규 경로 `200`, 구경로 `404`
+- [x] **API 리소스 경로 용어 일원화 1차 (`memeplates`/`remixes`) (완료 - 2026-02-23)**
+  - [x] 템플릿 라우트에 `memeplates` 별칭 추가 (`/templates/*` + `/memeplates/*` 동시 지원)
+  - [x] 이미지 라우트에 `remixes` 별칭 추가 (`/images/*` + `/remixes/*` 동시 지원)
+  - [x] 웹 API 호출 경로를 `/api/v1/memeplates/*`, `/api/v1/remixes/*` 기준으로 전환
+  - [x] 기존 `/api/v1/templates/*`, `/api/v1/images/*` 경로 호환 유지
+  - [x] `apps/api/README.md` 엔드포인트 문구를 신규 경로 기준으로 갱신
+  - [x] 검증
+    - [x] `pnpm --filter memeplate-api build`
+    - [x] `pnpm --filter memeplate-web lint`
+    - [x] `pnpm --filter memeplate-web build`
+    - [x] 수동 API 확인: `memeplates/templates`, `remixes/images` 공개 목록 경로 모두 `200`
 - [x] **리믹스 상세 좋아요 기능 API 연동 (완료 - 2026-02-23)**
   - [x] `POST /api/v1/images/s/:shareSlug/like` 라우트 추가
   - [x] `MemeImageRepository`에 `incrementLikeCountByShareSlug` 인터페이스 추가

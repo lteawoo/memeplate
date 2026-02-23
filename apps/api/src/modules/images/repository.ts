@@ -25,8 +25,9 @@ export interface MemeImageRepository {
   getMineById(userId: string, imageId: string): Promise<MemeImageRecord | null>;
   listPublic(limit: number, templateId?: string): Promise<MemeImageRecord[]>;
   getPublicByShareSlug(shareSlug: string): Promise<MemeImageRecord | null>;
-  incrementViewCountByShareSlug(shareSlug: string): Promise<number | null>;
-  incrementLikeCountByShareSlug(shareSlug: string): Promise<number | null>;
+  getLikeStateByShareSlug(shareSlug: string, actorKey: string): Promise<boolean | null>;
+  incrementViewCountByShareSlug(shareSlug: string, actorKey: string): Promise<number | null>;
+  toggleLikeByShareSlug(shareSlug: string, actorKey: string): Promise<{ likeCount: number; liked: boolean } | null>;
   create(userId: string, input: CreateMemeImageInput): Promise<MemeImageRecord>;
   update(userId: string, imageId: string, input: UpdateMemeImageInput): Promise<MemeImageRecord>;
   remove(userId: string, imageId: string): Promise<void>;

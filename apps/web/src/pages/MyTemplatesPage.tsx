@@ -54,7 +54,7 @@ const toTimestamp = (...values: Array<string | null | undefined>) => {
 };
 
 const fetchMyTemplates = async (): Promise<TemplateRecord[]> => {
-  const res = await apiFetch('/api/v1/templates/me', undefined, { redirectOnAuthFailure: false });
+  const res = await apiFetch('/api/v1/memeplates/me', undefined, { redirectOnAuthFailure: false });
   if (res.status === 401) {
     throw new AuthRequiredError('로그인이 필요합니다.');
   }
@@ -191,7 +191,7 @@ const MyTemplatesPage: React.FC = () => {
                   template={template}
                   hoverable
                   hoverSurfaceOnly
-                  onClick={() => navigate(`/templates/s/${template.shareSlug}`)}
+                  onClick={() => navigate(`/memeplates/s/${template.shareSlug}`)}
                 >
                   <div className="space-y-1">
                     <div className="line-clamp-1 text-sm font-semibold text-foreground">{template.title}</div>

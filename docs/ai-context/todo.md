@@ -215,6 +215,12 @@
   - [x] 밈플릿 상세 좋아요 버튼 추가(2026-02-22): 좌측 액션 영역에 `따봉 + 카운트` 버튼을 배치하고 `수정` 버튼의 왼쪽에 정렬
   - [x] 밈플릿 상세 좋아요 기능 연동(2026-02-23): `POST /templates/s/:shareSlug/like` 추가, 상세 버튼 클릭 시 카운트 즉시 반영, RPC 미존재/스키마 캐시 지연 시 저장소 fallback으로 500 회피
   - [x] 리믹스 상세 좋아요 기능 연동(2026-02-23): `POST /images/s/:shareSlug/like` 추가, 상세 버튼 클릭 시 카운트 즉시 반영, RPC 미존재/스키마 캐시 지연 시 저장소 fallback 적용
+  - [x] API 경로 용어 일원화 1차(2026-02-23): `/api/v1/memeplates/*`, `/api/v1/remixes/*` 경로를 추가하고 웹 호출을 신규 경로로 전환(기존 `/templates/*`, `/images/*` 호환 유지)
+  - [x] API 경로 용어 일원화 2차(2026-02-23): `/api/v1/templates/*`, `/api/v1/images/*` 구경로 제거, `/api/v1/memeplates/*`, `/api/v1/remixes/*`만 유지
+  - [x] 프론트 페이지 경로 일원화 3차(2026-02-23): 라우트/내비게이션을 `/memeplates`, `/memeplates/s/:shareSlug`, `/remixes/s/:shareSlug`, `/my/memeplates`로 단일화하고 구경로(`/templates`, `/images`, `/my/templates`) 제거
+  - [x] 조회수/좋아요 actor 중복 방지 1차(#147, 2026-02-23): actor HMAC 키 기반으로 `view 24시간 dedupe`, `like 토글(좋아요/취소)` 적용 + 상세 `likedByMe` 응답 추가 + SQL(`metric_actor_states`, dedupe/toggle RPC) 및 `TRUST_PROXY`/`METRIC_ACTOR_HASH_SECRET` 환경 변수 추가
+  - [x] 상세 좋아요 중복 클릭 레이스 차단(2026-02-23): 밈플릿/리믹스 상세 좋아요 요청에 `useRef` 즉시락을 추가해 재렌더 전 더블클릭 중복 호출 방지
+  - [x] 상세 좋아요 stale 응답 차단(2026-02-23): `AbortController` + 요청 시퀀스(ref) 가드로 상세 라우트 전환 후 지연 응답이 다른 slug 상태를 덮어쓰지 않도록 보강
   - [x] `apps/web/src`(단, `index.css` 변수명 제외) 클래스 스캔 기준 `slate/blue/on-accent` 직접 클래스 0건 확인
   - [ ] shadcn primitive variant 규칙 재점검(`button/input/card/dropdown/sheet`)
   - [ ] 웹 워커(Web Worker) 기반 내보내기 처리

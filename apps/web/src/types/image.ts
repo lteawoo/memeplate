@@ -22,6 +22,7 @@ export type MemeImageRecord = {
 
 export type MemeImageResponse = {
   image: MemeImageRecord;
+  likedByMe?: boolean;
 };
 
 export type MemeImagesResponse = {

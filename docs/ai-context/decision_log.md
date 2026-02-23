@@ -1,5 +1,154 @@
 # 결정 로그 (Decision Log)
 
+## [2026-02-23] 상세 좋아요 요청에 `AbortController + 요청 시퀀스`를 적용해 stale 응답 반영 차단
+- **결정**:
+  1. 좋아요 요청 시작 시 이전 in-flight 요청을 `abort`하고 현재 요청의 컨트롤러만 유지한다.
+  2. 요청마다 증가하는 시퀀스(ref)를 부여해 최신 요청이 아닌 응답은 상태 반영을 건너뛴다.
+  3. 상태 반영 시 현재 레코드의 `shareSlug`가 요청 대상 slug와 일치할 때만 카운트를 갱신한다.
+  4. 실패 처리에서도 시퀀스 검증을 우선 적용해 stale 요청의 에러 토스트를 노출하지 않는다.
+- **이유**:
+  1. 상세 페이지를 빠르게 이동할 때 이전 slug의 늦은 응답이 현재 화면 상태를 덮어쓰는 레이스를 방지해야 한다.
+  2. 즉시락만으로는 stale 응답 반영 자체를 완전히 막을 수 없다.
+- **구현 요약**:
+  - `apps/web/src/pages/TemplateShareDetailPage.tsx`
+    - `templateLikeAbortRef`, `templateLikeRequestSeqRef` 추가
+    - slug 변경/언마운트 시 in-flight like 요청 abort
+    - like 응답 반영 시 시퀀스/slug 가드 적용
+  - `apps/web/src/pages/ImageShareDetailPage.tsx`
+    - `imageLikeAbortRef`, `imageLikeRequestSeqRef` 추가
+    - slug 변경/언마운트 시 in-flight like 요청 abort
+    - like 응답 반영 시 시퀀스/slug 가드 적용
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+
+## [2026-02-23] 상세 좋아요 버튼에 즉시락을 추가해 연속 클릭 레이스를 차단
+- **결정**:
+  1. 밈플릿/리믹스 상세 좋아요 핸들러는 `isLiking` state 외에 `useRef` 락을 함께 사용한다.
+  2. 요청 시작 시 ref 락을 즉시 올리고, 완료/실패 `finally`에서 해제한다.
+- **이유**:
+  1. React state 기반 비활성화는 재렌더 전에 아주 빠른 연속 클릭이 들어오면 중복 호출 가능성이 남는다.
+  2. 좋아요 토글 API는 순차 2회 호출 시 최종 상태가 원복될 수 있어 사용자가 의도하지 않은 결과가 발생할 수 있다.
+- **구현 요약**:
+  - `apps/web/src/pages/TemplateShareDetailPage.tsx`
+    - `templateLikeLockRef` 추가, like 핸들러 가드/락 처리
+  - `apps/web/src/pages/ImageShareDetailPage.tsx`
+    - `imageLikeLockRef` 추가, like 핸들러 가드/락 처리
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+
+## [2026-02-23] 조회수/좋아요 중복 집계를 actor 해시 기반 dedupe로 전환
+- **결정**:
+  1. `view`는 동일 actor가 같은 리소스에 24시간 내 재요청하면 카운트를 올리지 않음.
+  2. `like`는 동일 actor 기준 토글(좋아요/취소)로 처리하며, 재요청 시 상태를 반전함.
+  3. actor 식별은 원문 IP를 저장하지 않고, `IP + UA (+ 로그인 시 userId)`를 HMAC 해시(`actor_key`)로 생성해 사용함.
+  4. 프록시 환경 대응을 위해 Fastify `trustProxy`를 env(`TRUST_PROXY`)로 제어함.
+- **이유**:
+  1. 기존 방식은 라우트 분당 rate-limit만 있어 동일 actor의 반복 호출로 지표 왜곡이 가능했음.
+  2. 비로그인 공개 상세 트래픽에서도 최소한의 데이터 신뢰도를 확보해야 정렬/랭킹 품질이 유지됨.
+  3. 개인정보 최소 수집 원칙에 맞춰 IP 원문 저장을 피해야 함.
+- **구현 요약**:
+  - `apps/api/src/lib/metricActorKey.ts`
+    - HMAC 기반 actor 키 생성 유틸 추가
+  - `apps/api/src/app.ts`, `apps/api/src/config/env.ts`
+    - `trustProxy` 연동 및 `TRUST_PROXY`, `METRIC_ACTOR_HASH_SECRET` env 추가
+  - `apps/api/src/modules/templates/routes.ts`
+  - `apps/api/src/modules/images/routes.ts`
+    - `view/like` 경로에서 actor 키를 생성해 repository에 전달
+    - 상세 응답에 `likedByMe` 추가
+  - `apps/api/src/modules/templates/repository.ts`
+  - `apps/api/src/modules/images/repository.ts`
+    - `incrementViewCountByShareSlug`, `incrementLikeCountByShareSlug` 시그니처에 `actorKey` 추가
+  - `apps/api/src/modules/templates/supabaseRepository.ts`
+  - `apps/api/src/modules/images/supabaseRepository.ts`
+    - dedupe RPC(`*_view_count_dedup`) + like toggle RPC(`toggle_*_like_count`) 호출로 전환
+  - `docs/ai-context/sql/2026-02-23_actor_metric_dedupe.sql`
+    - `metric_actor_states` 테이블 + dedupe 함수 4종 + like toggle 함수 2종 추가
+  - `apps/api/.env*.example`, `apps/api/README.md`
+    - 신규 런타임 변수 문서화
+- **검증**:
+  - `pnpm --filter memeplate-api build`
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+
+## [2026-02-23] 프론트 라우팅 구경로(`/templates`,`/images`,`/my/templates`)를 제거하고 신규 경로로 단일화
+- **결정**:
+  1. 웹 라우트 경로를 `/memeplates`, `/memeplates/s/:shareSlug`, `/remixes/s/:shareSlug`, `/my/memeplates`로 고정함.
+  2. `App.tsx`의 레거시 리다이렉트(`/templates*`, `/images*`, `/my/templates`)를 제거함.
+  3. 헤더/마이 섹션/상세 이동 링크는 신규 경로만 사용함.
+- **이유**:
+  1. 현재 서비스 오픈 전 단계이므로 구경로 호환을 유지할 실익보다 코드 단순화 이점이 큼.
+  2. API 경로 단일화(`memeplates/remixes`)와 프론트 라우트 경로를 맞춰 도메인 용어 일관성을 확보함.
+  3. 중복 라우트 유지 시 QA/문서/회귀 테스트 범위가 불필요하게 커짐.
+- **구현 요약**:
+  - `apps/web/src/App.tsx`
+    - 구경로 리다이렉트 라우트 제거
+    - 신규 경로 라우트만 유지
+  - `apps/web/src/components/layout/MainHeader.tsx`
+  - `apps/web/src/components/layout/MySectionLayout.tsx`
+  - `apps/web/src/pages/TemplatesPage.tsx`
+  - `apps/web/src/pages/MyTemplatesPage.tsx`
+  - `apps/web/src/pages/TemplateShareDetailPage.tsx`
+  - `apps/web/src/hooks/useMemeEditor.ts`
+    - 신규 경로 기준 내비게이션/공유 URL 유지
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - `rg -n "(/templates\\b|/images\\b|/my/templates\\b|api/v1/templates\\b|api/v1/images\\b)" apps/web/src` 결과 0건
+
+## [2026-02-23] API 구경로(`/templates`,`/images`)를 제거하고 신규 경로로 단일화
+- **결정**:
+  1. API 라우트에서 `/api/v1/templates/*`, `/api/v1/images/*`를 제거함.
+  2. API는 `/api/v1/memeplates/*`, `/api/v1/remixes/*`만 제공하도록 단일화함.
+  3. 웹 클라이언트는 이미 신규 경로로 전환되어 있어 추가 우회/alias 없이 유지함.
+- **이유**:
+  1. 현재 서비스 오픈 전 단계이므로 breaking change 비용이 낮고, 이중 경로 유지 비용을 초기에 제거하는 편이 유리함.
+  2. 동일 의미의 경로를 중복 유지하면 문서/운영/테스트 복잡도가 증가함.
+- **구현 요약**:
+  - `apps/api/src/modules/templates/routes.ts`
+    - `/templates` 등록 제거, `/memeplates`만 등록
+  - `apps/api/src/modules/images/routes.ts`
+    - `/images` 등록 제거, `/remixes`만 등록
+  - `apps/api/README.md`
+    - 구경로 호환 유지 문구 제거
+- **검증**:
+  - `pnpm --filter memeplate-api build`
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 수동 검증
+    - `GET /api/v1/memeplates/public?limit=1` -> `200`
+    - `GET /api/v1/remixes/public?limit=1` -> `200`
+    - `GET /api/v1/templates/public?limit=1` -> `404`
+    - `GET /api/v1/images/public?limit=1` -> `404`
+
+## [2026-02-23] API 리소스 경로를 `memeplates/remixes`로 전환하되 구경로 호환 유지
+- **결정**:
+  1. 밈플릿 API는 `/api/v1/memeplates/*`를 신규 표준 경로로 사용하고, 기존 `/api/v1/templates/*`는 호환 경로로 유지함.
+  2. 리믹스 API는 `/api/v1/remixes/*`를 신규 표준 경로로 사용하고, 기존 `/api/v1/images/*`는 호환 경로로 유지함.
+  3. 웹 클라이언트는 즉시 신규 경로(`memeplates/remixes`)로 전환함.
+- **이유**:
+  1. 제품 도메인 용어(밈플릿/리믹스)와 API 리소스 이름을 맞춰 가독성과 유지보수성을 높이기 위함.
+  2. 구경로를 즉시 제거하면 외부 의존 클라이언트에 breaking change가 발생하므로, 단계적 전환이 필요함.
+- **구현 요약**:
+  - `apps/api/src/modules/templates/routes.ts`
+    - 템플릿 라우트를 공통 등록 함수로 정리하고 `/templates`, `/memeplates`를 동시 등록
+  - `apps/api/src/modules/images/routes.ts`
+    - 이미지 라우트를 공통 등록 함수로 정리하고 `/images`, `/remixes`를 동시 등록
+  - `apps/web/src/pages/*`, `apps/web/src/hooks/useMemeEditor.ts`
+    - API 호출 경로를 `/api/v1/memeplates/*`, `/api/v1/remixes/*`로 교체
+  - `apps/api/README.md`
+    - 엔드포인트 문구를 신규 경로 기준으로 업데이트하고 구경로 호환 유지 문구 추가
+- **검증**:
+  - `pnpm --filter memeplate-api build`
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 수동 검증
+    - `GET /api/v1/memeplates/public?limit=1` -> `200`
+    - `GET /api/v1/templates/public?limit=1` -> `200`
+    - `GET /api/v1/remixes/public?limit=1` -> `200`
+    - `GET /api/v1/images/public?limit=1` -> `200`
+
 ## [2026-02-23] 리믹스 상세 좋아요 기능을 서버 API로 연결하고 RPC 미배포 구간 fallback 허용
 - **결정**:
   1. 리믹스 상세 좋아요 버튼은 `POST /api/v1/images/s/:shareSlug/like` 서버 API를 호출해 카운트를 증가시킴.

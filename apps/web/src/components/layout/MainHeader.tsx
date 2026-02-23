@@ -43,7 +43,7 @@ const MainHeader: React.FC = () => {
   const navLinks = [
     { to: '/', label: '홈' },
     { to: '/create', label: '밈플릿 생성' },
-    { to: '/templates', label: '밈플릿 목록' },
+    { to: '/memeplates', label: '밈플릿 목록' },
   ];
   const isLinkActive = (to: string) => {
     if (to === '/') return location.pathname === '/';
@@ -71,7 +71,7 @@ const MainHeader: React.FC = () => {
   const drawerNavLinks = [
     { to: '/create', label: '밈플릿 생성', icon: mdiPlus },
     { to: '/', label: '홈', icon: mdiHomeOutline },
-    { to: '/templates', label: '밈플릿 목록', icon: mdiViewGridOutline },
+    { to: '/memeplates', label: '밈플릿 목록', icon: mdiViewGridOutline },
   ];
 
   return (
@@ -127,7 +127,7 @@ const MainHeader: React.FC = () => {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-44">
                 <DropdownMenuItem onClick={() => navigate('/my')}>마이페이지</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate('/my/templates')}>내 밈플릿</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/my/memeplates')}>내 밈플릿</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => { void handleLogout(); }}>로그아웃</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -162,7 +162,7 @@ const MainHeader: React.FC = () => {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-44">
                 <DropdownMenuItem onClick={() => navigate('/my')}>마이페이지</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate('/my/templates')}>내 밈플릿</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/my/memeplates')}>내 밈플릿</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => { void handleLogout(); }}>로그아웃</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

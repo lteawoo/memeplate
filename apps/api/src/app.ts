@@ -13,7 +13,8 @@ import { memeImageRoutes } from './modules/images/routes.js';
 export const buildApp = () => {
   const app = Fastify({
     logger: true,
-    bodyLimit: 5 * 1024 * 1024
+    bodyLimit: 5 * 1024 * 1024,
+    trustProxy: env.TRUST_PROXY
   });
 
   app.get('/healthz', async () => {

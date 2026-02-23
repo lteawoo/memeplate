@@ -40,7 +40,7 @@ const fetchPublicTemplates = async (params: {
     sortBy: params.sortBy,
     period: params.period,
   });
-  const res = await fetch(`/api/v1/templates/public?${search.toString()}`);
+  const res = await fetch(`/api/v1/memeplates/public?${search.toString()}`);
   if (!res.ok) {
     throw new Error('밈플릿 목록 로딩 실패');
   }
@@ -125,7 +125,7 @@ const TemplatesPage: React.FC = () => {
                 template={template}
                 hoverable
                 hoverSurfaceOnly
-                onClick={() => navigate(`/templates/s/${template.shareSlug}`)}
+                onClick={() => navigate(`/memeplates/s/${template.shareSlug}`)}
               >
                 <div className="space-y-1">
                   <div className="line-clamp-1 text-sm font-semibold text-foreground">{template.title}</div>
