@@ -34,6 +34,7 @@ export interface TemplateRepository {
   getPublicDetailByShareSlug(shareSlug: string): Promise<TemplateRecord | null>;
   getPublicByShareSlug(shareSlug: string): Promise<TemplateRecord | null>;
   incrementViewCountByShareSlug(shareSlug: string): Promise<number | null>;
+  incrementLikeCountByShareSlug(shareSlug: string): Promise<number | null>;
   create(userId: string, input: CreateTemplateInput): Promise<TemplateRecord>;
   update(userId: string, templateId: string, input: UpdateTemplateInput): Promise<TemplateRecord>;
   remove(userId: string, templateId: string): Promise<void>;

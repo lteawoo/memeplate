@@ -1,6 +1,41 @@
 # 프로젝트 상태 (Status)
 
 ## 현재 진행 상황
+- [x] **리믹스 상세 좋아요 기능 API 연동 (완료 - 2026-02-23)**
+  - [x] `POST /api/v1/images/s/:shareSlug/like` 라우트 추가
+  - [x] `MemeImageRepository`에 `incrementLikeCountByShareSlug` 인터페이스 추가
+  - [x] Supabase 저장소에서 `increment_meme_image_like_count` RPC 우선 호출 + 미배포/스키마캐시 지연 시 fallback 처리
+  - [x] 리믹스 상세 좌측 액션 영역에 `따봉 아이콘 + 좋아요 카운트` 버튼 추가(`수정` 버튼 좌측 정렬)
+  - [x] 리믹스 상세 좋아요 버튼 클릭 시 API 호출/카운트 즉시 반영/실패 토스트 처리
+  - [x] 원자 증가용 SQL 함수 파일 추가: `docs/ai-context/sql/2026-02-23_atomic_meme_image_like_count_increment.sql`
+  - [x] 검증
+    - [x] `pnpm --filter memeplate-api build`
+    - [x] `pnpm --filter memeplate-web lint`
+    - [x] `pnpm --filter memeplate-web build`
+    - [x] 수동 호출: `POST /api/v1/images/s/:shareSlug/like` 응답 `200 { likeCount }` 확인
+    - [x] 화면 검증 스크린샷: `docs/ai-context/screenshots/2026-02-23_image_detail_like_button_api_connected_v1.png`
+- [x] **밈플릿 상세 좋아요 기능 API 연동 + 장애 회피 fallback 보강 (완료 - 2026-02-23)**
+  - [x] `POST /api/v1/templates/s/:shareSlug/like` 라우트 추가
+  - [x] `TemplateRepository`에 `incrementLikeCountByShareSlug` 인터페이스 추가
+  - [x] Supabase 저장소에서 `increment_template_like_count` RPC 우선 호출 + 미배포/스키마캐시 지연 시 update fallback 처리
+  - [x] 밈플릿 상세 좋아요 버튼 클릭 시 API 호출/카운트 즉시 반영/실패 토스트 처리
+  - [x] 원자 증가용 SQL 함수 파일 추가: `docs/ai-context/sql/2026-02-23_atomic_template_like_count_increment.sql`
+  - [x] 검증
+    - [x] `pnpm --filter memeplate-api build`
+    - [x] `pnpm --filter memeplate-web lint`
+    - [x] `pnpm --filter memeplate-web build`
+    - [x] 수동 호출: `POST /api/v1/templates/s/:shareSlug/like` 응답 `200 { likeCount }` 확인
+- [x] **밈플릿 상세 좋아요 버튼 UI 추가 (완료 - 2026-02-22)**
+  - [x] 밈플릿 상세 좌측 액션 영역에 `따봉 아이콘 + 좋아요 카운트` 버튼 추가
+  - [x] 액션 행 배치를 `좋아요 버튼(좌) -> 수정 버튼(우, owner)` 순서로 정렬
+  - [x] `pnpm --filter memeplate-web lint`, `pnpm --filter memeplate-web build` 통과
+  - [x] 스크린샷 검증
+    - [x] `docs/ai-context/screenshots/2026-02-22_template_detail_like_button_left_of_edit_v1.png`
+- [x] **상세 좌측 패널 높이 stretch 방지 정렬 고정 (완료 - 2026-02-22)**
+  - [x] 밈플릿 상세 그리드(로딩/완료)에 `lg:items-start` 적용
+  - [x] 리믹스 상세 그리드(로딩/완료)에 `lg:items-start` 적용
+  - [x] 리믹스 상세 좌측 정보 패널(로딩/완료)에 `lg:self-start` 적용
+  - [x] `pnpm --filter memeplate-web lint`, `pnpm --filter memeplate-web build` 통과
 - [x] **내 밈플릿 정렬/기간 컨트롤 추가 (완료 - 2026-02-22)**
   - [x] `/my/templates`에 목록과 동일한 정렬 버튼(`최신/좋아요/조회`) + 기간 셀렉트(`24시간/7일/30일/1년/전체`) 추가
   - [x] 내 밈플릿 목록은 클라이언트에서 기간 필터 + 정렬(`latest/likes/views`) 적용

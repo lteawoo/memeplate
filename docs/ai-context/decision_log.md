@@ -1,5 +1,96 @@
 # 결정 로그 (Decision Log)
 
+## [2026-02-23] 리믹스 상세 좋아요 기능을 서버 API로 연결하고 RPC 미배포 구간 fallback 허용
+- **결정**:
+  1. 리믹스 상세 좋아요 버튼은 `POST /api/v1/images/s/:shareSlug/like` 서버 API를 호출해 카운트를 증가시킴.
+  2. 저장소는 DB 함수(`increment_meme_image_like_count`) RPC를 우선 사용하되, 함수 미배포/스키마 캐시 지연(`PGRST202`) 시 조회+업데이트 fallback 경로를 허용함.
+  3. 리믹스 상세 좌측 액션 영역에 `따봉 아이콘 + 카운트` 버튼을 추가하고, owner일 때 `수정` 버튼의 왼쪽에 배치함.
+- **이유**:
+  1. 템플릿 상세와 동일한 상호작용 패턴으로 리믹스 상세 UX를 일관되게 맞추기 위함.
+  2. SQL 함수 배포 타이밍 불일치 시 500이 발생해 좋아요 기능이 중단되는 것을 방지하기 위함.
+  3. 메타 항목 텍스트보다 액션형 버튼이 지표 확인과 상호작용을 동시에 제공함.
+- **구현 요약**:
+  - `apps/api/src/modules/images/routes.ts`
+    - `POST /images/s/:shareSlug/like` 라우트 추가
+  - `apps/api/src/modules/images/repository.ts`
+    - `incrementLikeCountByShareSlug` 인터페이스 추가
+  - `apps/api/src/modules/images/supabaseRepository.ts`
+    - RPC 호출 + `PGRST202` fallback 처리 추가
+  - `apps/web/src/pages/ImageShareDetailPage.tsx`
+    - 좋아요 버튼 액션/로딩 상태/카운트 반영 추가
+  - `docs/ai-context/sql/2026-02-23_atomic_meme_image_like_count_increment.sql`
+    - 원자 증가 함수 정의 추가
+- **검증**:
+  - `pnpm --filter memeplate-api build`
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 수동 검증
+    - `POST /api/v1/images/s/:shareSlug/like` 응답 `200 { likeCount }`
+    - 리믹스 상세 버튼 클릭 시 카운트 증가
+  - 스크린샷
+    - `docs/ai-context/screenshots/2026-02-23_image_detail_like_button_api_connected_v1.png`
+
+## [2026-02-23] 밈플릿 상세 좋아요 기능을 서버 API로 연결하고 RPC 미배포 구간 fallback 허용
+- **결정**:
+  1. 밈플릿 상세 좋아요 버튼은 `POST /api/v1/templates/s/:shareSlug/like` 서버 API를 호출해 카운트를 증가시킴.
+  2. 저장소는 DB 함수(`increment_template_like_count`) RPC를 우선 사용하되, 함수 미배포/스키마 캐시 지연(`PGRST202`) 시 조회+업데이트 fallback 경로를 허용함.
+  3. 프론트는 응답 `likeCount`를 즉시 UI에 반영하고 실패 시 토스트로 안내함.
+- **이유**:
+  1. 기존 UI-only 좋아요 버튼은 실제 데이터 변경이 없어 기능 요구를 충족하지 못함.
+  2. 운영/개발 환경에서 SQL 함수 배포 타이밍 불일치가 발생하면 500이 발생할 수 있어, 기능 연속성을 위해 일시 fallback이 필요함.
+  3. 사용자가 클릭 즉시 증가 수치를 확인할 수 있어야 상호작용 피드백이 명확함.
+- **구현 요약**:
+  - `apps/api/src/modules/templates/routes.ts`
+    - `POST /templates/s/:shareSlug/like` 라우트 추가
+  - `apps/api/src/modules/templates/repository.ts`
+    - `incrementLikeCountByShareSlug` 인터페이스 추가
+  - `apps/api/src/modules/templates/supabaseRepository.ts`
+    - RPC 호출 + `PGRST202` fallback 처리 추가
+  - `apps/web/src/pages/TemplateShareDetailPage.tsx`
+    - 좋아요 버튼 클릭 핸들러/로딩 상태/카운트 반영 추가
+  - `docs/ai-context/sql/2026-02-23_atomic_template_like_count_increment.sql`
+    - 원자 증가 함수 정의 추가
+- **검증**:
+  - `pnpm --filter memeplate-api build`
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 수동 검증: `POST /api/v1/templates/s/:shareSlug/like` 응답 `200 { likeCount }`, 상세 버튼 클릭 시 카운트 증가 확인
+
+## [2026-02-22] 밈플릿 상세 좋아요 버튼(아이콘+카운트) 배치
+- **결정**:
+  1. 밈플릿 상세 좌측 패널 액션 영역에 `따봉 아이콘 + 좋아요 수` 버튼을 추가함.
+  2. 액션 버튼 순서를 `좋아요 버튼 -> 수정 버튼(owner만)`으로 배치함.
+- **이유**:
+  1. 상세에서 좋아요 지표를 메타 텍스트가 아닌 즉시 인지 가능한 액션형 UI로 노출하기 위함.
+  2. 사용자 요청대로 `수정` 버튼의 왼쪽에 좋아요 버튼을 고정 배치하기 위함.
+- **구현 요약**:
+  - `apps/web/src/pages/TemplateShareDetailPage.tsx`
+    - `mdiThumbUpOutline` 아이콘 import
+    - 액션 영역에 `Button(variant=outline)` 형태의 좋아요 카운트 버튼 추가
+    - `수정` 버튼과 같은 행(`flex`)에서 좌측 정렬
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 스크린샷
+    - `docs/ai-context/screenshots/2026-02-22_template_detail_like_button_left_of_edit_v1.png`
+
+## [2026-02-22] 밈플릿/리믹스 상세 좌측 패널 stretch 방지
+- **결정**:
+  1. 밈플릿 상세와 리믹스 상세의 2열 레이아웃 그리드에 `lg:items-start`를 적용함.
+  2. 리믹스 상세 좌측 정보 패널에 `lg:self-start`를 추가함.
+- **이유**:
+  1. CSS Grid 기본 `align-items: stretch`로 인해 좌측 패널이 우측 콘텐츠 높이에 끌려 늘어나는 체감이 있었음.
+  2. 좌측 정보 패널은 고정 높이 카드처럼 동작해야 정보 밀도와 시각 안정성이 유지됨.
+- **구현 요약**:
+  - `apps/web/src/pages/TemplateShareDetailPage.tsx`
+    - 로딩/완료 그리드 클래스에 `lg:items-start` 추가
+  - `apps/web/src/pages/ImageShareDetailPage.tsx`
+    - 로딩/완료 그리드 클래스에 `lg:items-start` 추가
+    - 로딩/완료 좌측 패널 클래스에 `lg:self-start` 추가
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+
 ## [2026-02-22] 정렬 기능 후속 보완(타입 안정성/접근성)
 - **결정**:
   1. 템플릿 공개 목록 정렬 구현에서 사용하던 `any` 헬퍼를 제거하고 `listPublic` 내부에서 정렬 분기를 명시적으로 구성함.

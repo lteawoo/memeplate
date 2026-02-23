@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Icon from '@mdi/react';
-import { mdiEyeOutline, mdiHeartOutline, mdiImageOffOutline } from '@mdi/js';
+import { mdiEyeOutline, mdiHeartOutline, mdiImageOffOutline, mdiThumbUpOutline } from '@mdi/js';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -114,6 +114,7 @@ const TemplateShareDetailPage: React.FC = () => {
   const [isUpdatingVisibility, setIsUpdatingVisibility] = React.useState(false);
   const [isDeletingTemplate, setIsDeletingTemplate] = React.useState(false);
   const [isSavingMeta, setIsSavingMeta] = React.useState(false);
+  const [isLikingTemplate, setIsLikingTemplate] = React.useState(false);
   const [isManageDialogOpen, setIsManageDialogOpen] = React.useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
   const [isRelatedLoaded, setIsRelatedLoaded] = React.useState(false);
@@ -177,6 +178,7 @@ const TemplateShareDetailPage: React.FC = () => {
     setIsOwnerFromDetail(null);
     setEditTitle('');
     setEditDescription('');
+    setIsLikingTemplate(false);
 
     const load = async () => {
       if (!shareSlug) {
@@ -328,6 +330,31 @@ const TemplateShareDetailPage: React.FC = () => {
     navigate(buildLoginPath(remixPath));
   }, [authInitialized, authUser, navigate, syncSession, template?.shareSlug]);
 
+  const handleLikeTemplate = React.useCallback(async () => {
+    if (!template?.shareSlug || template.visibility !== 'public' || isLikingTemplate) return;
+
+    setIsLikingTemplate(true);
+    try {
+      const res = await fetch(`/api/v1/templates/s/${template.shareSlug}/like`, {
+        method: 'POST',
+      });
+      if (!res.ok) {
+        const payload = (await res.json().catch(() => ({}))) as { message?: string };
+        throw new Error(payload.message || '좋아요 처리에 실패했습니다.');
+      }
+      const payload = (await res.json().catch(() => ({}))) as { likeCount?: number };
+      if (typeof payload.likeCount === 'number') {
+        setTemplate((prev) => (prev ? { ...prev, likeCount: payload.likeCount } : prev));
+      } else {
+        setTemplate((prev) => (prev ? { ...prev, likeCount: (prev.likeCount ?? 0) + 1 } : prev));
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '좋아요 처리에 실패했습니다.');
+    } finally {
+      setIsLikingTemplate(false);
+    }
+  }, [isLikingTemplate, template?.shareSlug, template?.visibility]);
+
   const handleChangeVisibility = React.useCallback(async (nextVisibility: TemplateVisibility) => {
     if (!template || !isOwner || template.visibility === nextVisibility) return;
     if (template.visibility === 'public' && nextVisibility === 'private' && hasRelatedRemixes) {
@@ -444,7 +471,7 @@ const TemplateShareDetailPage: React.FC = () => {
       <MainHeader />
       <PageContainer className="py-10">
         {isLoading ? (
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[340px_minmax(0,1fr)]">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[340px_minmax(0,1fr)] lg:items-start">
             <div className="rounded-2xl bg-card p-6">
               <div className="mb-4 space-y-2">
                 <Skeleton className="h-5 w-full rounded bg-border/80" />
@@ -479,7 +506,7 @@ const TemplateShareDetailPage: React.FC = () => {
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         ) : template ? (
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[340px_minmax(0,1fr)]">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[340px_minmax(0,1fr)] lg:items-start">
             <div className="lg:sticky lg:top-20 lg:self-start">
               <div className="rounded-2xl bg-card p-6">
                 <div className="mb-4">
@@ -535,98 +562,109 @@ const TemplateShareDetailPage: React.FC = () => {
                     <span className="text-right font-medium text-foreground">{template.visibility === 'public' ? '공개' : '비공개'}</span>
                   </div>
                 </div>
+                <div className="mt-5 flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="gap-1.5"
+                    onClick={() => { void handleLikeTemplate(); }}
+                    disabled={isLikingTemplate || template.visibility !== 'public'}
+                    aria-label="좋아요"
+                  >
+                    <Icon path={mdiThumbUpOutline} size={0.75} />
+                    {(template.likeCount ?? 0).toLocaleString()}
+                  </Button>
+                  {isOwner ? (
+                    <Button type="button" variant="outline" onClick={handleOpenManageDialog}>
+                      수정
+                    </Button>
+                  ) : null}
+                </div>
                 {isOwner ? (
-                  <>
-                    <div className="mt-5">
-                      <Button type="button" variant="outline" onClick={handleOpenManageDialog}>
-                        수정
-                      </Button>
-                    </div>
-                    <Dialog open={isManageDialogOpen} onOpenChange={handleManageDialogOpenChange}>
-                      <DialogContent className="sm:max-w-md">
-                        <DialogHeader>
-                          <DialogTitle>밈플릿 관리</DialogTitle>
-                          <DialogDescription>제목/설명 수정, 공개 상태 변경, 삭제를 관리합니다.</DialogDescription>
-                        </DialogHeader>
-                        <div className="space-y-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="template-title">제목</Label>
-                            <Input
-                              id="template-title"
-                              value={editTitle}
-                              maxLength={100}
-                              disabled={isSavingMeta}
-                              onChange={(event) => setEditTitle(event.target.value)}
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="template-description">설명</Label>
-                            <Textarea
-                              id="template-description"
-                              value={editDescription}
-                              maxLength={500}
-                              rows={4}
-                              disabled={isSavingMeta}
-                              onChange={(event) => setEditDescription(event.target.value)}
-                            />
-                          </div>
-                          {!isRelatedLoaded ? (
-                            <div className="text-sm text-muted-foreground">관리 옵션을 확인하는 중입니다.</div>
-                          ) : (
-                            <>
-                              {!isPrivateSwitchHidden ? (
-                                <div className="space-y-2">
-                                  <div className="text-sm font-medium text-foreground">공개 상태</div>
-                                  <SegmentedButtons
-                                    value={template.visibility}
-                                    options={[
-                                      { label: '비공개', value: 'private' },
-                                      { label: '공개', value: 'public' },
-                                    ]}
-                                    disabled={isUpdatingVisibility}
-                                    onChange={(value) => { void handleChangeVisibility(value); }}
-                                  />
-                                </div>
-                              ) : null}
-                              {!isDeleteHidden ? (
-                                <div className="space-y-2">
-                                  <div className="text-sm font-medium text-foreground">삭제</div>
-                                  <Button
-                                    type="button"
-                                    variant="destructive"
-                                    disabled={isDeletingTemplate}
-                                    onClick={() => {
-                                      setIsManageDialogOpen(false);
-                                      setIsDeleteDialogOpen(true);
-                                    }}
-                                  >
-                                    삭제
-                                  </Button>
-                                </div>
-                              ) : null}
-                            </>
-                          )}
+                  <Dialog open={isManageDialogOpen} onOpenChange={handleManageDialogOpenChange}>
+                    <DialogContent className="sm:max-w-md">
+                      <DialogHeader>
+                        <DialogTitle>밈플릿 관리</DialogTitle>
+                        <DialogDescription>제목/설명 수정, 공개 상태 변경, 삭제를 관리합니다.</DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="template-title">제목</Label>
+                          <Input
+                            id="template-title"
+                            value={editTitle}
+                            maxLength={100}
+                            disabled={isSavingMeta}
+                            onChange={(event) => setEditTitle(event.target.value)}
+                          />
                         </div>
-                        <DialogFooter>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            disabled={isUpdatingVisibility || isDeletingTemplate || isSavingMeta}
-                            onClick={() => setIsManageDialogOpen(false)}
-                          >
-                            취소
-                          </Button>
-                          <Button
-                            type="button"
-                            disabled={isUpdatingVisibility || isDeletingTemplate || isSavingMeta}
-                            onClick={() => { void handleSaveMetaFromDialog(); }}
-                          >
-                            {isSavingMeta ? '저장 중...' : '저장'}
-                          </Button>
-                        </DialogFooter>
-                      </DialogContent>
-                    </Dialog>
-                  </>
+                        <div className="space-y-2">
+                          <Label htmlFor="template-description">설명</Label>
+                          <Textarea
+                            id="template-description"
+                            value={editDescription}
+                            maxLength={500}
+                            rows={4}
+                            disabled={isSavingMeta}
+                            onChange={(event) => setEditDescription(event.target.value)}
+                          />
+                        </div>
+                        {!isRelatedLoaded ? (
+                          <div className="text-sm text-muted-foreground">관리 옵션을 확인하는 중입니다.</div>
+                        ) : (
+                          <>
+                            {!isPrivateSwitchHidden ? (
+                              <div className="space-y-2">
+                                <div className="text-sm font-medium text-foreground">공개 상태</div>
+                                <SegmentedButtons
+                                  value={template.visibility}
+                                  options={[
+                                    { label: '비공개', value: 'private' },
+                                    { label: '공개', value: 'public' },
+                                  ]}
+                                  disabled={isUpdatingVisibility}
+                                  onChange={(value) => { void handleChangeVisibility(value); }}
+                                />
+                              </div>
+                            ) : null}
+                            {!isDeleteHidden ? (
+                              <div className="space-y-2">
+                                <div className="text-sm font-medium text-foreground">삭제</div>
+                                <Button
+                                  type="button"
+                                  variant="destructive"
+                                  disabled={isDeletingTemplate}
+                                  onClick={() => {
+                                    setIsManageDialogOpen(false);
+                                    setIsDeleteDialogOpen(true);
+                                  }}
+                                >
+                                  삭제
+                                </Button>
+                              </div>
+                            ) : null}
+                          </>
+                        )}
+                      </div>
+                      <DialogFooter>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          disabled={isUpdatingVisibility || isDeletingTemplate || isSavingMeta}
+                          onClick={() => setIsManageDialogOpen(false)}
+                        >
+                          취소
+                        </Button>
+                        <Button
+                          type="button"
+                          disabled={isUpdatingVisibility || isDeletingTemplate || isSavingMeta}
+                          onClick={() => { void handleSaveMetaFromDialog(); }}
+                        >
+                          {isSavingMeta ? '저장 중...' : '저장'}
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
                 ) : null}
                 <div className="mt-5 flex flex-col gap-2">
                   <Button type="button" onClick={() => { void handleRemixClick(); }}>리믹스</Button>

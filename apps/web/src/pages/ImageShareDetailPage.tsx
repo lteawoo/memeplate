@@ -1,5 +1,7 @@
 import React from 'react';
 import { useParams } from 'react-router-dom';
+import Icon from '@mdi/react';
+import { mdiThumbUpOutline } from '@mdi/js';
 import { toast } from 'sonner';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -50,6 +52,7 @@ const ImageShareDetailPage: React.FC = () => {
   const [editDescription, setEditDescription] = React.useState('');
   const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
   const [isSavingMeta, setIsSavingMeta] = React.useState(false);
+  const [isLikingImage, setIsLikingImage] = React.useState(false);
   const isOwner = Boolean(authInitialized && authUser?.id && image?.ownerId && authUser.id === image.ownerId);
 
   React.useEffect(() => {
@@ -79,6 +82,7 @@ const ImageShareDetailPage: React.FC = () => {
         setIsLoading(false);
       }
     };
+    setIsLikingImage(false);
     void load();
   }, [shareSlug]);
 
@@ -114,6 +118,31 @@ const ImageShareDetailPage: React.FC = () => {
     };
     void incrementView();
   }, [shareSlug, image]);
+
+  const handleLikeImage = React.useCallback(async () => {
+    if (!image?.shareSlug || image.visibility !== 'public' || isLikingImage) return;
+
+    setIsLikingImage(true);
+    try {
+      const res = await fetch(`/api/v1/images/s/${image.shareSlug}/like`, {
+        method: 'POST',
+      });
+      if (!res.ok) {
+        const payload = (await res.json().catch(() => ({}))) as { message?: string };
+        throw new Error(payload.message || '좋아요 처리에 실패했습니다.');
+      }
+      const payload = (await res.json().catch(() => ({}))) as { likeCount?: number };
+      if (typeof payload.likeCount === 'number') {
+        setImage((prev) => (prev ? { ...prev, likeCount: payload.likeCount } : prev));
+      } else {
+        setImage((prev) => (prev ? { ...prev, likeCount: (prev.likeCount ?? 0) + 1 } : prev));
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '좋아요 처리에 실패했습니다.');
+    } finally {
+      setIsLikingImage(false);
+    }
+  }, [image?.shareSlug, image?.visibility, isLikingImage]);
 
   const handleSaveMeta = React.useCallback(async () => {
     if (!image || !isOwner) return false;
@@ -179,8 +208,8 @@ const ImageShareDetailPage: React.FC = () => {
       <MainHeader />
       <PageContainer className="py-10">
         {isLoading ? (
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[300px_minmax(0,1fr)]">
-            <div className="order-2 rounded-2xl bg-card p-6 lg:order-1">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[300px_minmax(0,1fr)] lg:items-start">
+            <div className="order-2 rounded-2xl bg-card p-6 lg:order-1 lg:self-start">
               <Skeleton className="mb-4 h-5 w-24 rounded bg-border/70" />
               <div className="space-y-3">
                 {Array.from({ length: 7 }, (_, idx) => (
@@ -205,8 +234,8 @@ const ImageShareDetailPage: React.FC = () => {
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         ) : image ? (
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[300px_minmax(0,1fr)]">
-            <div className="order-2 rounded-2xl bg-card p-6 lg:order-1">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[300px_minmax(0,1fr)] lg:items-start">
+            <div className="order-2 rounded-2xl bg-card p-6 lg:order-1 lg:self-start">
               <h3 className="mb-4 text-base font-semibold text-foreground">상세 정보</h3>
               <div className="space-y-3 text-sm">
                 <div className="flex items-start justify-between gap-3">
@@ -235,16 +264,25 @@ const ImageShareDetailPage: React.FC = () => {
                   <span className="text-muted-foreground">조회수</span>
                   <span className="text-right font-medium text-foreground">{(image.viewCount ?? 0).toLocaleString()}</span>
                 </div>
-                <div className="flex items-start justify-between gap-3">
-                  <span className="text-muted-foreground">좋아요</span>
-                  <span className="text-right font-medium text-foreground">{(image.likeCount ?? 0).toLocaleString()}</span>
-                </div>
+              </div>
+              <div className="mt-5 flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="gap-1.5"
+                  onClick={() => { void handleLikeImage(); }}
+                  disabled={isLikingImage || image.visibility !== 'public'}
+                  aria-label="좋아요"
+                >
+                  <Icon path={mdiThumbUpOutline} size={0.75} />
+                  {(image.likeCount ?? 0).toLocaleString()}
+                </Button>
+                {isOwner ? (
+                  <Button type="button" variant="outline" onClick={handleOpenEditDialog}>수정</Button>
+                ) : null}
               </div>
               {isOwner ? (
                 <>
-                  <div className="mt-5">
-                    <Button type="button" variant="outline" onClick={handleOpenEditDialog}>수정</Button>
-                  </div>
                   <Dialog open={isEditDialogOpen} onOpenChange={handleEditDialogOpenChange}>
                     <DialogContent className="sm:max-w-md">
                       <DialogHeader>
