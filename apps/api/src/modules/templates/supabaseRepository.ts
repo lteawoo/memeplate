@@ -1,6 +1,11 @@
 import { randomBytes } from 'node:crypto';
 import { getSupabaseAdminClient } from '../../lib/supabaseAdmin.js';
-import type { CreateTemplateInput, UpdateTemplateInput } from '../../types/template.js';
+import type {
+  CreateTemplateInput,
+  UpdateTemplateInput,
+  TemplatePublicPeriod,
+  TemplatePublicSortBy
+} from '../../types/template.js';
 import type { TemplateRecord, TemplateRepository } from './repository.js';
 
 type TemplateRow = {
@@ -70,6 +75,18 @@ const extractDisplayName = (users: TemplateRow['users']) => {
 
 const generateShareSlug = () => `tmpl_${randomBytes(6).toString('base64url')}`;
 
+const getPeriodCutoffIso = (period: TemplatePublicPeriod) => {
+  if (period === 'all') return null;
+  const now = Date.now();
+  const cutoffMsByPeriod: Record<Exclude<TemplatePublicPeriod, 'all'>, number> = {
+    '24h': 24 * 60 * 60 * 1000,
+    '7d': 7 * 24 * 60 * 60 * 1000,
+    '30d': 30 * 24 * 60 * 60 * 1000,
+    '1y': 365 * 24 * 60 * 60 * 1000
+  };
+  return new Date(now - cutoffMsByPeriod[period]).toISOString();
+};
+
 export const createSupabaseTemplateRepository = (): TemplateRepository => {
   const supabase = getSupabaseAdminClient();
   return {
@@ -112,14 +129,30 @@ export const createSupabaseTemplateRepository = (): TemplateRepository => {
       return count ?? 0;
     },
 
-    async listPublic(limit) {
-      const { data, error } = await supabase
+    async listPublic({ limit, sortBy, period }) {
+      const cutoffIso = getPeriodCutoffIso(period);
+      let query = supabase
         .from('templates')
         .select('id, owner_id, title, description, content, view_count, like_count, visibility, share_slug, created_at, updated_at, users!templates_owner_id_fkey(display_name)')
         .eq('visibility', 'public')
-        .is('deleted_at', null)
-        .order('updated_at', { ascending: false })
-        .limit(limit);
+        .is('deleted_at', null);
+      if (cutoffIso) {
+        query = query.gte('created_at', cutoffIso);
+      }
+      let orderedQuery = query.order('updated_at', { ascending: false });
+      if (sortBy === 'likes') {
+        orderedQuery = query
+          .order('like_count', { ascending: false })
+          .order('view_count', { ascending: false })
+          .order('updated_at', { ascending: false });
+      } else if (sortBy === 'views') {
+        orderedQuery = query
+          .order('view_count', { ascending: false })
+          .order('like_count', { ascending: false })
+          .order('updated_at', { ascending: false });
+      }
+      orderedQuery = orderedQuery.limit(limit);
+      const { data, error } = await orderedQuery;
 
       if (error) throw error;
       const rows = (data ?? []) as TemplateRow[];

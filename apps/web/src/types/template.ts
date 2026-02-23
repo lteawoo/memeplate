@@ -1,4 +1,6 @@
 export type TemplateVisibility = 'private' | 'public';
+export type TemplatePublicSortBy = 'latest' | 'likes' | 'views';
+export type TemplatePublicPeriod = '24h' | '7d' | '30d' | '1y' | 'all';
 
 export type TemplateRecord = {
   id: string;

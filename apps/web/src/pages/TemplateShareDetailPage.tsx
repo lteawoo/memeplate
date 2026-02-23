@@ -105,7 +105,7 @@ const TemplateShareDetailPage: React.FC = () => {
   const [relatedImages, setRelatedImages] = React.useState<MemeImageRecord[]>([]);
   const [isRelatedLoading, setIsRelatedLoading] = React.useState(false);
   const [relatedError, setRelatedError] = React.useState<string | null>(null);
-  const [relatedSort, setRelatedSort] = React.useState<'latest' | 'popular'>('latest');
+  const [relatedSort, setRelatedSort] = React.useState<'latest' | 'likes' | 'views'>('latest');
   const [isMainImageLoaded, setIsMainImageLoaded] = React.useState(false);
   const [isMainImageError, setIsMainImageError] = React.useState(false);
   const mainImageRef = React.useRef<HTMLImageElement | null>(null);
@@ -130,13 +130,23 @@ const TemplateShareDetailPage: React.FC = () => {
 
   const sortedRelatedImages = React.useMemo(() => {
     const next = [...relatedImages];
-    if (relatedSort === 'popular') {
+    if (relatedSort === 'likes') {
       next.sort((a, b) => {
         const likeDiff = (b.likeCount ?? 0) - (a.likeCount ?? 0);
         if (likeDiff !== 0) return likeDiff;
         const viewDiff = (b.viewCount ?? 0) - (a.viewCount ?? 0);
         if (viewDiff !== 0) return viewDiff;
-        return new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime();
+        return new Date(b.updatedAt ?? b.createdAt ?? 0).getTime() - new Date(a.updatedAt ?? a.createdAt ?? 0).getTime();
+      });
+      return next;
+    }
+    if (relatedSort === 'views') {
+      next.sort((a, b) => {
+        const viewDiff = (b.viewCount ?? 0) - (a.viewCount ?? 0);
+        if (viewDiff !== 0) return viewDiff;
+        const likeDiff = (b.likeCount ?? 0) - (a.likeCount ?? 0);
+        if (likeDiff !== 0) return likeDiff;
+        return new Date(b.updatedAt ?? b.createdAt ?? 0).getTime() - new Date(a.updatedAt ?? a.createdAt ?? 0).getTime();
       });
       return next;
     }
@@ -634,16 +644,26 @@ const TemplateShareDetailPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setRelatedSort('latest')}
+                    aria-pressed={relatedSort === 'latest'}
                     className={`h-8 rounded-lg px-3 text-xs font-bold ${relatedSort === 'latest' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent hover:text-foreground'}`}
                   >
-                    최신순
+                    최신
                   </button>
                   <button
                     type="button"
-                    onClick={() => setRelatedSort('popular')}
-                    className={`h-8 rounded-lg px-3 text-xs font-bold ${relatedSort === 'popular' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent hover:text-foreground'}`}
+                    onClick={() => setRelatedSort('likes')}
+                    aria-pressed={relatedSort === 'likes'}
+                    className={`h-8 rounded-lg px-3 text-xs font-bold ${relatedSort === 'likes' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent hover:text-foreground'}`}
                   >
-                    인기순
+                    좋아요
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRelatedSort('views')}
+                    aria-pressed={relatedSort === 'views'}
+                    className={`h-8 rounded-lg px-3 text-xs font-bold ${relatedSort === 'views' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent hover:text-foreground'}`}
+                  >
+                    조회
                   </button>
                 </div>
               </div>

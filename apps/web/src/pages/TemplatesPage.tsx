@@ -9,10 +9,38 @@ import MainHeader from '../components/layout/MainHeader';
 import PageContainer from '../components/layout/PageContainer';
 import TemplateThumbnailCard from '../components/TemplateThumbnailCard';
 import TemplateCardSkeletonGrid from '../components/TemplateCardSkeletonGrid';
-import type { TemplateRecord, TemplatesResponse } from '../types/template';
+import type {
+  TemplatePublicPeriod,
+  TemplatePublicSortBy,
+  TemplateRecord,
+  TemplatesResponse
+} from '../types/template';
 
-const fetchPublicTemplates = async (): Promise<TemplateRecord[]> => {
-  const res = await fetch('/api/v1/templates/public?limit=50');
+const SORT_OPTIONS: Array<{ value: TemplatePublicSortBy; label: string }> = [
+  { value: 'latest', label: '최신' },
+  { value: 'likes', label: '좋아요' },
+  { value: 'views', label: '조회' },
+];
+
+const PERIOD_OPTIONS: Array<{ value: TemplatePublicPeriod; label: string }> = [
+  { value: '24h', label: '24시간' },
+  { value: '7d', label: '7일' },
+  { value: '30d', label: '30일' },
+  { value: '1y', label: '1년' },
+  { value: 'all', label: '전체' },
+];
+
+const fetchPublicTemplates = async (params: {
+  limit: number;
+  sortBy: TemplatePublicSortBy;
+  period: TemplatePublicPeriod;
+}): Promise<TemplateRecord[]> => {
+  const search = new URLSearchParams({
+    limit: String(params.limit),
+    sortBy: params.sortBy,
+    period: params.period,
+  });
+  const res = await fetch(`/api/v1/templates/public?${search.toString()}`);
   if (!res.ok) {
     throw new Error('밈플릿 목록 로딩 실패');
   }
@@ -22,20 +50,55 @@ const fetchPublicTemplates = async (): Promise<TemplateRecord[]> => {
 
 const TemplatesPage: React.FC = () => {
   const navigate = useNavigate();
+  const [sortBy, setSortBy] = React.useState<TemplatePublicSortBy>('latest');
+  const [period, setPeriod] = React.useState<TemplatePublicPeriod>('all');
   const {
     data: templates = [],
     isLoading,
     error,
     refetch,
   } = useQuery({
-    queryKey: ['templates', 'public', 50],
-    queryFn: fetchPublicTemplates,
+    queryKey: ['templates', 'public', 50, sortBy, period],
+    queryFn: () => fetchPublicTemplates({ limit: 50, sortBy, period }),
   });
 
   return (
     <div className="min-h-screen bg-app-surface">
       <MainHeader />
       <PageContainer className="py-8">
+        <div className="mb-4 flex flex-wrap items-center justify-end gap-3">
+          <div className="flex items-center gap-2">
+            <div className="flex items-center rounded-xl bg-muted p-1">
+              {SORT_OPTIONS.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  aria-pressed={sortBy === option.value}
+                  onClick={() => setSortBy(option.value)}
+                  className={`h-8 rounded-lg px-3 text-xs font-bold ${
+                    sortBy === option.value
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <label className="inline-flex items-center">
+            <select
+              aria-label="기간 선택"
+              value={period}
+              onChange={(event) => setPeriod(event.target.value as TemplatePublicPeriod)}
+              className="h-9 rounded-lg border border-border bg-card px-3 text-sm text-foreground outline-none transition-colors focus:border-primary"
+            >
+              {PERIOD_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
+            </select>
+          </label>
+        </div>
         {isLoading ? (
           <TemplateCardSkeletonGrid count={6} minItemWidth={240} />
         ) : error ? (

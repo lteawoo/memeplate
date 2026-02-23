@@ -1,4 +1,9 @@
-import type { CreateTemplateInput, UpdateTemplateInput } from '../../types/template.js';
+import type {
+  CreateTemplateInput,
+  UpdateTemplateInput,
+  TemplatePublicPeriod,
+  TemplatePublicSortBy
+} from '../../types/template.js';
 
 export interface TemplateRecord {
   id: string;
@@ -20,7 +25,11 @@ export interface TemplateRepository {
   listMine(userId: string): Promise<TemplateRecord[]>;
   getMineById(userId: string, templateId: string): Promise<TemplateRecord | null>;
   countRemixesByTemplateId(templateId: string): Promise<number>;
-  listPublic(limit: number): Promise<TemplateRecord[]>;
+  listPublic(options: {
+    limit: number;
+    sortBy: TemplatePublicSortBy;
+    period: TemplatePublicPeriod;
+  }): Promise<TemplateRecord[]>;
   getDetailByShareSlug(shareSlug: string, viewerUserId?: string | null): Promise<TemplateRecord | null>;
   getPublicDetailByShareSlug(shareSlug: string): Promise<TemplateRecord | null>;
   getPublicByShareSlug(shareSlug: string): Promise<TemplateRecord | null>;

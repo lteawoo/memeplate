@@ -3,8 +3,12 @@ import { requireAuth, resolveAuthUser } from '../auth/guard.js';
 import { env } from '../../config/env.js';
 import {
   CreateTemplateSchema,
+  TemplatePublicPeriodSchema,
+  TemplatePublicSortBySchema,
   TemplateIdParamSchema,
   TemplateShareSlugParamSchema,
+  type TemplatePublicPeriod,
+  type TemplatePublicSortBy,
   UpdateTemplateSchema
 } from '../../types/template.js';
 import { createSupabaseTemplateRepository } from './supabaseRepository.js';
@@ -47,10 +51,17 @@ export const templateRoutes: FastifyPluginAsync = async (app) => {
   const repository = createSupabaseTemplateRepository();
 
   app.get('/templates/public', async (req, reply) => {
-    const limitRaw = Number((req.query as Record<string, unknown> | undefined)?.limit ?? 20);
+    const query = (req.query as Record<string, unknown> | undefined) ?? {};
+    const limitRaw = Number(query.limit ?? 20);
     const limit = Number.isFinite(limitRaw) ? Math.min(50, Math.max(1, Math.floor(limitRaw))) : 20;
+    const sortByRaw = typeof query.sortBy === 'string' ? query.sortBy : '';
+    const periodRaw = typeof query.period === 'string' ? query.period : '';
+    const sortByParsed = TemplatePublicSortBySchema.safeParse(sortByRaw);
+    const periodParsed = TemplatePublicPeriodSchema.safeParse(periodRaw);
+    const sortBy: TemplatePublicSortBy = sortByParsed.success ? sortByParsed.data : 'latest';
+    const period: TemplatePublicPeriod = periodParsed.success ? periodParsed.data : 'all';
 
-    const templates = await repository.listPublic(limit);
+    const templates = await repository.listPublic({ limit, sortBy, period });
     return reply.send({ templates });
   });
 
