@@ -75,6 +75,17 @@ const extractDisplayName = (users: TemplateRow['users']) => {
 
 const generateShareSlug = () => `tmpl_${randomBytes(6).toString('base64url')}`;
 
+const isMissingLikeRpcError = (error: unknown) => {
+  if (!error || typeof error !== 'object') return false;
+  const code = 'code' in error && typeof (error as { code?: unknown }).code === 'string'
+    ? (error as { code: string }).code
+    : '';
+  const message = 'message' in error && typeof (error as { message?: unknown }).message === 'string'
+    ? (error as { message: string }).message
+    : '';
+  return code === 'PGRST202' || message.includes('increment_template_like_count');
+};
+
 const getPeriodCutoffIso = (period: TemplatePublicPeriod) => {
   if (period === 'all') return null;
   const now = Date.now();
@@ -215,6 +226,43 @@ export const createSupabaseTemplateRepository = (): TemplateRepository => {
       });
 
       if (error) throw error;
+      if (data === null || data === undefined) return null;
+      const next = Number(data);
+      return Number.isFinite(next) ? next : null;
+    },
+
+    async incrementLikeCountByShareSlug(shareSlug) {
+      const { data, error } = await supabase.rpc('increment_template_like_count', {
+        p_share_slug: shareSlug
+      });
+
+      if (error) {
+        if (!isMissingLikeRpcError(error)) throw error;
+
+        const { data: existing, error: existingError } = await supabase
+          .from('templates')
+          .select('id, like_count')
+          .eq('share_slug', shareSlug)
+          .eq('visibility', 'public')
+          .is('deleted_at', null)
+          .maybeSingle();
+        if (existingError) throw existingError;
+        if (!existing) return null;
+
+        const nextLikeCount = Math.max(0, Number(existing.like_count ?? 0) + 1);
+        const { data: updated, error: updateError } = await supabase
+          .from('templates')
+          .update({ like_count: nextLikeCount })
+          .eq('id', existing.id)
+          .is('deleted_at', null)
+          .select('like_count')
+          .maybeSingle();
+        if (updateError) throw updateError;
+
+        if (updated?.like_count === null || updated?.like_count === undefined) return nextLikeCount;
+        const fallbackNext = Number(updated.like_count);
+        return Number.isFinite(fallbackNext) ? fallbackNext : nextLikeCount;
+      }
       if (data === null || data === undefined) return null;
       const next = Number(data);
       return Number.isFinite(next) ? next : null;

@@ -70,6 +70,29 @@ export const memeImageRoutes: FastifyPluginAsync = async (app) => {
     return reply.code(200).send({ viewCount });
   });
 
+  app.post('/images/s/:shareSlug/like', {
+    config: {
+      rateLimit: {
+        max: env.VIEW_RATE_LIMIT_MAX_PER_MINUTE ?? 30,
+        timeWindow: '1 minute'
+      }
+    }
+  }, async (req, reply) => {
+    const paramsParsed = MemeImageShareSlugParamSchema.safeParse(req.params);
+    if (!paramsParsed.success) {
+      return reply.code(400).send({
+        message: 'Invalid share slug',
+        issues: paramsParsed.error.issues
+      });
+    }
+
+    const likeCount = await repository.incrementLikeCountByShareSlug(paramsParsed.data.shareSlug);
+    if (likeCount === null) {
+      return reply.code(404).send({ message: 'Image not found.' });
+    }
+    return reply.code(200).send({ likeCount });
+  });
+
   app.get('/images/me', { preHandler: requireAuth }, async (req, reply) => {
     const images = await repository.listMine(req.authUser!.id);
     return reply.send({ images });
