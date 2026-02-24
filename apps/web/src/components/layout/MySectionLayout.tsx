@@ -2,6 +2,7 @@ import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import MainHeader from './MainHeader';
+import MainFooter from './MainFooter';
 import PageContainer from './PageContainer';
 
 interface MySectionLayoutProps {
@@ -81,6 +82,7 @@ const MySectionLayout: React.FC<MySectionLayoutProps> = ({
           </main>
         </div>
       </PageContainer>
+      <MainFooter />
     </div>
   );
 };

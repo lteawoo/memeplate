@@ -8,6 +8,9 @@ import TemplateShareDetailPage from './pages/TemplateShareDetailPage';
 import ImageShareDetailPage from './pages/ImageShareDetailPage';
 import MyTemplatesPage from './pages/MyTemplatesPage';
 import MyPage from './pages/MyPage';
+import PrivacyPage from './pages/PrivacyPage';
+import AboutPage from './pages/AboutPage';
+import TermsPage from './pages/TermsPage';
 
 const App: React.FC = () => {
   return (
@@ -21,6 +24,9 @@ const App: React.FC = () => {
         <Route path="/remixes/s/:shareSlug" element={<ImageShareDetailPage />} />
         <Route path="/my" element={<MyPage />} />
         <Route path="/my/memeplates" element={<MyTemplatesPage />} />
+        <Route path="/privacy" element={<PrivacyPage />} />
+        <Route path="/about" element={<AboutPage />} />
+        <Route path="/terms" element={<TermsPage />} />
       </Routes>
     </BrowserRouter>
   );

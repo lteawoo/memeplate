@@ -20,6 +20,7 @@ import {
 import { buildLoginPath } from '@/lib/loginNavigation';
 import { apiFetch } from '@/lib/apiFetch';
 import MainHeader from '../components/layout/MainHeader';
+import MainFooter from '../components/layout/MainFooter';
 import PageContainer from '../components/layout/PageContainer';
 import TemplateCardSkeletonGrid from '../components/TemplateCardSkeletonGrid';
 import PreviewFrame from '../components/PreviewFrame';
@@ -556,7 +557,7 @@ const TemplateShareDetailPage: React.FC = () => {
           </Alert>
         ) : template ? (
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-[340px_minmax(0,1fr)] lg:items-start">
-            <div className="lg:sticky lg:top-20 lg:self-start">
+            <div className="lg:self-start">
               <div className="rounded-2xl bg-card p-6">
                 <div className="mb-4">
                   <h3 className="mb-1 text-2xl font-bold text-foreground">{template.title}</h3>
@@ -835,6 +836,7 @@ const TemplateShareDetailPage: React.FC = () => {
           </div>
         ) : null}
       </PageContainer>
+      <MainFooter />
     </div>
   );
 };

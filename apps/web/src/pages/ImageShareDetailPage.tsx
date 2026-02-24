@@ -19,6 +19,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
 import { apiFetch } from '@/lib/apiFetch';
 import MainHeader from '../components/layout/MainHeader';
+import MainFooter from '../components/layout/MainFooter';
 import PageContainer from '../components/layout/PageContainer';
 import PreviewFrame from '../components/PreviewFrame';
 import type { MemeImageRecord, MemeImageResponse } from '../types/image';
@@ -410,6 +411,7 @@ const ImageShareDetailPage: React.FC = () => {
           </div>
         ) : null}
       </PageContainer>
+      <MainFooter />
     </div>
   );
 };

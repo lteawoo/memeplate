@@ -1,5 +1,153 @@
 # 결정 로그 (Decision Log)
 
+## [2026-02-24] Terms 주체 표현을 `회사`에서 `운영자`로 변경
+- **결정**:
+  1. 이용약관 본문의 서비스 주체 표기를 `회사`가 아닌 `운영자`로 통일한다.
+- **이유**:
+  1. 현재 서비스 운영 형태와 문구의 법적/운영상 정합성을 맞추기 위함.
+- **구현 요약**:
+  - `apps/web/src/pages/TermsPage.tsx` 내 `회사` 표기 4건을 `운영자`로 교체
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+
+## [2026-02-24] Terms 본문을 v1 구조로 작성하고 OAuth 문구를 범용화
+- **결정**:
+  1. Terms 본문을 목적/계정인증/공개공유/리믹스제약/권리/금지행위/제한/면책/문의 구조로 작성한다.
+  2. 계정 인증 문구는 특정 공급자 종속 없이 `OAuth 제공자` 일반 표현으로 명시한다.
+- **이유**:
+  1. 정책 페이지를 placeholder에서 실제 운영 가능한 초안 상태로 전환하기 위함.
+  2. 향후 Google 외 인증 제공자 추가 시 약관 문구 재수정 범위를 줄이기 위함.
+- **구현 요약**:
+  - `apps/web/src/pages/TermsPage.tsx` 본문 전체 교체
+    - 공개/비공개 노출 정책
+    - 리믹스 존재 시 비공개 전환/삭제 제한 가능 문구
+    - OAuth 제공자 확장 가능 문구
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 스크린샷
+    - `docs/ai-context/screenshots/2026-02-24_terms_v1_generic_oauth_v1.png`
+
+## [2026-02-24] About 본문을 공개/비공개 및 공유 시나리오 중심으로 갱신
+- **결정**:
+  1. About 소개 문구를 `빠른 제작/공유`, `친구 공유`, `커뮤니티 공개`, `비공개 보관` 흐름 중심으로 정리한다.
+- **이유**:
+  1. 서비스 핵심 가치(밈 제작 특화 + 공개/비공개 공유 플로우)를 한 번에 전달하기 위함.
+- **구현 요약**:
+  - `apps/web/src/pages/AboutPage.tsx` 본문 교체
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 스크린샷
+    - `docs/ai-context/screenshots/2026-02-24_about_copy_public_private_share_v1.png`
+
+## [2026-02-24] Privacy 본문을 섹션형(`Memeplate / Remix`, `쿠키 사용 안내`)으로 정리
+- **결정**:
+  1. Privacy 본문을 `Memeplate / Remix` 단락과 `쿠키 사용 안내` 단락으로 구분한다.
+  2. 밈플릿 삭제/공개 정책에 `리믹스 존재 시 비공개 전환 및 삭제 제한 가능` 문구를 명시한다.
+  3. 쿠키 단락은 실제 구현 쿠키(`mp_access`, `mp_refresh`, `mp_oauth_state`, `mp_oauth_next`) 기준으로 작성한다.
+- **이유**:
+  1. 정책 문구를 사용자 관점에서 빠르게 읽히는 형태로 단순화하기 위함.
+  2. 현재 서비스 동작 제약(리믹스 존재 시 템플릿 제어 제한)을 Privacy 문구와 일치시키기 위함.
+  3. 실제와 다른 쿠키 설명을 피하고 과장 없는 정책 문구를 제공하기 위함.
+- **구현 요약**:
+  - `apps/web/src/pages/PrivacyPage.tsx`
+    - 본문을 2개 섹션으로 재구성
+    - 쿠키 설명을 톤 조정(자사/제3자 쿠키, 브라우저 제어 안내)
+    - 삭제 제약 문구 추가
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+
+## [2026-02-24] Footer를 법적 링크 전용으로 단순화
+- **결정**:
+  1. Footer 링크는 `Privacy`, `About`, `Terms`만 노출한다.
+  2. 푸터 링크가 404가 되지 않도록 `/privacy`, `/about`, `/terms` 라우트를 추가한다.
+- **이유**:
+  1. 요청사항대로 하단 메뉴를 탐색 메뉴가 아닌 정책/소개 링크 중심으로 단순화하기 위함.
+  2. 초기 단계라도 링크 클릭 시 빈 화면/미정의 라우트가 나오지 않도록 기본 페이지를 확보하기 위함.
+- **구현 요약**:
+  - `apps/web/src/components/layout/MainFooter.tsx`
+    - 링크를 `Privacy/About/Terms + ©` 구성으로 교체
+  - `apps/web/src/pages/PrivacyPage.tsx` 추가
+  - `apps/web/src/pages/AboutPage.tsx` 추가
+  - `apps/web/src/pages/TermsPage.tsx` 추가
+  - `apps/web/src/App.tsx`
+    - `/privacy`, `/about`, `/terms` 라우트 등록
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 스크린샷
+    - `docs/ai-context/screenshots/2026-02-24_footer_legal_links_home_v1.png`
+    - `docs/ai-context/screenshots/2026-02-24_footer_legal_privacy_page_v1.png`
+
+## [2026-02-24] 전역 Footer 컴포넌트 추가
+- **결정**:
+  1. 재사용 가능한 `MainFooter` 컴포넌트를 신설해 주요 페이지 하단에 공통 배치한다.
+  2. 편집 집중도가 중요한 에디터 화면(`MemeEditor`)은 이번 적용 범위에서 제외한다.
+- **이유**:
+  1. 페이지 종료 지점을 명확히 하고 주요 이동 링크를 하단에서도 제공하기 위함.
+  2. 페이지별로 분산된 구현 대신 공통 컴포넌트로 유지보수 포인트를 단일화하기 위함.
+- **구현 요약**:
+  - `apps/web/src/components/layout/MainFooter.tsx` 추가
+  - 다음 레이아웃/페이지에 공통 삽입
+    - `apps/web/src/pages/HomePage.tsx`
+    - `apps/web/src/pages/TemplatesPage.tsx`
+    - `apps/web/src/pages/TemplateShareDetailPage.tsx`
+    - `apps/web/src/pages/ImageShareDetailPage.tsx`
+    - `apps/web/src/components/layout/MySectionLayout.tsx`
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 스크린샷
+    - `docs/ai-context/screenshots/2026-02-24_footer_home_full_v1.png`
+    - `docs/ai-context/screenshots/2026-02-24_footer_detail_full_v1.png`
+
+## [2026-02-23] 홈 V1 후속 정리: 사용법 섹션 제거 + 상세 스크롤 안정화
+- **결정**:
+  1. 홈 화면의 `사용법 3단계` 섹션은 제거한다.
+  2. 홈 섹션 흐름은 `추천 밈플릿 -> 최근 리믹스 활동`을 연속 배치로 유지한다.
+  3. 밈플릿 상세 좌측 패널의 `sticky`를 제거해 일반 스크롤 흐름으로 고정한다.
+- **이유**:
+  1. 초기 오픈 전 단계에서 홈의 핵심 동선(생성/탐색) 집중도를 높이기 위해 안내성 섹션 밀도를 낮춘다.
+  2. 사용자 피드백 기준으로 추천과 최근 리믹스는 연속 탐색이 자연스럽다.
+  3. 상세 페이지에서 좌측 sticky가 일부 환경에서 스크롤 체감 이상(고정/점프 느낌)을 유발할 수 있어 안정성을 우선한다.
+- **구현 요약**:
+  - `apps/web/src/pages/HomePage.tsx`
+    - `사용법 3단계` 섹션 제거
+    - `추천 밈플릿` 아래에 `최근 리믹스 활동`을 바로 배치
+  - `apps/web/src/pages/TemplateShareDetailPage.tsx`
+    - 좌측 패널 wrapper에서 `lg:sticky lg:top-20` 제거 (`lg:self-start`만 유지)
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 스크린샷
+    - `docs/ai-context/screenshots/2026-02-23_home_v1_layout_no_howto_v1.png`
+    - `docs/ai-context/screenshots/2026-02-23_template_detail_scroll_fix_full_v1.png`
+
+## [2026-02-23] 홈 화면을 초기 오픈형 V1 레이아웃으로 개편
+- **결정**:
+  1. 미오픈 단계의 홈은 커뮤니티 기능보다 `빠른 온보딩 + 탐색 진입`을 우선한다.
+  2. 홈 섹션은 `히어로 -> 퀵 액션 -> 추천 밈플릿 -> 사용법 3단계 -> 최근 리믹스` 순서로 구성한다.
+  3. 백엔드 API 추가 없이 기존 공개 API(`GET /api/v1/memeplates/public`, `GET /api/v1/remixes/public`)만 재사용한다.
+- **이유**:
+  1. 현재 홈의 단일 CTA 구조로는 서비스 가치와 다음 행동이 충분히 전달되지 않는다.
+  2. 데이터가 아직 적은 초기 단계에서는 복잡한 랭킹/팔로우보다 기본 생성/탐색 동선을 선명하게 보여주는 편이 효과적이다.
+  3. API 확장 없이 빠르게 UI 개선을 배포해 피드백을 수집할 수 있다.
+- **구현 요약**:
+  - `apps/web/src/pages/HomePage.tsx`
+    - 히어로 영역에 핵심 카피/2개 CTA/추천 프리뷰 카드 추가
+    - 퀵 액션 3카드 및 사용법 3단계 카드 추가
+    - 추천 밈플릿/최근 리믹스 그리드를 React Query 기반으로 연동
+    - 섹션별 로딩/에러/빈 상태 렌더링 추가
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 스크린샷
+    - `docs/ai-context/screenshots/2026-02-23_home_v1_layout_desktop_v1.png`
+    - `docs/ai-context/screenshots/2026-02-23_home_v1_layout_mobile_v1.png`
+
 ## [2026-02-23] 상세 좋아요 요청에 `AbortController + 요청 시퀀스`를 적용해 stale 응답 반영 차단
 - **결정**:
   1. 좋아요 요청 시작 시 이전 in-flight 요청을 `abort`하고 현재 요청의 컨트롤러만 유지한다.

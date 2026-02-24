@@ -1,6 +1,68 @@
 # 프로젝트 상태 (Status)
 
 ## 현재 진행 상황
+- [x] **Terms 주체 표현 정합화(완료 - 2026-02-24)**
+  - [x] 이용약관의 `회사` 표기를 `운영자`로 교체
+  - [x] 검증
+    - [x] `pnpm --filter memeplate-web lint`
+    - [x] `pnpm --filter memeplate-web build`
+- [x] **Terms v1 본문 작성(완료 - 2026-02-24)**
+  - [x] 약관 핵심 섹션(목적/계정인증/공개공유/리믹스제약/권리/금지행위/변경/면책/문의) 작성
+  - [x] OAuth 문구를 특정 공급자 종속 없이 범용화
+  - [x] 검증
+    - [x] `pnpm --filter memeplate-web lint`
+    - [x] `pnpm --filter memeplate-web build`
+    - [x] 스크린샷: `docs/ai-context/screenshots/2026-02-24_terms_v1_generic_oauth_v1.png`
+- [x] **About 소개 문구 갱신(완료 - 2026-02-24)**
+  - [x] 빠른 제작/공유, 공개/비공개, 친구 공유/커뮤니티 공유 뉘앙스 반영
+  - [x] 검증
+    - [x] `pnpm --filter memeplate-web lint`
+    - [x] `pnpm --filter memeplate-web build`
+    - [x] 스크린샷: `docs/ai-context/screenshots/2026-02-24_about_copy_public_private_share_v1.png`
+- [x] **Privacy 본문 구조화/쿠키 안내 보강(완료 - 2026-02-24)**
+  - [x] `Memeplate / Remix` + `쿠키 사용 안내` 섹션으로 본문 재구성
+  - [x] 리믹스 존재 시 템플릿 비공개 전환/삭제 제한 문구 반영
+  - [x] 구현 쿠키(`mp_access`, `mp_refresh`, `mp_oauth_state`, `mp_oauth_next`) 기준 문구 반영
+  - [x] 검증
+    - [x] `pnpm --filter memeplate-web lint`
+    - [x] `pnpm --filter memeplate-web build`
+- [x] **Footer 법적 링크 전용화(완료 - 2026-02-24)**
+  - [x] Footer 메뉴를 `Privacy`, `About`, `Terms`, `©` 구성으로 단순화
+  - [x] `/privacy`, `/about`, `/terms` 페이지 및 라우트 추가
+  - [x] 검증
+    - [x] `pnpm --filter memeplate-web lint`
+    - [x] `pnpm --filter memeplate-web build`
+    - [x] 스크린샷: `docs/ai-context/screenshots/2026-02-24_footer_legal_links_home_v1.png`
+    - [x] 스크린샷: `docs/ai-context/screenshots/2026-02-24_footer_legal_privacy_page_v1.png`
+- [x] **전역 Footer 추가(완료 - 2026-02-24)**
+  - [x] `MainFooter` 컴포넌트 추가 (`apps/web/src/components/layout/MainFooter.tsx`)
+  - [x] 홈/밈플릿 목록/밈플릿 상세/리믹스 상세/마이 섹션 공통 하단 배치
+  - [x] 에디터 화면은 적용 제외
+  - [x] 검증
+    - [x] `pnpm --filter memeplate-web lint`
+    - [x] `pnpm --filter memeplate-web build`
+    - [x] 스크린샷: `docs/ai-context/screenshots/2026-02-24_footer_home_full_v1.png`
+    - [x] 스크린샷: `docs/ai-context/screenshots/2026-02-24_footer_detail_full_v1.png`
+- [x] **홈 V1 후속 정리(#150, 완료 - 2026-02-23)**
+  - [x] 홈의 `사용법 3단계` 섹션 제거
+  - [x] 홈 섹션 흐름을 `추천 밈플릿 -> 최근 리믹스 활동` 연속 배치로 유지
+  - [x] 밈플릿 상세 좌측 패널 sticky 제거(`lg:sticky lg:top-20` -> `lg:self-start`)
+  - [x] 검증
+    - [x] `pnpm --filter memeplate-web lint`
+    - [x] `pnpm --filter memeplate-web build`
+    - [x] 스크린샷: `docs/ai-context/screenshots/2026-02-23_home_v1_layout_no_howto_v1.png`
+    - [x] 스크린샷: `docs/ai-context/screenshots/2026-02-23_template_detail_scroll_fix_full_v1.png`
+- [x] **홈 화면 V1 레이아웃 개편(#149, 완료 - 2026-02-23)**
+  - [x] 히어로(가치 제안 + 2개 CTA + 대표 프리뷰) 섹션 추가
+  - [x] 퀵 액션 3카드(`이미지로 시작`, `인기 밈플릿 리믹스`, `바로 공유하기`) 추가
+  - [x] 추천 밈플릿/최근 리믹스 데이터 섹션 추가(`memeplates/remixes public` API 재사용)
+  - [x] 사용법 3단계(업로드/편집/공유) 안내 섹션 추가
+  - [x] 섹션별 로딩/에러/빈 상태 UX 적용
+  - [x] 검증
+    - [x] `pnpm --filter memeplate-web lint`
+    - [x] `pnpm --filter memeplate-web build`
+    - [x] 스크린샷: `docs/ai-context/screenshots/2026-02-23_home_v1_layout_desktop_v1.png`
+    - [x] 스크린샷: `docs/ai-context/screenshots/2026-02-23_home_v1_layout_mobile_v1.png`
 - [x] **상세 좋아요 stale 응답 반영 차단 (완료 - 2026-02-23)**
   - [x] 밈플릿/리믹스 상세 좋아요 요청에 `AbortController` 적용
   - [x] 요청 시퀀스(ref) 가드 추가로 라우트 전환 후 지연 응답의 상태 덮어쓰기 차단
