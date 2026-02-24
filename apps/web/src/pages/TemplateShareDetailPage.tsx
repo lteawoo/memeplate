@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Icon from '@mdi/react';
-import { mdiEyeOutline, mdiHeartOutline, mdiImageOffOutline, mdiThumbUpOutline } from '@mdi/js';
+import { mdiCommentOutline, mdiEyeOutline, mdiHeartOutline, mdiImageOffOutline, mdiThumbUpOutline } from '@mdi/js';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -795,6 +795,10 @@ const TemplateShareDetailPage: React.FC = () => {
                             <span className="inline-flex items-center gap-1">
                               <Icon path={mdiHeartOutline} size={0.55} />
                               {(image.likeCount ?? 0).toLocaleString()}
+                            </span>
+                            <span className="inline-flex items-center gap-1">
+                              <Icon path={mdiCommentOutline} size={0.55} />
+                              {(image.commentCount ?? 0).toLocaleString()}
                             </span>
                           </span>
                         </div>
