@@ -6,6 +6,7 @@ import { mdiEyeOutline, mdiHeartOutline } from '@mdi/js';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import MainHeader from '../components/layout/MainHeader';
+import MainFooter from '../components/layout/MainFooter';
 import PageContainer from '../components/layout/PageContainer';
 import TemplateThumbnailCard from '../components/TemplateThumbnailCard';
 import TemplateCardSkeletonGrid from '../components/TemplateCardSkeletonGrid';
@@ -148,6 +149,7 @@ const TemplatesPage: React.FC = () => {
           </div>
         )}
       </PageContainer>
+      <MainFooter />
     </div>
   );
 };

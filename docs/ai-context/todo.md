@@ -221,6 +221,14 @@
   - [x] 조회수/좋아요 actor 중복 방지 1차(#147, 2026-02-23): actor HMAC 키 기반으로 `view 24시간 dedupe`, `like 토글(좋아요/취소)` 적용 + 상세 `likedByMe` 응답 추가 + SQL(`metric_actor_states`, dedupe/toggle RPC) 및 `TRUST_PROXY`/`METRIC_ACTOR_HASH_SECRET` 환경 변수 추가
   - [x] 상세 좋아요 중복 클릭 레이스 차단(2026-02-23): 밈플릿/리믹스 상세 좋아요 요청에 `useRef` 즉시락을 추가해 재렌더 전 더블클릭 중복 호출 방지
   - [x] 상세 좋아요 stale 응답 차단(2026-02-23): `AbortController` + 요청 시퀀스(ref) 가드로 상세 라우트 전환 후 지연 응답이 다른 slug 상태를 덮어쓰지 않도록 보강
+  - [x] 홈 V1 레이아웃 개편(#149, 2026-02-23): 히어로/퀵액션/추천 밈플릿/사용법 3단계/최근 리믹스 섹션으로 초기 오픈형 홈을 구성하고 `memeplates/remixes public` API를 재사용해 데이터 섹션 연결 + 데스크톱/모바일 스크린샷 검증
+  - [x] 홈 V1 후속 정리(#150, 2026-02-23): 사용법 3단계 섹션 제거, 추천 밈플릿 바로 아래 최근 리믹스 배치 유지, 밈플릿 상세 좌측 sticky 제거로 스크롤 체감 이상 개선 + 스크린샷 검증
+  - [x] 전역 Footer 추가(2026-02-24): `MainFooter` 컴포넌트를 신설하고 홈/목록/상세/마이 섹션 하단에 공통 배치(에디터 제외) + 스크린샷 검증
+  - [x] Footer 법적 링크 전용화(2026-02-24): 푸터 링크를 `Privacy/About/Terms + ©`로 단순화하고 `/privacy`, `/about`, `/terms` 페이지/라우트 추가
+  - [x] Privacy 본문 톤/구조 정리(2026-02-24): `Memeplate / Remix`, `쿠키 사용 안내` 단락으로 정리하고 리믹스 존재 시 비공개/삭제 제한 문구 및 실제 쿠키 사용(`mp_access`, `mp_refresh`, `mp_oauth_state`, `mp_oauth_next`) 안내 반영
+  - [x] About 본문 톤 보강(2026-02-24): 빠른 제작/공유 + 공개/비공개 + 친구 공유/커뮤니티 공유 흐름을 명시한 소개 문구로 교체
+  - [x] Terms 본문 v1 작성(2026-02-24): 약관 핵심 조항을 섹션형으로 정리하고 OAuth 제공자 문구를 범용화
+  - [x] Terms 주체 표현 교정(2026-02-24): `회사`를 `운영자`로 통일
   - [x] `apps/web/src`(단, `index.css` 변수명 제외) 클래스 스캔 기준 `slate/blue/on-accent` 직접 클래스 0건 확인
   - [ ] shadcn primitive variant 규칙 재점검(`button/input/card/dropdown/sheet`)
   - [ ] 웹 워커(Web Worker) 기반 내보내기 처리
