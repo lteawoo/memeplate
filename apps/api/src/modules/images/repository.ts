@@ -16,6 +16,20 @@ export interface MemeImageRecord {
   shareSlug: string;
   viewCount: number;
   likeCount: number;
+  commentCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RemixCommentRecord {
+  id: string;
+  imageId: string;
+  authorId: string;
+  authorDisplayName?: string;
+  rootCommentId?: string;
+  replyToCommentId?: string;
+  replyToAuthorDisplayName?: string;
+  body: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -25,6 +39,19 @@ export interface MemeImageRepository {
   getMineById(userId: string, imageId: string): Promise<MemeImageRecord | null>;
   listPublic(limit: number, templateId?: string): Promise<MemeImageRecord[]>;
   getPublicByShareSlug(shareSlug: string): Promise<MemeImageRecord | null>;
+  listPublicCommentsByShareSlug(shareSlug: string, limit: number, imageId?: string): Promise<{
+    comments: RemixCommentRecord[];
+    totalCount: number;
+  } | null>;
+  createCommentByShareSlug(
+    userId: string,
+    shareSlug: string,
+    body: string,
+    replyToCommentId?: string
+  ): Promise<{
+    comment: RemixCommentRecord;
+    totalCount: number;
+  } | null>;
   getLikeStateByShareSlug(shareSlug: string, actorKey: string): Promise<boolean | null>;
   incrementViewCountByShareSlug(shareSlug: string, actorKey: string): Promise<number | null>;
   toggleLikeByShareSlug(shareSlug: string, actorKey: string): Promise<{ likeCount: number; liked: boolean } | null>;

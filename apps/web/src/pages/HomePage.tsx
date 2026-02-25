@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import Icon from '@mdi/react';
 import {
+  mdiCommentOutline,
   mdiChevronRight,
   mdiEyeOutline,
   mdiHeartOutline,
@@ -319,6 +320,10 @@ const HomePage: React.FC = () => {
                         <span className="inline-flex items-center gap-1">
                           <Icon path={mdiHeartOutline} size={0.55} />
                           {(image.likeCount ?? 0).toLocaleString()}
+                        </span>
+                        <span className="inline-flex items-center gap-1">
+                          <Icon path={mdiCommentOutline} size={0.55} />
+                          {(image.commentCount ?? 0).toLocaleString()}
                         </span>
                       </span>
                     </div>

@@ -1,6 +1,89 @@
 # 프로젝트 상태 (Status)
 
 ## 현재 진행 상황
+- [x] **리믹스 상세 응답에 댓글 동봉(완료 - 2026-02-24)**
+  - [x] `GET /api/v1/remixes/s/:shareSlug` 응답에 `comments`, `commentsTotalCount` 필드 추가
+  - [x] 프론트 `ImageShareDetailPage`에서 별도 댓글 조회 호출 제거(상세 1회 호출로 초기 렌더 데이터 구성)
+  - [x] 상세 조회에서 댓글 로딩 실패/미구성 테이블 상황은 빈 배열/0건 fallback 처리
+  - [x] 검증
+    - [x] `pnpm --filter memeplate-api build`
+    - [x] `pnpm --filter memeplate-web lint`
+    - [x] `pnpm --filter memeplate-web build`
+    - [x] 스크린샷: `docs/ai-context/screenshots/2026-02-24_remix_detail_single_fetch_with_embedded_comments_v1.png`
+- [x] **리믹스 댓글 빈 상태 아이콘 크기 상향(완료 - 2026-02-24)**
+  - [x] 댓글 빈 상태 아이콘 `mdiCommentOutline` 크기를 `0.9 -> 1.2`로 조정
+  - [x] 검증
+    - [x] `pnpm --filter memeplate-web lint`
+    - [x] `pnpm --filter memeplate-web build`
+    - [x] 스크린샷: `docs/ai-context/screenshots/2026-02-24_remix_detail_comments_empty_state_icon_size_up_v1.png`
+- [x] **리믹스 댓글 빈 상태 UI 플랫화(완료 - 2026-02-24)**
+  - [x] `아직 댓글이 없습니다` 상태를 `Alert 카드`에서 `아이콘 + 설명 텍스트` 인라인 형태로 변경
+  - [x] 카드형 보더/배경 스타일 제거
+  - [x] 검증
+    - [x] `pnpm --filter memeplate-web lint`
+    - [x] `pnpm --filter memeplate-web build`
+    - [x] 스크린샷: `docs/ai-context/screenshots/2026-02-24_remix_detail_comments_empty_state_flat_v1.png`
+- [x] **리믹스 상세 액션 버튼 정렬(하트 좋아요 + 댓글 이동) (#154, 완료 - 2026-02-24)**
+  - [x] 좋아요 버튼 아이콘을 `mdiHeartOutline`로 통일
+  - [x] 액션 행에 댓글 아이콘+댓글 수 버튼 추가
+  - [x] 댓글 수 버튼 클릭 시 댓글 섹션(`#remix-comments`)으로 `smooth scroll` 이동
+  - [x] 검증
+    - [x] `pnpm --filter memeplate-web lint`
+    - [x] `pnpm --filter memeplate-web build`
+    - [x] 스크린샷: `docs/ai-context/screenshots/2026-02-24_remix_detail_action_heart_comment_button_v1.png`
+    - [x] 스크린샷: `docs/ai-context/screenshots/2026-02-24_remix_detail_comment_button_scroll_target_v1.png`
+- [x] **리믹스 목록 댓글 수 아이콘 노출(완료 - 2026-02-24)**
+  - [x] `remixes/public` 응답에 `commentCount` 포함
+    - [x] 목록 조회 후 `remix_comments` 집계로 `image_id`별 댓글 수 계산
+    - [x] `remix_comments` 미구성 환경에서도 목록이 깨지지 않도록 fallback 처리
+  - [x] 홈 `최근 리믹스 활동` 카드 메타에 댓글 아이콘+카운트 추가
+  - [x] 밈플릿 상세 `리믹스` 카드 메타에 댓글 아이콘+카운트 추가
+  - [x] 검증
+    - [x] `pnpm --filter memeplate-api build`
+    - [x] `pnpm --filter memeplate-web lint`
+    - [x] `pnpm --filter memeplate-web build`
+    - [x] 스크린샷: `docs/ai-context/screenshots/2026-02-24_home_recent_remix_comment_count_v1.png`
+    - [x] 스크린샷: `docs/ai-context/screenshots/2026-02-24_home_recent_remix_comment_count_v1_mobile.png`
+    - [x] 스크린샷: `docs/ai-context/screenshots/2026-02-24_template_detail_related_remix_comment_count_v1.png`
+- [x] **리믹스 댓글 2단 고정 스레드 확장(#153, 완료 - 2026-02-24)**
+  - [x] 댓글 데이터 모델 확장
+    - [x] `rootCommentId`, `replyToCommentId`, `replyToAuthorDisplayName` 응답 필드 추가
+    - [x] 댓글 작성 payload에 `replyToCommentId` 옵션 추가
+  - [x] API/저장소 확장
+    - [x] 대댓글의 대댓글 작성 시 `rootCommentId = target.root ?? target.id`, `replyToCommentId = target.id` 규칙 적용
+    - [x] 댓글 조회 시 `replyTo` 대상 작성자명 매핑 응답 추가
+  - [x] UI 확장
+    - [x] 댓글/대댓글 `답글` 액션 추가
+    - [x] 답글 클릭 시 해당 댓글 위치에 인라인 입력창 노출(상단 입력창 미사용)
+    - [x] 인라인 입력창 `OO님에게 답글` 상태 및 취소 동작 추가
+    - [x] 대댓글의 대댓글도 동일 대댓글 레벨에서 렌더 + `OO님에게 답글` 표시
+  - [x] SQL 보강
+    - [x] `remix_comments`에 `root_comment_id`, `reply_to_comment_id`, 일관성 constraint, 인덱스 추가
+    - [x] 기존 테이블에도 적용 가능하도록 `alter table ... if not exists` + `do $$` 가드 추가
+  - [x] 검증
+    - [x] `pnpm --filter memeplate-api build`
+    - [x] `pnpm --filter memeplate-web lint`
+    - [x] `pnpm --filter memeplate-web build`
+    - [x] 스크린샷: `docs/ai-context/screenshots/2026-02-24_remix_detail_thread_reply_target_v1_desktop.png`
+    - [x] 스크린샷: `docs/ai-context/screenshots/2026-02-24_remix_detail_thread_reply_target_v1_mobile.png`
+- [x] **리믹스 댓글 기능 1차 구현(#152, 완료 - 2026-02-24)**
+  - [x] API 추가
+    - [x] `GET /api/v1/remixes/s/:shareSlug/comments`
+    - [x] `POST /api/v1/remixes/s/:shareSlug/comments` (로그인 필수)
+  - [x] 저장소/스키마
+    - [x] `MemeImageRepository` 댓글 조회/작성 메서드 확장
+    - [x] Supabase 저장소에 댓글 목록(join users) + 생성 + 총 개수 응답 구현
+    - [x] SQL 추가: `docs/ai-context/sql/2026-02-24_remix_comments_schema.sql`
+  - [x] 프론트 UI
+    - [x] `ImageShareDetailPage` 댓글 목록/입력/등록 섹션 추가
+    - [x] 비로그인 등록 시 `/login?next=...` 리다이렉트 동선 적용
+    - [x] 등록 성공 시 목록 상단 즉시 반영
+  - [x] 검증
+    - [x] `pnpm --filter memeplate-api build`
+    - [x] `pnpm --filter memeplate-web lint`
+    - [x] `pnpm --filter memeplate-web build`
+    - [x] 스크린샷: `docs/ai-context/screenshots/2026-02-24_remix_detail_comments_v1_desktop.png`
+    - [x] 스크린샷: `docs/ai-context/screenshots/2026-02-24_remix_detail_comments_v1_mobile.png`
 - [x] **Terms 주체 표현 정합화(완료 - 2026-02-24)**
   - [x] 이용약관의 `회사` 표기를 `운영자`로 교체
   - [x] 검증

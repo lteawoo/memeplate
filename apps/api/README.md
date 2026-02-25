@@ -40,6 +40,9 @@ pnpm --filter memeplate-api dev
 - `POST /api/v1/remixes`
 - `PATCH /api/v1/remixes/:imageId`
 - `DELETE /api/v1/remixes/:imageId`
+- `GET /api/v1/remixes/s/:shareSlug` (optional query: `commentsLimit`, response: `image`, `likedByMe`, `comments`, `commentsTotalCount`)
+- `GET /api/v1/remixes/s/:shareSlug/comments` (query: `limit`)
+- `POST /api/v1/remixes/s/:shareSlug/comments` (`body`, optional `replyToCommentId`)
 
 ## 구조
 

@@ -18,6 +18,16 @@ export const memeImageRoutes: FastifyPluginAsync = async (app) => {
     limit: z.coerce.number().int().min(1).max(50).optional(),
     templateId: z.uuid().optional()
   });
+  const PublicRemixDetailQuerySchema = z.object({
+    commentsLimit: z.coerce.number().int().min(1).max(100).optional()
+  });
+  const PublicRemixCommentsQuerySchema = z.object({
+    limit: z.coerce.number().int().min(1).max(100).optional()
+  });
+  const CreateRemixCommentBodySchema = z.object({
+    body: z.string().trim().min(1).max(500),
+    replyToCommentId: z.uuid().optional()
+  });
   const registerRemixResourceRoutes = (basePath: '/remixes') => {
     app.get(`${basePath}/public`, async (req, reply) => {
       const parsed = PublicImagesQuerySchema.safeParse(req.query ?? {});
@@ -40,6 +50,13 @@ export const memeImageRoutes: FastifyPluginAsync = async (app) => {
           issues: paramsParsed.error.issues
         });
       }
+      const queryParsed = PublicRemixDetailQuerySchema.safeParse(req.query ?? {});
+      if (!queryParsed.success) {
+        return reply.code(400).send({
+          message: 'Invalid remix detail query',
+          issues: queryParsed.error.issues
+        });
+      }
 
       const image = await repository.getPublicByShareSlug(paramsParsed.data.shareSlug);
       if (!image) {
@@ -47,7 +64,18 @@ export const memeImageRoutes: FastifyPluginAsync = async (app) => {
       }
       const actorKey = buildMetricActorKey(req);
       const likedByMe = (await repository.getLikeStateByShareSlug(paramsParsed.data.shareSlug, actorKey)) ?? false;
-      return reply.send({ image, likedByMe });
+      const commentsLimit = queryParsed.data.commentsLimit ?? 100;
+      const commentResult = await repository.listPublicCommentsByShareSlug(
+        paramsParsed.data.shareSlug,
+        commentsLimit,
+        image.id
+      );
+      return reply.send({
+        image,
+        likedByMe,
+        comments: commentResult?.comments ?? [],
+        commentsTotalCount: commentResult?.totalCount ?? 0
+      });
     });
 
     app.post(`${basePath}/s/:shareSlug/view`, {
@@ -96,6 +124,68 @@ export const memeImageRoutes: FastifyPluginAsync = async (app) => {
         return reply.code(404).send({ message: 'Image not found.' });
       }
       return reply.code(200).send(likeResult);
+    });
+
+    app.get(`${basePath}/s/:shareSlug/comments`, async (req, reply) => {
+      const paramsParsed = MemeImageShareSlugParamSchema.safeParse(req.params);
+      if (!paramsParsed.success) {
+        return reply.code(400).send({
+          message: 'Invalid share slug',
+          issues: paramsParsed.error.issues
+        });
+      }
+
+      const queryParsed = PublicRemixCommentsQuerySchema.safeParse(req.query ?? {});
+      if (!queryParsed.success) {
+        return reply.code(400).send({
+          message: 'Invalid comments query',
+          issues: queryParsed.error.issues
+        });
+      }
+
+      const limit = queryParsed.data.limit ?? 20;
+      const result = await repository.listPublicCommentsByShareSlug(paramsParsed.data.shareSlug, limit);
+      if (!result) {
+        return reply.code(404).send({ message: 'Image not found.' });
+      }
+      return reply.send(result);
+    });
+
+    app.post(`${basePath}/s/:shareSlug/comments`, { preHandler: requireAuth }, async (req, reply) => {
+      const paramsParsed = MemeImageShareSlugParamSchema.safeParse(req.params);
+      if (!paramsParsed.success) {
+        return reply.code(400).send({
+          message: 'Invalid share slug',
+          issues: paramsParsed.error.issues
+        });
+      }
+
+      const bodyParsed = CreateRemixCommentBodySchema.safeParse(req.body);
+      if (!bodyParsed.success) {
+        return reply.code(400).send({
+          message: 'Invalid comment payload',
+          issues: bodyParsed.error.issues
+        });
+      }
+
+      let result: Awaited<ReturnType<typeof repository.createCommentByShareSlug>>;
+      try {
+        result = await repository.createCommentByShareSlug(
+          req.authUser!.id,
+          paramsParsed.data.shareSlug,
+          bodyParsed.data.body,
+          bodyParsed.data.replyToCommentId
+        );
+      } catch (error) {
+        if (error instanceof Error && error.message === 'Reply target comment not found.') {
+          return reply.code(400).send({ message: 'Reply target comment not found.' });
+        }
+        throw error;
+      }
+      if (!result) {
+        return reply.code(404).send({ message: 'Image not found.' });
+      }
+      return reply.code(201).send(result);
     });
 
     app.get(`${basePath}/me`, { preHandler: requireAuth }, async (req, reply) => {

@@ -1,5 +1,18 @@
 export type MemeImageVisibility = 'private' | 'public';
 
+export type RemixCommentRecord = {
+  id: string;
+  imageId: string;
+  authorId: string;
+  authorDisplayName?: string;
+  rootCommentId?: string;
+  replyToCommentId?: string;
+  replyToAuthorDisplayName?: string;
+  body: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type MemeImageRecord = {
   id: string;
   ownerId?: string;
@@ -16,6 +29,7 @@ export type MemeImageRecord = {
   shareSlug: string;
   viewCount?: number;
   likeCount?: number;
+  commentCount?: number;
   createdAt?: string;
   updatedAt?: string;
 };
@@ -23,8 +37,20 @@ export type MemeImageRecord = {
 export type MemeImageResponse = {
   image: MemeImageRecord;
   likedByMe?: boolean;
+  comments?: RemixCommentRecord[];
+  commentsTotalCount?: number;
 };
 
 export type MemeImagesResponse = {
   images: MemeImageRecord[];
+};
+
+export type RemixCommentsResponse = {
+  comments: RemixCommentRecord[];
+  totalCount: number;
+};
+
+export type RemixCommentCreateResponse = {
+  comment: RemixCommentRecord;
+  totalCount: number;
 };

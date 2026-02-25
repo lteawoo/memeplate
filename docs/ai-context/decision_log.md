@@ -1,5 +1,177 @@
 # 결정 로그 (Decision Log)
 
+## [2026-02-24] 리믹스 상세는 이미지/좋아요 상태/댓글을 단일 응답으로 제공
+- **결정**:
+  1. `GET /api/v1/remixes/s/:shareSlug`에서 `image`, `likedByMe`와 함께 `comments`, `commentsTotalCount`를 같이 응답한다.
+  2. `ImageShareDetailPage`는 초기 진입 시 상세 API 1회 호출만 사용하고, 별도 댓글 조회 요청은 제거한다.
+  3. 댓글 테이블이 미구성된 환경에서는 상세 응답을 실패시키지 않고 `comments=[]`, `commentsTotalCount=0`으로 fallback 한다.
+- **이유**:
+  1. 상세 진입 시 이미지와 댓글이 분리 호출되면서 초기 요청이 중복되고, 화면 데이터 결합 지점이 프론트에 분산된다.
+  2. 커뮤니티 상세에서 핵심 데이터(콘텐츠 + 반응)를 한 번에 수신하면 초기 체감과 코드 복잡도가 개선된다.
+  3. 운영 환경별 스키마 반영 시점 차이로 상세 화면 전체가 깨지는 리스크를 줄인다.
+- **구현 요약**:
+  - API
+    - `apps/api/src/modules/images/routes.ts`
+      - 상세 조회 쿼리에 `commentsLimit`(optional, max 100) 추가
+      - 상세 응답에 `comments`, `commentsTotalCount` 포함
+    - `apps/api/src/modules/images/repository.ts`
+      - `listPublicCommentsByShareSlug(shareSlug, limit, imageId?)` 시그니처 확장
+    - `apps/api/src/modules/images/supabaseRepository.ts`
+      - `listPublicCommentsByImageId` 내부 헬퍼 추가
+      - 상세 경로에서 이미 확보한 `image.id`를 재사용해 중복 조회 감소
+      - `remix_comments` 미구성 시 fallback 응답 처리
+  - Web
+    - `apps/web/src/types/image.ts`
+      - `MemeImageResponse`에 `comments`, `commentsTotalCount` optional 필드 추가
+    - `apps/web/src/pages/ImageShareDetailPage.tsx`
+      - 상세 조회 URL을 `?commentsLimit=100` 포함 단일 호출로 변경
+      - 별도 댓글 fetch effect 제거
+      - 상세 응답 payload로 댓글 상태 초기화
+- **검증**:
+  - `pnpm --filter memeplate-api build`
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 스크린샷
+    - `docs/ai-context/screenshots/2026-02-24_remix_detail_single_fetch_with_embedded_comments_v1.png`
+
+## [2026-02-24] 댓글 빈 상태 아이콘은 본문 대비 한 단계 크게 유지
+- **결정**:
+  1. 리믹스 상세 댓글 빈 상태 아이콘(`mdiCommentOutline`) 크기를 `0.9`에서 `1.2`로 상향한다.
+- **이유**:
+  1. 빈 상태 안내 텍스트 대비 아이콘 존재감이 약해 시각적 포인트가 부족했기 때문이다.
+- **구현 요약**:
+  - `apps/web/src/pages/ImageShareDetailPage.tsx`
+    - `comments.length === 0` 분기의 아이콘 크기 `size={1.2}`로 조정
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 스크린샷
+    - `docs/ai-context/screenshots/2026-02-24_remix_detail_comments_empty_state_icon_size_up_v1.png`
+
+## [2026-02-24] 댓글 빈 상태는 카드형 Alert 대신 플랫한 인라인 안내로 표시
+- **결정**:
+  1. 리믹스 상세 댓글 비어 있음 상태에서 `Alert` 카드 컴포넌트를 사용하지 않는다.
+  2. 아이콘 + 제목 + 보조 설명의 인라인 텍스트 구성으로 대체한다.
+- **이유**:
+  1. 댓글 리스트 영역의 밀도를 낮추고, 일반 댓글 플로우와 시각 톤을 맞추기 위함.
+  2. 사용자 요청대로 별도 카드 스타일을 제거해 단순한 안내만 남기기 위함.
+- **구현 요약**:
+  - `apps/web/src/pages/ImageShareDetailPage.tsx`
+    - `comments.length === 0` 분기를 `Alert`에서 인라인 `div`로 변경
+    - `mdiCommentOutline` 아이콘과 안내 문구를 렌더
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 스크린샷
+    - `docs/ai-context/screenshots/2026-02-24_remix_detail_comments_empty_state_flat_v1.png`
+
+## [2026-02-24] 리믹스 상세 액션은 `하트 좋아요 + 댓글 이동 버튼` 조합으로 운영
+- **결정**:
+  1. 리믹스 상세 액션의 좋아요 아이콘을 기존 따봉 계열에서 하트(`mdiHeartOutline`)로 통일한다.
+  2. 좋아요 버튼 옆에 댓글 아이콘+댓글 수 버튼을 고정 배치한다.
+  3. 댓글 버튼 클릭 시 댓글 섹션(`#remix-comments`)으로 부드럽게 스크롤 이동한다.
+- **이유**:
+  1. 커뮤니티 맥락에서 좋아요 아이콘 의미를 직관적으로 통일하고, 댓글 진입 동선을 액션 영역에서 즉시 제공하기 위함.
+  2. 상세 상단에서 반응 지표(좋아요/댓글)를 함께 보여주면 참여 유도가 쉬워진다.
+- **구현 요약**:
+  - `apps/web/src/pages/ImageShareDetailPage.tsx`
+    - `mdiHeartOutline`, `mdiCommentOutline` 아이콘 사용
+    - `displayCommentCount`를 액션 버튼 라벨로 노출
+    - `handleScrollToComments` + `commentsSectionRef`를 통해 댓글 섹션으로 스크롤 이동
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 스크린샷
+    - `docs/ai-context/screenshots/2026-02-24_remix_detail_action_heart_comment_button_v1.png`
+    - `docs/ai-context/screenshots/2026-02-24_remix_detail_comment_button_scroll_target_v1.png`
+
+## [2026-02-24] 리믹스 목록 카드 메타에 댓글 수를 노출한다
+- **결정**:
+  1. 홈 `최근 리믹스 활동`과 밈플릿 상세의 리믹스 목록 카드 메타에 댓글 아이콘+댓글 수를 추가한다.
+  2. `remixes/public` 응답에 `commentCount` 필드를 포함해 카드에서 즉시 표시한다.
+  3. `remix_comments` 테이블/관계 미구성 환경에서도 목록 API가 실패하지 않도록 집계 조회는 fallback 가능하게 구현한다.
+- **이유**:
+  1. 리믹스 목록에서 참여도(조회/좋아요/댓글)를 한눈에 비교할 수 있어 커뮤니티 신호 전달력이 높아진다.
+  2. 댓글 기능 도입 이후 목록 지표에도 댓글 수를 노출해 탐색 효율을 맞춘다.
+  3. 운영 환경별 스키마 반영 시점 차이로 목록 화면이 깨지는 리스크를 줄인다.
+- **구현 요약**:
+  - API
+    - `MemeImageRecord`에 `commentCount` 필드 추가
+    - `listPublic`에서 `meme_images` 목록 조회 후 `remix_comments(image_id)` 집계로 댓글 수 매핑
+    - `remix_comments` 미존재 시 fallback(0건) 처리
+  - Web
+    - `MemeImageRecord` 타입에 `commentCount` 추가
+    - `HomePage` 최근 리믹스 카드 메타에 댓글 아이콘(`mdiCommentOutline`) + 카운트 추가
+    - `TemplateShareDetailPage` 리믹스 카드 메타에 댓글 아이콘 + 카운트 추가
+- **검증**:
+  - `pnpm --filter memeplate-api build`
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 스크린샷
+    - `docs/ai-context/screenshots/2026-02-24_home_recent_remix_comment_count_v1.png`
+    - `docs/ai-context/screenshots/2026-02-24_home_recent_remix_comment_count_v1_mobile.png`
+    - `docs/ai-context/screenshots/2026-02-24_template_detail_related_remix_comment_count_v1.png`
+
+## [2026-02-24] 댓글 스레드는 2단 고정으로 운영하고, 대댓글의 대댓글은 `replyTo` 대상 표시로 처리
+- **결정**:
+  1. 리믹스 댓글은 depth를 무제한으로 늘리지 않고 `댓글 -> 대댓글` 2단만 렌더한다.
+  2. 대댓글의 대댓글 작성 시 depth를 더 늘리지 않고 동일 대댓글 레벨에 저장/표시한다.
+  3. 대신 각 댓글에 `replyToCommentId`와 `replyToAuthorDisplayName`를 포함해 \"누구에게 답글인지\" 맥락을 유지한다.
+- **이유**:
+  1. 초기 커뮤니티 단계에서 깊은 트리는 UI 복잡도와 운영 부담(모더레이션/가독성)을 급격히 높인다.
+  2. 2단 고정은 모바일 가독성과 스크롤 효율을 유지하면서도 대화 맥락은 보존할 수 있다.
+  3. 데이터 모델을 `root/replyTo`로 분리해 추후 알림/멘션 기능 확장 여지를 남긴다.
+- **구현 요약**:
+  - API/저장소
+    - 댓글 생성 payload: `replyToCommentId?` 지원
+    - 생성 규칙: `rootCommentId = target.rootCommentId ?? target.id`, `replyToCommentId = target.id`
+    - 댓글 조회 응답: `rootCommentId`, `replyToCommentId`, `replyToAuthorDisplayName` 포함
+  - Web
+    - 댓글/대댓글 `답글` 버튼 추가
+    - `답글` 클릭 시 해당 댓글 아래 인라인 작성창 노출
+    - 인라인 작성창 `OO님에게 답글` 상태 표시 + 취소/등록
+    - 답글은 대댓글 레벨에 렌더하되 `OO님에게 답글` 텍스트로 대상 표시
+  - SQL
+    - `remix_comments`에 `root_comment_id`, `reply_to_comment_id`, 일관성 constraint, 인덱스 추가
+    - 기존 테이블 환경 대응을 위해 `alter table ... if not exists` 및 constraint 가드(`do $$`) 적용
+- **검증**:
+  - `pnpm --filter memeplate-api build`
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 스크린샷
+    - `docs/ai-context/screenshots/2026-02-24_remix_detail_thread_reply_target_v1_desktop.png`
+    - `docs/ai-context/screenshots/2026-02-24_remix_detail_thread_reply_target_v1_mobile.png`
+
+## [2026-02-24] 댓글은 리믹스 상세에만 1차 도입하고 조회/작성만 우선 제공
+- **결정**:
+  1. 댓글 기능은 밈플릿이 아닌 리믹스 상세(`/remixes/s/:shareSlug`)에 먼저 도입한다.
+  2. 1차 스코프는 `조회 + 작성`으로 제한하고 수정/삭제/답글/신고는 제외한다.
+  3. 댓글 작성은 로그인 필수로 처리하고 비로그인 사용자는 로그인(next) 리다이렉트로 유도한다.
+- **이유**:
+  1. 결과물(리믹스) 단위가 피드백 문맥이 가장 명확해 댓글 밀도를 높이기 쉽다.
+  2. 초기 커뮤니티 기능에서 운영 복잡도를 낮추기 위해 최소 기능으로 먼저 검증한다.
+  3. 기존 인증 흐름(`apiFetch`, `authStore`, `/login?next`)을 재사용해 구현/운영 리스크를 줄인다.
+- **구현 요약**:
+  - API
+    - `GET /api/v1/remixes/s/:shareSlug/comments`
+    - `POST /api/v1/remixes/s/:shareSlug/comments` (`requireAuth`)
+  - 저장소
+    - `MemeImageRepository`에 댓글 조회/작성 메서드 추가
+    - Supabase 저장소에서 `remix_comments` + `users` 조인 목록 조회 및 작성/총 개수 반환 구현
+  - Web
+    - `ImageShareDetailPage`에 댓글 섹션(목록/입력/등록) 추가
+    - 등록 성공 시 목록 상단 즉시 반영
+    - 비로그인 등록 시 `buildLoginPath(getPathWithSearchAndHash(location))`로 이동
+  - SQL
+    - `docs/ai-context/sql/2026-02-24_remix_comments_schema.sql` 추가
+- **검증**:
+  - `pnpm --filter memeplate-api build`
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 스크린샷
+    - `docs/ai-context/screenshots/2026-02-24_remix_detail_comments_v1_desktop.png`
+    - `docs/ai-context/screenshots/2026-02-24_remix_detail_comments_v1_mobile.png`
+
 ## [2026-02-24] Terms 주체 표현을 `회사`에서 `운영자`로 변경
 - **결정**:
   1. 이용약관 본문의 서비스 주체 표기를 `회사`가 아닌 `운영자`로 통일한다.
