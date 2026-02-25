@@ -162,6 +162,64 @@ export const createSupabaseMemeImageRepository = (): MemeImageRepository => {
     return imageRow;
   };
 
+  const listPublicCommentsByImageId = async (imageId: string, limit: number) => {
+    const safeLimit = Math.min(Math.max(Math.floor(limit), 1), 100);
+    const { data, error, count } = await supabase
+      .from('remix_comments')
+      .select('id, image_id, root_comment_id, reply_to_comment_id, author_id, body, created_at, updated_at, users!remix_comments_author_id_fkey(display_name)', { count: 'exact' })
+      .eq('image_id', imageId)
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false })
+      .limit(safeLimit);
+    if (error) {
+      if (isMissingRemixCommentsTableError(error)) {
+        return {
+          comments: [] as RemixCommentRecord[],
+          totalCount: 0
+        };
+      }
+      throw error;
+    }
+
+    const rows = (data ?? []) as RemixCommentRow[];
+    const replyToCommentIds = Array.from(new Set(
+      rows
+        .map((row) => row.reply_to_comment_id)
+        .filter((value): value is string => typeof value === 'string' && value.length > 0)
+    ));
+
+    const replyToAuthorNameByCommentId = new Map<string, string>();
+    if (replyToCommentIds.length > 0) {
+      const { data: replyTargets, error: replyTargetsError } = await supabase
+        .from('remix_comments')
+        .select('id, author_id, users!remix_comments_author_id_fkey(display_name)')
+        .in('id', replyToCommentIds);
+      if (replyTargetsError) throw replyTargetsError;
+
+      for (const target of (replyTargets ?? []) as Array<{
+        id: string;
+        author_id: string;
+        users?: {
+          display_name: string | null;
+        } | Array<{
+          display_name: string | null;
+        }> | null;
+      }>) {
+        const displayName = extractCommentAuthorDisplayName(target.users) ?? target.author_id;
+        replyToAuthorNameByCommentId.set(target.id, displayName);
+      }
+    }
+
+    return {
+      comments: rows.map((row) => toCommentRecord(
+        row,
+        extractCommentAuthorDisplayName(row.users),
+        row.reply_to_comment_id ? replyToAuthorNameByCommentId.get(row.reply_to_comment_id) : undefined
+      )),
+      totalCount: count ?? rows.length
+    };
+  };
+
   return {
     async listMine(userId) {
       const { data, error } = await supabase
@@ -248,58 +306,10 @@ export const createSupabaseMemeImageRepository = (): MemeImageRepository => {
       return toRecord(row, extractDisplayName(row.users));
     },
 
-    async listPublicCommentsByShareSlug(shareSlug, limit) {
-      const imageRow = await findPublicImageByShareSlug(shareSlug);
-      if (!imageRow?.id) return null;
-
-      const safeLimit = Math.min(Math.max(Math.floor(limit), 1), 100);
-      const { data, error, count } = await supabase
-        .from('remix_comments')
-        .select('id, image_id, root_comment_id, reply_to_comment_id, author_id, body, created_at, updated_at, users!remix_comments_author_id_fkey(display_name)', { count: 'exact' })
-        .eq('image_id', imageRow.id)
-        .is('deleted_at', null)
-        .order('created_at', { ascending: false })
-        .limit(safeLimit);
-
-      if (error) throw error;
-
-      const rows = (data ?? []) as RemixCommentRow[];
-      const replyToCommentIds = Array.from(new Set(
-        rows
-          .map((row) => row.reply_to_comment_id)
-          .filter((value): value is string => typeof value === 'string' && value.length > 0)
-      ));
-
-      const replyToAuthorNameByCommentId = new Map<string, string>();
-      if (replyToCommentIds.length > 0) {
-        const { data: replyTargets, error: replyTargetsError } = await supabase
-          .from('remix_comments')
-          .select('id, author_id, users!remix_comments_author_id_fkey(display_name)')
-          .in('id', replyToCommentIds);
-        if (replyTargetsError) throw replyTargetsError;
-
-        for (const target of (replyTargets ?? []) as Array<{
-          id: string;
-          author_id: string;
-          users?: {
-            display_name: string | null;
-          } | Array<{
-            display_name: string | null;
-          }> | null;
-        }>) {
-          const displayName = extractCommentAuthorDisplayName(target.users) ?? target.author_id;
-          replyToAuthorNameByCommentId.set(target.id, displayName);
-        }
-      }
-
-      return {
-        comments: rows.map((row) => toCommentRecord(
-          row,
-          extractCommentAuthorDisplayName(row.users),
-          row.reply_to_comment_id ? replyToAuthorNameByCommentId.get(row.reply_to_comment_id) : undefined
-        )),
-        totalCount: count ?? rows.length
-      };
+    async listPublicCommentsByShareSlug(shareSlug, limit, imageId) {
+      const resolvedImageId = imageId ?? (await findPublicImageByShareSlug(shareSlug))?.id;
+      if (!resolvedImageId) return null;
+      return listPublicCommentsByImageId(resolvedImageId, limit);
     },
 
     async createCommentByShareSlug(userId, shareSlug, body, replyToCommentId) {

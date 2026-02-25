@@ -37,6 +37,8 @@ export type MemeImageRecord = {
 export type MemeImageResponse = {
   image: MemeImageRecord;
   likedByMe?: boolean;
+  comments?: RemixCommentRecord[];
+  commentsTotalCount?: number;
 };
 
 export type MemeImagesResponse = {

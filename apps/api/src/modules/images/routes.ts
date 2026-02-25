@@ -18,6 +18,9 @@ export const memeImageRoutes: FastifyPluginAsync = async (app) => {
     limit: z.coerce.number().int().min(1).max(50).optional(),
     templateId: z.uuid().optional()
   });
+  const PublicRemixDetailQuerySchema = z.object({
+    commentsLimit: z.coerce.number().int().min(1).max(100).optional()
+  });
   const PublicRemixCommentsQuerySchema = z.object({
     limit: z.coerce.number().int().min(1).max(100).optional()
   });
@@ -47,6 +50,13 @@ export const memeImageRoutes: FastifyPluginAsync = async (app) => {
           issues: paramsParsed.error.issues
         });
       }
+      const queryParsed = PublicRemixDetailQuerySchema.safeParse(req.query ?? {});
+      if (!queryParsed.success) {
+        return reply.code(400).send({
+          message: 'Invalid remix detail query',
+          issues: queryParsed.error.issues
+        });
+      }
 
       const image = await repository.getPublicByShareSlug(paramsParsed.data.shareSlug);
       if (!image) {
@@ -54,7 +64,18 @@ export const memeImageRoutes: FastifyPluginAsync = async (app) => {
       }
       const actorKey = buildMetricActorKey(req);
       const likedByMe = (await repository.getLikeStateByShareSlug(paramsParsed.data.shareSlug, actorKey)) ?? false;
-      return reply.send({ image, likedByMe });
+      const commentsLimit = queryParsed.data.commentsLimit ?? 100;
+      const commentResult = await repository.listPublicCommentsByShareSlug(
+        paramsParsed.data.shareSlug,
+        commentsLimit,
+        image.id
+      );
+      return reply.send({
+        image,
+        likedByMe,
+        comments: commentResult?.comments ?? [],
+        commentsTotalCount: commentResult?.totalCount ?? 0
+      });
     });
 
     app.post(`${basePath}/s/:shareSlug/view`, {

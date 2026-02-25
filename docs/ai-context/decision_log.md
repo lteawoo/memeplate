@@ -1,5 +1,39 @@
 # 결정 로그 (Decision Log)
 
+## [2026-02-24] 리믹스 상세는 이미지/좋아요 상태/댓글을 단일 응답으로 제공
+- **결정**:
+  1. `GET /api/v1/remixes/s/:shareSlug`에서 `image`, `likedByMe`와 함께 `comments`, `commentsTotalCount`를 같이 응답한다.
+  2. `ImageShareDetailPage`는 초기 진입 시 상세 API 1회 호출만 사용하고, 별도 댓글 조회 요청은 제거한다.
+  3. 댓글 테이블이 미구성된 환경에서는 상세 응답을 실패시키지 않고 `comments=[]`, `commentsTotalCount=0`으로 fallback 한다.
+- **이유**:
+  1. 상세 진입 시 이미지와 댓글이 분리 호출되면서 초기 요청이 중복되고, 화면 데이터 결합 지점이 프론트에 분산된다.
+  2. 커뮤니티 상세에서 핵심 데이터(콘텐츠 + 반응)를 한 번에 수신하면 초기 체감과 코드 복잡도가 개선된다.
+  3. 운영 환경별 스키마 반영 시점 차이로 상세 화면 전체가 깨지는 리스크를 줄인다.
+- **구현 요약**:
+  - API
+    - `apps/api/src/modules/images/routes.ts`
+      - 상세 조회 쿼리에 `commentsLimit`(optional, max 100) 추가
+      - 상세 응답에 `comments`, `commentsTotalCount` 포함
+    - `apps/api/src/modules/images/repository.ts`
+      - `listPublicCommentsByShareSlug(shareSlug, limit, imageId?)` 시그니처 확장
+    - `apps/api/src/modules/images/supabaseRepository.ts`
+      - `listPublicCommentsByImageId` 내부 헬퍼 추가
+      - 상세 경로에서 이미 확보한 `image.id`를 재사용해 중복 조회 감소
+      - `remix_comments` 미구성 시 fallback 응답 처리
+  - Web
+    - `apps/web/src/types/image.ts`
+      - `MemeImageResponse`에 `comments`, `commentsTotalCount` optional 필드 추가
+    - `apps/web/src/pages/ImageShareDetailPage.tsx`
+      - 상세 조회 URL을 `?commentsLimit=100` 포함 단일 호출로 변경
+      - 별도 댓글 fetch effect 제거
+      - 상세 응답 payload로 댓글 상태 초기화
+- **검증**:
+  - `pnpm --filter memeplate-api build`
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 스크린샷
+    - `docs/ai-context/screenshots/2026-02-24_remix_detail_single_fetch_with_embedded_comments_v1.png`
+
 ## [2026-02-24] 댓글 빈 상태 아이콘은 본문 대비 한 단계 크게 유지
 - **결정**:
   1. 리믹스 상세 댓글 빈 상태 아이콘(`mdiCommentOutline`) 크기를 `0.9`에서 `1.2`로 상향한다.

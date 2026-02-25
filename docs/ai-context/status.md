@@ -1,6 +1,15 @@
 # 프로젝트 상태 (Status)
 
 ## 현재 진행 상황
+- [x] **리믹스 상세 응답에 댓글 동봉(완료 - 2026-02-24)**
+  - [x] `GET /api/v1/remixes/s/:shareSlug` 응답에 `comments`, `commentsTotalCount` 필드 추가
+  - [x] 프론트 `ImageShareDetailPage`에서 별도 댓글 조회 호출 제거(상세 1회 호출로 초기 렌더 데이터 구성)
+  - [x] 상세 조회에서 댓글 로딩 실패/미구성 테이블 상황은 빈 배열/0건 fallback 처리
+  - [x] 검증
+    - [x] `pnpm --filter memeplate-api build`
+    - [x] `pnpm --filter memeplate-web lint`
+    - [x] `pnpm --filter memeplate-web build`
+    - [x] 스크린샷: `docs/ai-context/screenshots/2026-02-24_remix_detail_single_fetch_with_embedded_comments_v1.png`
 - [x] **리믹스 댓글 빈 상태 아이콘 크기 상향(완료 - 2026-02-24)**
   - [x] 댓글 빈 상태 아이콘 `mdiCommentOutline` 크기를 `0.9 -> 1.2`로 조정
   - [x] 검증

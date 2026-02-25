@@ -27,8 +27,7 @@ import type {
   MemeImageRecord,
   MemeImageResponse,
   RemixCommentCreateResponse,
-  RemixCommentRecord,
-  RemixCommentsResponse
+  RemixCommentRecord
 } from '../types/image';
 import { useAuthStore } from '../stores/authStore';
 
@@ -77,15 +76,11 @@ const ImageShareDetailPage: React.FC = () => {
   const [likedImageByMe, setLikedImageByMe] = React.useState(false);
   const [comments, setComments] = React.useState<RemixCommentRecord[]>([]);
   const [commentsTotalCount, setCommentsTotalCount] = React.useState(0);
-  const [isCommentsLoading, setIsCommentsLoading] = React.useState(false);
-  const [commentsError, setCommentsError] = React.useState<string | null>(null);
   const [commentDraft, setCommentDraft] = React.useState('');
   const [activeReplyTarget, setActiveReplyTarget] = React.useState<ReplyTarget | null>(null);
   const [replyDraft, setReplyDraft] = React.useState('');
   const [isSubmittingComment, setIsSubmittingComment] = React.useState(false);
   const [isSubmittingReply, setIsSubmittingReply] = React.useState(false);
-  const commentsRequestSeqRef = React.useRef(0);
-  const commentsAbortRef = React.useRef<AbortController | null>(null);
   const commentsSectionRef = React.useRef<HTMLElement | null>(null);
   const isOwner = Boolean(authInitialized && authUser?.id && image?.ownerId && authUser.id === image.ownerId);
   const displayCommentCount = React.useMemo(() => {
@@ -135,7 +130,7 @@ const ImageShareDetailPage: React.FC = () => {
         return;
       }
       try {
-        const res = await fetch(`/api/v1/remixes/s/${shareSlug}`);
+        const res = await fetch(`/api/v1/remixes/s/${shareSlug}?commentsLimit=${COMMENT_LIST_LIMIT}`);
         if (!res.ok) {
           const payload = (await res.json().catch(() => ({}))) as { message?: string };
           throw new Error(payload.message || '이미지를 불러오지 못했습니다.');
@@ -143,6 +138,11 @@ const ImageShareDetailPage: React.FC = () => {
         const payload = (await res.json()) as MemeImageResponse;
         setImage(payload.image);
         setLikedImageByMe(payload.likedByMe === true);
+        const nextComments = Array.isArray(payload.comments) ? payload.comments : [];
+        setComments(nextComments);
+        setCommentsTotalCount(
+          typeof payload.commentsTotalCount === 'number' ? payload.commentsTotalCount : nextComments.length
+        );
       } catch (err) {
         setError(err instanceof Error ? err.message : '이미지를 불러오지 못했습니다.');
       } finally {
@@ -157,16 +157,11 @@ const ImageShareDetailPage: React.FC = () => {
     setLikedImageByMe(false);
     setComments([]);
     setCommentsTotalCount(0);
-    setCommentsError(null);
     setCommentDraft('');
     setActiveReplyTarget(null);
     setReplyDraft('');
-    setIsCommentsLoading(false);
     setIsSubmittingComment(false);
     setIsSubmittingReply(false);
-    commentsAbortRef.current?.abort();
-    commentsAbortRef.current = null;
-    commentsRequestSeqRef.current += 1;
     void load();
   }, [shareSlug]);
 
@@ -174,8 +169,6 @@ const ImageShareDetailPage: React.FC = () => {
     return () => {
       imageLikeAbortRef.current?.abort();
       imageLikeAbortRef.current = null;
-      commentsAbortRef.current?.abort();
-      commentsAbortRef.current = null;
     };
   }, []);
 
@@ -211,42 +204,6 @@ const ImageShareDetailPage: React.FC = () => {
     };
     void incrementView();
   }, [shareSlug, image]);
-
-  React.useEffect(() => {
-    if (!shareSlug || !image?.id) return;
-
-    const requestSeq = commentsRequestSeqRef.current + 1;
-    commentsRequestSeqRef.current = requestSeq;
-    const controller = new AbortController();
-    commentsAbortRef.current?.abort();
-    commentsAbortRef.current = controller;
-
-    const loadComments = async () => {
-      setIsCommentsLoading(true);
-      setCommentsError(null);
-      try {
-        const res = await fetch(`/api/v1/remixes/s/${shareSlug}/comments?limit=${COMMENT_LIST_LIMIT}`, { signal: controller.signal });
-        if (!res.ok) {
-          const payload = (await res.json().catch(() => ({}))) as { message?: string };
-          throw new Error(payload.message || '댓글을 불러오지 못했습니다.');
-        }
-        const payload = (await res.json()) as RemixCommentsResponse;
-        if (commentsRequestSeqRef.current !== requestSeq) return;
-        const nextComments = Array.isArray(payload.comments) ? payload.comments : [];
-        setComments(nextComments);
-        setCommentsTotalCount(typeof payload.totalCount === 'number' ? payload.totalCount : nextComments.length);
-      } catch (err) {
-        if (commentsRequestSeqRef.current !== requestSeq) return;
-        if (err instanceof DOMException && err.name === 'AbortError') return;
-        setCommentsError(err instanceof Error ? err.message : '댓글을 불러오지 못했습니다.');
-      } finally {
-        if (commentsRequestSeqRef.current === requestSeq) {
-          setIsCommentsLoading(false);
-        }
-      }
-    };
-    void loadComments();
-  }, [image?.id, shareSlug]);
 
   const handleLikeImage = React.useCallback(async () => {
     if (!image?.shareSlug || image.visibility !== 'public' || imageLikeLockRef.current) return;
@@ -362,7 +319,6 @@ const ImageShareDetailPage: React.FC = () => {
         typeof payload.totalCount === 'number' ? payload.totalCount : prev + 1
       ));
       setCommentDraft('');
-      setCommentsError(null);
       toast.success('댓글을 등록했습니다.');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : '댓글 등록에 실패했습니다.');
@@ -418,7 +374,6 @@ const ImageShareDetailPage: React.FC = () => {
       ));
       setReplyDraft('');
       setActiveReplyTarget(null);
-      setCommentsError(null);
       toast.success('답글을 등록했습니다.');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : '답글 등록에 실패했습니다.');
@@ -745,22 +700,7 @@ const ImageShareDetailPage: React.FC = () => {
                   </div>
                 </div>
                 <div className="mt-5">
-                  {isCommentsLoading ? (
-                    <div className="divide-y divide-border/70 border-y border-border/70">
-                      {Array.from({ length: 3 }, (_, idx) => (
-                        <div key={idx} className="py-4">
-                          <Skeleton className="mb-2 h-4 w-28 rounded bg-border/70" />
-                          <Skeleton className="mb-1 h-4 w-full rounded bg-border/70" />
-                          <Skeleton className="h-4 w-4/5 rounded bg-border/70" />
-                        </div>
-                      ))}
-                    </div>
-                  ) : commentsError ? (
-                    <Alert variant="destructive">
-                      <AlertTitle>댓글 로딩 실패</AlertTitle>
-                      <AlertDescription>{commentsError}</AlertDescription>
-                    </Alert>
-                  ) : comments.length === 0 ? (
+                  {comments.length === 0 ? (
                     <div className="flex flex-col items-center justify-center gap-2 py-10 text-center">
                       <Icon path={mdiCommentOutline} size={1.2} className="text-muted-foreground" />
                       <p className="text-sm font-medium text-foreground">아직 댓글이 없습니다.</p>

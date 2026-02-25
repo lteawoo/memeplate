@@ -39,7 +39,7 @@ export interface MemeImageRepository {
   getMineById(userId: string, imageId: string): Promise<MemeImageRecord | null>;
   listPublic(limit: number, templateId?: string): Promise<MemeImageRecord[]>;
   getPublicByShareSlug(shareSlug: string): Promise<MemeImageRecord | null>;
-  listPublicCommentsByShareSlug(shareSlug: string, limit: number): Promise<{
+  listPublicCommentsByShareSlug(shareSlug: string, limit: number, imageId?: string): Promise<{
     comments: RemixCommentRecord[];
     totalCount: number;
   } | null>;
