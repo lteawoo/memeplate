@@ -1,7 +1,7 @@
 import React from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import Icon from '@mdi/react';
-import { mdiCommentOutline, mdiHeartOutline } from '@mdi/js';
+import { mdiCommentOutline, mdiEyeOutline, mdiHeartOutline } from '@mdi/js';
 import { toast } from 'sonner';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -23,11 +23,14 @@ import MainHeader from '../components/layout/MainHeader';
 import MainFooter from '../components/layout/MainFooter';
 import PageContainer from '../components/layout/PageContainer';
 import PreviewFrame from '../components/PreviewFrame';
+import ThumbnailCard from '../components/ThumbnailCard';
 import type {
   MemeImageRecord,
+  MemeImagesResponse,
   MemeImageResponse,
   RemixCommentCreateResponse,
-  RemixCommentRecord
+  RemixCommentRecord,
+  SourceTemplateSummary
 } from '../types/image';
 import { useAuthStore } from '../stores/authStore';
 
@@ -45,11 +48,29 @@ const formatBytes = (bytes: number) => {
 
 const COMMENT_BODY_MAX_LENGTH = 500;
 const COMMENT_LIST_LIMIT = 100;
+const RELATED_REMIXES_LIMIT = 12;
 
 type ReplyTarget = {
   commentId: string;
   authorName: string;
 };
+
+const SidebarThumbnailSkeleton: React.FC = () => (
+  <div className="overflow-hidden rounded-xl border border-transparent bg-transparent shadow-none">
+    <div className="thumb-card-surface h-52 w-full bg-transparent px-4">
+      <div className="thumb-card-media-surface relative flex h-full items-center justify-center overflow-hidden rounded-lg bg-transparent">
+        <Skeleton className="absolute inset-0 rounded-lg bg-border/70" />
+      </div>
+    </div>
+    <div className="space-y-2 px-4 pt-3 pb-4">
+      <Skeleton className="h-4 w-full rounded bg-border/80" />
+      <div className="flex items-center gap-2">
+        <Skeleton className="h-4 flex-1 rounded bg-border/70" />
+        <Skeleton className="h-4 flex-1 rounded bg-border/70" />
+      </div>
+    </div>
+  </div>
+);
 
 const ImageShareDetailPage: React.FC = () => {
   const navigate = useNavigate();
@@ -73,7 +94,14 @@ const ImageShareDetailPage: React.FC = () => {
   const imageLikeLockRef = React.useRef(false);
   const imageLikeRequestSeqRef = React.useRef(0);
   const imageLikeAbortRef = React.useRef<AbortController | null>(null);
+  const detailRequestSeqRef = React.useRef(0);
+  const detailAbortRef = React.useRef<AbortController | null>(null);
   const [likedImageByMe, setLikedImageByMe] = React.useState(false);
+  const [sourceTemplate, setSourceTemplate] = React.useState<SourceTemplateSummary | null>(null);
+  const [relatedRemixes, setRelatedRemixes] = React.useState<MemeImageRecord[]>([]);
+  const [isRelatedLoading, setIsRelatedLoading] = React.useState(false);
+  const [isRelatedLoaded, setIsRelatedLoaded] = React.useState(false);
+  const [relatedError, setRelatedError] = React.useState<string | null>(null);
   const [comments, setComments] = React.useState<RemixCommentRecord[]>([]);
   const [commentsTotalCount, setCommentsTotalCount] = React.useState(0);
   const [commentDraft, setCommentDraft] = React.useState('');
@@ -88,6 +116,10 @@ const ImageShareDetailPage: React.FC = () => {
     if (comments.length > 0) return comments.length;
     return image?.commentCount ?? 0;
   }, [comments.length, commentsTotalCount, image?.commentCount]);
+  const visibleRelatedRemixes = React.useMemo(
+    () => relatedRemixes.slice(0, 6),
+    [relatedRemixes]
+  );
 
   const orderedComments = React.useMemo(() => {
     const next = [...comments];
@@ -123,38 +155,63 @@ const ImageShareDetailPage: React.FC = () => {
   }, [authInitialized, syncSession]);
 
   React.useEffect(() => {
+    const requestSeq = detailRequestSeqRef.current + 1;
+    detailRequestSeqRef.current = requestSeq;
+    const controller = new AbortController();
+    detailAbortRef.current?.abort();
+    detailAbortRef.current = controller;
+
     const load = async () => {
       if (!shareSlug) {
+        if (detailRequestSeqRef.current !== requestSeq) return;
         setError('잘못된 공유 링크입니다.');
-        setIsLoading(false);
         return;
       }
       try {
-        const res = await fetch(`/api/v1/remixes/s/${shareSlug}?commentsLimit=${COMMENT_LIST_LIMIT}`);
+        const res = await fetch(`/api/v1/remixes/s/${shareSlug}?commentsLimit=${COMMENT_LIST_LIMIT}`, {
+          signal: controller.signal
+        });
         if (!res.ok) {
           const payload = (await res.json().catch(() => ({}))) as { message?: string };
           throw new Error(payload.message || '이미지를 불러오지 못했습니다.');
         }
         const payload = (await res.json()) as MemeImageResponse;
+        if (detailRequestSeqRef.current !== requestSeq) return;
         setImage(payload.image);
         setLikedImageByMe(payload.likedByMe === true);
+        setSourceTemplate(payload.sourceTemplate ?? null);
         const nextComments = Array.isArray(payload.comments) ? payload.comments : [];
         setComments(nextComments);
         setCommentsTotalCount(
           typeof payload.commentsTotalCount === 'number' ? payload.commentsTotalCount : nextComments.length
         );
       } catch (err) {
+        if (detailRequestSeqRef.current !== requestSeq) return;
+        if (err instanceof DOMException && err.name === 'AbortError') return;
         setError(err instanceof Error ? err.message : '이미지를 불러오지 못했습니다.');
       } finally {
-        setIsLoading(false);
+        if (detailAbortRef.current === controller) {
+          detailAbortRef.current = null;
+        }
+        if (detailRequestSeqRef.current === requestSeq) {
+          setIsLoading(false);
+        }
       }
     };
+    setIsLoading(true);
+    setError(null);
+    setImage(null);
     setIsLikingImage(false);
     imageLikeAbortRef.current?.abort();
     imageLikeAbortRef.current = null;
     imageLikeRequestSeqRef.current += 1;
     imageLikeLockRef.current = false;
     setLikedImageByMe(false);
+    setSourceTemplate(null);
+    setRelatedRemixes([]);
+    setIsRelatedLoading(false);
+    setIsRelatedLoaded(false);
+    setRelatedError(null);
     setComments([]);
     setCommentsTotalCount(0);
     setCommentDraft('');
@@ -163,10 +220,19 @@ const ImageShareDetailPage: React.FC = () => {
     setIsSubmittingComment(false);
     setIsSubmittingReply(false);
     void load();
+
+    return () => {
+      controller.abort();
+      if (detailAbortRef.current === controller) {
+        detailAbortRef.current = null;
+      }
+    };
   }, [shareSlug]);
 
   React.useEffect(() => {
     return () => {
+      detailAbortRef.current?.abort();
+      detailAbortRef.current = null;
       imageLikeAbortRef.current?.abort();
       imageLikeAbortRef.current = null;
     };
@@ -204,6 +270,51 @@ const ImageShareDetailPage: React.FC = () => {
     };
     void incrementView();
   }, [shareSlug, image]);
+
+  React.useEffect(() => {
+    const templateId = image?.templateId;
+    const currentShareSlug = image?.shareSlug;
+    if (!templateId) {
+      setRelatedRemixes([]);
+      setRelatedError(null);
+      setIsRelatedLoading(false);
+      setIsRelatedLoaded(true);
+      return;
+    }
+
+    let cancelled = false;
+    const loadRelatedRemixes = async () => {
+      setIsRelatedLoading(true);
+      setIsRelatedLoaded(false);
+      setRelatedError(null);
+      try {
+        const res = await fetch(`/api/v1/remixes/public?limit=${RELATED_REMIXES_LIMIT}&templateId=${templateId}`);
+        if (!res.ok) {
+          throw new Error('다른 리믹스를 불러오지 못했습니다.');
+        }
+        const payload = (await res.json()) as MemeImagesResponse;
+        if (cancelled) return;
+        const next = Array.isArray(payload.images) ? payload.images : [];
+        setRelatedRemixes(
+          next.filter((candidate) => candidate.shareSlug && candidate.shareSlug !== currentShareSlug)
+        );
+      } catch (err) {
+        if (cancelled) return;
+        setRelatedError(err instanceof Error ? err.message : '다른 리믹스를 불러오지 못했습니다.');
+        setRelatedRemixes([]);
+      } finally {
+        if (!cancelled) {
+          setIsRelatedLoading(false);
+          setIsRelatedLoaded(true);
+        }
+      }
+    };
+    void loadRelatedRemixes();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [image?.shareSlug, image?.templateId]);
 
   const handleLikeImage = React.useCallback(async () => {
     if (!image?.shareSlug || image.visibility !== 'public' || imageLikeLockRef.current) return;
@@ -268,6 +379,26 @@ const ImageShareDetailPage: React.FC = () => {
       block: 'start'
     });
   }, []);
+
+  const handleOpenSourceTemplate = React.useCallback(() => {
+    if (!sourceTemplate?.shareSlug) return;
+    navigate(`/memeplates/s/${sourceTemplate.shareSlug}`);
+  }, [navigate, sourceTemplate?.shareSlug]);
+
+  const handleStartRemixFromSource = React.useCallback(async () => {
+    if (!sourceTemplate?.shareSlug) return;
+    const nextPath = `/create?shareSlug=${sourceTemplate.shareSlug}`;
+    let nextUser = authUser;
+    if (!nextUser) {
+      await syncSession();
+      nextUser = useAuthStore.getState().user;
+    }
+    if (!nextUser) {
+      navigate(buildLoginPath(nextPath));
+      return;
+    }
+    navigate(nextPath);
+  }, [authUser, navigate, sourceTemplate?.shareSlug, syncSession]);
 
   const ensureSignedInUser = React.useCallback(async () => {
     let nextUser = authUser;
@@ -512,24 +643,48 @@ const ImageShareDetailPage: React.FC = () => {
       <MainHeader />
       <PageContainer className="py-10">
         {isLoading ? (
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[300px_minmax(0,1fr)] lg:items-start">
-            <div className="order-2 rounded-2xl bg-card p-6 lg:order-1 lg:self-start">
-              <Skeleton className="mb-4 h-5 w-24 rounded bg-border/70" />
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[320px_minmax(0,1fr)] lg:items-start">
+            <aside className="order-2 rounded-2xl bg-card p-6 lg:order-1 lg:self-start">
+              <Skeleton className="mb-3 h-5 w-28 rounded bg-border/70" />
+              <div className="mb-3">
+                <SidebarThumbnailSkeleton />
+              </div>
+              <div className="mt-3 grid grid-cols-1 gap-2">
+                <Skeleton className="h-9 rounded bg-border/70" />
+              </div>
+              <Skeleton className="mt-8 mb-3 h-5 w-24 rounded bg-border/70" />
               <div className="space-y-3">
-                {Array.from({ length: 7 }, (_, idx) => (
-                  <div key={idx} className="flex items-center justify-between gap-3">
-                    <Skeleton className="h-4 w-16 rounded bg-border/70" />
-                    <Skeleton className="h-4 w-28 rounded bg-border/70" />
-                  </div>
+                {Array.from({ length: 2 }, (_, idx) => (
+                  <SidebarThumbnailSkeleton key={idx} />
                 ))}
               </div>
-            </div>
+            </aside>
             <div className="order-1 rounded-2xl bg-card p-6 lg:order-2">
-              <div className="mb-6 space-y-2">
-                <Skeleton className="h-6 w-full rounded bg-border/80" />
-                <Skeleton className="h-4 w-44 rounded bg-border/70" />
-              </div>
-              <PreviewFrame alt="공유 이미지 로딩" loadingPlaceholder contentClassName="h-[480px]" />
+              <section className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
+                <PreviewFrame alt="공유 이미지 로딩" loadingPlaceholder contentClassName="h-[480px]" />
+                <div className="space-y-4">
+                  <Skeleton className="h-7 w-4/5 rounded bg-border/80" />
+                  <Skeleton className="h-4 w-full rounded bg-border/70" />
+                  <Skeleton className="h-4 w-3/4 rounded bg-border/70" />
+                  <div className="flex gap-2">
+                    <Skeleton className="h-9 w-24 rounded bg-border/70" />
+                    <Skeleton className="h-9 w-24 rounded bg-border/70" />
+                  </div>
+                  <div className="space-y-3 border-t border-border/70 pt-4">
+                    {Array.from({ length: 6 }, (_, idx) => (
+                      <div key={idx} className="flex items-center justify-between gap-3">
+                        <Skeleton className="h-4 w-16 rounded bg-border/70" />
+                        <Skeleton className="h-4 w-28 rounded bg-border/70" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </section>
+              <section className="mt-8 border-t border-border/70 pt-6">
+                <Skeleton className="mb-4 h-6 w-20 rounded bg-border/70" />
+                <Skeleton className="mb-2 h-24 w-full rounded bg-border/70" />
+                <Skeleton className="h-9 w-20 rounded bg-border/70" />
+              </section>
             </div>
           </div>
         ) : error ? (
@@ -538,139 +693,249 @@ const ImageShareDetailPage: React.FC = () => {
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         ) : image ? (
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[300px_minmax(0,1fr)] lg:items-start">
-            <div className="order-2 rounded-2xl bg-card p-6 lg:order-1 lg:self-start">
-              <h3 className="mb-4 text-base font-semibold text-foreground">상세 정보</h3>
-              <div className="space-y-3 text-sm">
-                <div className="flex items-start justify-between gap-3">
-                  <span className="text-muted-foreground">만든 사람</span>
-                  <span className="text-right font-medium text-foreground">{image.ownerDisplayName || image.ownerId || '-'}</span>
-                </div>
-                <div className="flex items-start justify-between gap-3">
-                  <span className="text-muted-foreground">생성일</span>
-                  <span className="text-right font-medium text-foreground">{image.createdAt ? new Date(image.createdAt).toLocaleString() : '-'}</span>
-                </div>
-                <div className="flex items-start justify-between gap-3">
-                  <span className="text-muted-foreground">이미지 포맷</span>
-                  <span className="text-right font-medium text-foreground">{image.imageMime || '-'}</span>
-                </div>
-                <div className="flex items-start justify-between gap-3">
-                  <span className="text-muted-foreground">해상도</span>
-                  <span className="text-right font-medium text-foreground">
-                    {image.imageWidth && image.imageHeight ? `${image.imageWidth} x ${image.imageHeight}` : '-'}
-                  </span>
-                </div>
-                <div className="flex items-start justify-between gap-3">
-                  <span className="text-muted-foreground">파일 사이즈</span>
-                  <span className="text-right font-medium text-foreground">{formatBytes(image.imageBytes ?? 0)}</span>
-                </div>
-                <div className="flex items-start justify-between gap-3">
-                  <span className="text-muted-foreground">조회수</span>
-                  <span className="text-right font-medium text-foreground">{(image.viewCount ?? 0).toLocaleString()}</span>
-                </div>
-              </div>
-              <div className="mt-5 flex items-center gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  className={`gap-1.5 ${likedImageByMe ? 'border-primary bg-primary/15 text-primary' : ''}`}
-                  onClick={() => { void handleLikeImage(); }}
-                  disabled={isLikingImage || image.visibility !== 'public'}
-                  aria-label="좋아요"
-                  aria-pressed={likedImageByMe}
-                >
-                  <Icon path={mdiHeartOutline} size={0.75} />
-                  {(image.likeCount ?? 0).toLocaleString()}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="gap-1.5"
-                  onClick={handleScrollToComments}
-                  aria-label="댓글 영역으로 이동"
-                >
-                  <Icon path={mdiCommentOutline} size={0.75} />
-                  {displayCommentCount.toLocaleString()}
-                </Button>
-                {isOwner ? (
-                  <Button type="button" variant="outline" onClick={handleOpenEditDialog}>수정</Button>
-                ) : null}
-              </div>
-              {isOwner ? (
-                <>
-                  <Dialog open={isEditDialogOpen} onOpenChange={handleEditDialogOpenChange}>
-                    <DialogContent className="sm:max-w-md">
-                      <DialogHeader>
-                        <DialogTitle>리믹스 정보 수정</DialogTitle>
-                        <DialogDescription>제목과 설명을 수정합니다.</DialogDescription>
-                      </DialogHeader>
-                      <div className="space-y-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="remix-title">제목</Label>
-                          <Input
-                            id="remix-title"
-                            value={editTitle}
-                            maxLength={100}
-                            onChange={(event) => setEditTitle(event.target.value)}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="remix-description">설명</Label>
-                          <Textarea
-                            id="remix-description"
-                            value={editDescription}
-                            maxLength={500}
-                            rows={4}
-                            onChange={(event) => setEditDescription(event.target.value)}
-                          />
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[320px_minmax(0,1fr)] lg:items-start">
+            <aside className="order-2 rounded-2xl bg-card p-6 lg:order-1 lg:self-start">
+              <section>
+                <h3 className="mb-3 text-base font-semibold text-foreground">원본 밈플릿</h3>
+                {sourceTemplate ? (
+                  <div className="space-y-3">
+                    <ThumbnailCard
+                      imageUrl={sourceTemplate.thumbnailUrl}
+                      title={sourceTemplate.title}
+                      hoverable
+                      hoverSurfaceOnly
+                      fallbackText="원본 이미지 없음"
+                      onClick={handleOpenSourceTemplate}
+                    >
+                      <div className="space-y-1">
+                        <h4 className="line-clamp-1 text-sm font-semibold text-foreground">{sourceTemplate.title}</h4>
+                        <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                          <span className="truncate">{sourceTemplate.ownerDisplayName || sourceTemplate.ownerId}</span>
+                          <span className="inline-flex shrink-0 items-center gap-2">
+                            <span className="inline-flex items-center gap-1">
+                              <Icon path={mdiEyeOutline} size={0.55} />
+                              {(sourceTemplate.viewCount ?? 0).toLocaleString()}
+                            </span>
+                            <span className="inline-flex items-center gap-1">
+                              <Icon path={mdiHeartOutline} size={0.55} />
+                              {(sourceTemplate.likeCount ?? 0).toLocaleString()}
+                            </span>
+                          </span>
                         </div>
                       </div>
-                      <DialogFooter>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          disabled={isSavingMeta}
-                          onClick={() => setIsEditDialogOpen(false)}
-                        >
-                          취소
-                        </Button>
-                        <Button
-                          type="button"
-                          disabled={isSavingMeta}
-                          onClick={() => { void handleSaveMetaFromDialog(); }}
-                        >
-                          {isSavingMeta ? '저장 중...' : '저장'}
-                        </Button>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
-                </>
-              ) : null}
-            </div>
+                    </ThumbnailCard>
+                    <div className="grid grid-cols-1 gap-2">
+                      <Button
+                        type="button"
+                        className="h-9"
+                        onClick={() => { void handleStartRemixFromSource(); }}
+                      >
+                        리믹스
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
+                    원본 밈플릿 정보를 찾을 수 없습니다.
+                  </div>
+                )}
+              </section>
+
+              <section className="mt-8">
+                <div className="mb-3">
+                  <h3 className="text-base font-semibold text-foreground">다른 리믹스</h3>
+                </div>
+                {isRelatedLoading ? (
+                  <div className="space-y-3">
+                    {Array.from({ length: 2 }, (_, idx) => (
+                      <SidebarThumbnailSkeleton key={idx} />
+                    ))}
+                  </div>
+                ) : relatedError ? (
+                  <Alert variant="destructive">
+                    <AlertTitle>목록 로딩 실패</AlertTitle>
+                    <AlertDescription>{relatedError}</AlertDescription>
+                  </Alert>
+                ) : isRelatedLoaded && visibleRelatedRemixes.length === 0 ? (
+                  <p className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
+                    아직 다른 리믹스가 없습니다.
+                  </p>
+                ) : (
+                  <div className="space-y-3">
+                    {visibleRelatedRemixes.map((candidate) => (
+                      <ThumbnailCard
+                        key={candidate.id}
+                        imageUrl={candidate.imageUrl}
+                        title={candidate.title}
+                        hoverable
+                        hoverSurfaceOnly
+                        onClick={() => navigate(`/remixes/s/${candidate.shareSlug}`)}
+                      >
+                        <div className="space-y-1">
+                          <h4 className="line-clamp-1 text-sm font-semibold text-foreground">{candidate.title}</h4>
+                          <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                            <span className="truncate">{candidate.ownerDisplayName || candidate.ownerId || '-'}</span>
+                            <span className="inline-flex shrink-0 items-center gap-2">
+                              <span className="inline-flex items-center gap-1">
+                                <Icon path={mdiEyeOutline} size={0.55} />
+                                {(candidate.viewCount ?? 0).toLocaleString()}
+                              </span>
+                              <span className="inline-flex items-center gap-1">
+                                <Icon path={mdiHeartOutline} size={0.55} />
+                                {(candidate.likeCount ?? 0).toLocaleString()}
+                              </span>
+                              <span className="inline-flex items-center gap-1">
+                                <Icon path={mdiCommentOutline} size={0.55} />
+                                {(candidate.commentCount ?? 0).toLocaleString()}
+                              </span>
+                            </span>
+                          </div>
+                        </div>
+                      </ThumbnailCard>
+                    ))}
+                  </div>
+                )}
+              </section>
+            </aside>
+
             <div className="order-1 rounded-2xl bg-card p-6 lg:order-2">
-              <div className="mb-6">
-                <h2 className="mb-2 text-3xl font-bold text-foreground">{image.title}</h2>
-                {image.description ? (
-                  <div className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground">{image.description}</div>
-                ) : null}
-              </div>
-              <PreviewFrame
-                imageUrl={image.imageUrl}
-                alt={image.title}
-                imageRef={mainImageRef}
-                imageKey={image.imageUrl}
-                isImageLoaded={isMainImageLoaded}
-                isImageError={isMainImageError}
-                maxImageHeightClassName="max-h-[800px] max-w-[800px]"
-                onLoad={() => {
-                  setIsMainImageError(false);
-                  setIsMainImageLoaded(true);
-                }}
-                onError={() => {
-                  setIsMainImageLoaded(false);
-                  setIsMainImageError(true);
-                }}
-              />
+              <section className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
+                <PreviewFrame
+                  imageUrl={image.imageUrl}
+                  alt={image.title}
+                  imageRef={mainImageRef}
+                  imageKey={image.imageUrl}
+                  isImageLoaded={isMainImageLoaded}
+                  isImageError={isMainImageError}
+                  maxImageHeightClassName="max-h-[800px] max-w-[800px]"
+                  onLoad={() => {
+                    setIsMainImageError(false);
+                    setIsMainImageLoaded(true);
+                  }}
+                  onError={() => {
+                    setIsMainImageLoaded(false);
+                    setIsMainImageError(true);
+                  }}
+                />
+
+                <div className="space-y-6">
+                  <div>
+                    <h2 className="mb-2 text-3xl font-bold text-foreground">{image.title}</h2>
+                    {image.description ? (
+                      <div className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground">{image.description}</div>
+                    ) : null}
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className={`gap-1.5 ${likedImageByMe ? 'border-primary bg-primary/15 text-primary' : ''}`}
+                      onClick={() => { void handleLikeImage(); }}
+                      disabled={isLikingImage || image.visibility !== 'public'}
+                      aria-label="좋아요"
+                      aria-pressed={likedImageByMe}
+                    >
+                      <Icon path={mdiHeartOutline} size={0.75} />
+                      {(image.likeCount ?? 0).toLocaleString()}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="gap-1.5"
+                      onClick={handleScrollToComments}
+                      aria-label="댓글 영역으로 이동"
+                    >
+                      <Icon path={mdiCommentOutline} size={0.75} />
+                      {displayCommentCount.toLocaleString()}
+                    </Button>
+                    {isOwner ? (
+                      <Button type="button" variant="outline" onClick={handleOpenEditDialog}>수정</Button>
+                    ) : null}
+                  </div>
+
+                  <div className="space-y-3 border-t border-border/70 pt-4 text-sm">
+                    <div className="flex items-start justify-between gap-3">
+                      <span className="text-muted-foreground">만든 사람</span>
+                      <span className="text-right font-medium text-foreground">{image.ownerDisplayName || image.ownerId || '-'}</span>
+                    </div>
+                    <div className="flex items-start justify-between gap-3">
+                      <span className="text-muted-foreground">생성일</span>
+                      <span className="text-right font-medium text-foreground">
+                        {image.createdAt ? new Date(image.createdAt).toLocaleString() : '-'}
+                      </span>
+                    </div>
+                    <div className="flex items-start justify-between gap-3">
+                      <span className="text-muted-foreground">이미지 포맷</span>
+                      <span className="text-right font-medium text-foreground">{image.imageMime || '-'}</span>
+                    </div>
+                    <div className="flex items-start justify-between gap-3">
+                      <span className="text-muted-foreground">해상도</span>
+                      <span className="text-right font-medium text-foreground">
+                        {image.imageWidth && image.imageHeight ? `${image.imageWidth} x ${image.imageHeight}` : '-'}
+                      </span>
+                    </div>
+                    <div className="flex items-start justify-between gap-3">
+                      <span className="text-muted-foreground">파일 사이즈</span>
+                      <span className="text-right font-medium text-foreground">{formatBytes(image.imageBytes ?? 0)}</span>
+                    </div>
+                    <div className="flex items-start justify-between gap-3">
+                      <span className="text-muted-foreground">조회수</span>
+                      <span className="text-right font-medium text-foreground">{(image.viewCount ?? 0).toLocaleString()}</span>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              {isOwner ? (
+                <Dialog open={isEditDialogOpen} onOpenChange={handleEditDialogOpenChange}>
+                  <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>리믹스 정보 수정</DialogTitle>
+                      <DialogDescription>제목과 설명을 수정합니다.</DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="remix-title">제목</Label>
+                        <Input
+                          id="remix-title"
+                          value={editTitle}
+                          maxLength={100}
+                          onChange={(event) => setEditTitle(event.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="remix-description">설명</Label>
+                        <Textarea
+                          id="remix-description"
+                          value={editDescription}
+                          maxLength={500}
+                          rows={4}
+                          onChange={(event) => setEditDescription(event.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        disabled={isSavingMeta}
+                        onClick={() => setIsEditDialogOpen(false)}
+                      >
+                        취소
+                      </Button>
+                      <Button
+                        type="button"
+                        disabled={isSavingMeta}
+                        onClick={() => { void handleSaveMetaFromDialog(); }}
+                      >
+                        {isSavingMeta ? '저장 중...' : '저장'}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              ) : null}
+
               <section ref={commentsSectionRef} id="remix-comments" className="mt-8 border-t border-border/70 pt-6">
                 <h3 className="mb-4 text-lg font-semibold text-foreground">
                   댓글({displayCommentCount.toLocaleString()})

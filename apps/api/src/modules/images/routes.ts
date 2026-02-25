@@ -62,6 +62,9 @@ export const memeImageRoutes: FastifyPluginAsync = async (app) => {
       if (!image) {
         return reply.code(404).send({ message: 'Image not found.' });
       }
+      const sourceTemplate = image.templateId
+        ? await repository.getPublicSourceTemplateById(image.templateId)
+        : null;
       const actorKey = buildMetricActorKey(req);
       const likedByMe = (await repository.getLikeStateByShareSlug(paramsParsed.data.shareSlug, actorKey)) ?? false;
       const commentsLimit = queryParsed.data.commentsLimit ?? 100;
@@ -73,6 +76,7 @@ export const memeImageRoutes: FastifyPluginAsync = async (app) => {
       return reply.send({
         image,
         likedByMe,
+        sourceTemplate,
         comments: commentResult?.comments ?? [],
         commentsTotalCount: commentResult?.totalCount ?? 0
       });
