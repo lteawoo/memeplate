@@ -1,5 +1,166 @@
 # 결정 로그 (Decision Log)
 
+## [2026-02-25] 리믹스 상세 로드는 `Abort + requestSeq` 가드로 일관성 보장
+- **결정**:
+  1. `ImageShareDetailPage` 상세 로드 fetch에 `AbortController`와 요청 시퀀스(ref) 가드를 적용한다.
+  2. slug 변경 시 로드 시작 단계에서 `isLoading=true`, `error=null`, `image=null`으로 상태를 명시적으로 초기화한다.
+- **이유**:
+  1. 빠른 slug 전환/느린 네트워크에서 이전 응답이 늦게 도착해 최신 상태를 덮는 race를 차단하기 위함.
+  2. 이전 요청 실패 메시지가 다음 요청 성공 후에도 남아 화면이 고착되는 회귀를 방지하기 위함.
+- **구현 요약**:
+  - `apps/web/src/pages/ImageShareDetailPage.tsx`
+    - `detailRequestSeqRef`, `detailAbortRef` 추가
+    - 상세 `useEffect([shareSlug])`에 abort/sequence guard 적용
+    - 로드 시작 시 `setIsLoading(true)`, `setError(null)`, `setImage(null)` 적용
+    - 언마운트 정리에서 상세 요청 abort 추가
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 브라우저 강제 실패 응답 주입 후 slug 복귀 시 에러 고착 없이 정상 렌더 확인
+
+## [2026-02-25] 리믹스 상세 사이드 로딩 스켈레톤도 목록 카드 패턴으로 통일
+- **결정**:
+  1. 리믹스 상세의 `원본 밈플릿`, `다른 리믹스` 로딩 스켈레톤은 목록 카드와 동일한 시각 구조를 사용한다.
+  2. 페이지 내부 공통 블록(`SidebarThumbnailSkeleton`)으로 재사용한다.
+- **이유**:
+  1. 사용자 요청대로 “로딩 상태까지” 카드 패턴을 일치시켜 화면 전환 시 이질감을 줄이기 위함.
+  2. 스켈레톤 마크업 중복을 줄여 이후 카드 패턴 변경 시 수정 지점을 최소화하기 위함.
+- **구현 요약**:
+  - `apps/web/src/pages/ImageShareDetailPage.tsx`
+    - `SidebarThumbnailSkeleton` 추가 (`thumb-card-surface h-52 + 본문 2줄`)
+    - 초기 로딩의 원본 카드 스켈레톤을 공통 블록으로 교체
+    - `다른 리믹스` 로딩 스켈레톤 2개도 공통 블록으로 교체
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 스크린샷
+    - `docs/ai-context/screenshots/2026-02-25_remix_detail_sidebar_skeleton_match_v1_loading.png`
+
+## [2026-02-25] 원본 밈플릿 카드도 `작성자 + 조회/좋아요` 메타 패턴을 적용
+- **결정**:
+  1. 리믹스 상세 원본 카드(`sourceTemplate`)에도 조회/좋아요 수를 표시한다.
+  2. 이를 위해 원본 요약 응답에 `viewCount`, `likeCount`를 포함한다.
+- **이유**:
+  1. 사용자 요청대로 원본 카드와 다른 목록 카드의 정보 밀도를 맞춰 일관된 탐색 정보를 제공하기 위함.
+  2. 원본 밈플릿의 반응 지표를 상세 진입 시 즉시 확인할 수 있도록 하기 위함.
+- **구현 요약**:
+  - API
+    - `apps/api/src/modules/images/repository.ts`: `SourceTemplateSummary`에 `viewCount`, `likeCount` 추가
+    - `apps/api/src/modules/images/supabaseRepository.ts`: 원본 조회 select에 `view_count`, `like_count` 추가 및 매핑
+  - Web
+    - `apps/web/src/types/image.ts`: `SourceTemplateSummary`에 `viewCount`, `likeCount` 타입 추가
+    - `apps/web/src/pages/ImageShareDetailPage.tsx`: 원본 카드 하단 메타를 `작성자 + 조회/좋아요` 행으로 확장
+- **검증**:
+  - `pnpm --filter memeplate-api build`
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - `/remixes/s/img_F7J3d4Ek`에서 원본 카드 지표(`328`, `3`) 노출 확인
+
+## [2026-02-25] 카드/프리뷰 이미지에는 `crossOrigin`을 강제하지 않는다
+- **결정**:
+  1. `ThumbnailCard`, `PreviewFrame`의 `<img>`에서 `crossOrigin="anonymous"`를 제거한다.
+- **이유**:
+  1. 일부 CDN 객체가 `Access-Control-Allow-Origin` 헤더를 제공하지 않아 CORS 모드 요청 시 `net::ERR_FAILED`로 이미지가 간헐적으로 사라졌다.
+  2. 카드/프리뷰 렌더는 캔버스 픽셀 읽기와 무관하므로 CORS 강제가 필요 없다.
+- **구현 요약**:
+  - `apps/web/src/components/ThumbnailCard.tsx`: `img crossOrigin` 제거
+  - `apps/web/src/components/PreviewFrame.tsx`: `img crossOrigin` 제거
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - `/remixes/s/img_F7J3d4Ek`에서 원본 밈플릿 썸네일 정상 노출 확인
+  - 스크린샷
+    - `docs/ai-context/screenshots/2026-02-25_remix_detail_source_thumbnail_cors_fix_v5_desktop.png`
+    - `docs/ai-context/screenshots/2026-02-25_remix_detail_source_thumbnail_cors_fix_v5_mobile.png`
+
+## [2026-02-25] 리믹스 상세 `원본 밈플릿`은 버튼 분리 대신 카드 클릭 진입으로 통일
+- **결정**:
+  1. `원본 보기` 버튼은 제거한다.
+  2. 원본 영역은 공통 `ThumbnailCard`를 사용하고 카드 자체 클릭으로 원본 밈플릿 상세로 이동시킨다.
+  3. 보조 액션은 `리믹스` 버튼만 유지한다.
+- **이유**:
+  1. 사용자 요청대로 원본/연관 카드의 탐색 패턴을 일치시켜 학습 비용을 줄이기 위함.
+  2. 중복 CTA(`원본 보기` + 카드)를 제거해 사이드 영역의 시각 밀도를 낮추기 위함.
+- **구현 요약**:
+  - `apps/web/src/pages/ImageShareDetailPage.tsx`
+    - 원본 섹션 렌더를 공통 `ThumbnailCard` 패턴으로 정렬
+    - `원본 보기` 버튼 제거
+    - 카드 `onClick`에서 `handleOpenSourceTemplate` 호출
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - 스크린샷
+    - `docs/ai-context/screenshots/2026-02-25_remix_detail_source_thumbnail_click_only_v4_desktop.png`
+    - `docs/ai-context/screenshots/2026-02-25_remix_detail_source_thumbnail_click_only_v4_mobile.png`
+
+## [2026-02-25] 리믹스 상세 `다른 리믹스` 카드는 공통 `ThumbnailCard` 패턴으로 정렬
+- **결정**:
+  1. 리믹스 상세 사이드 `다른 리믹스` 목록은 커스텀 카드 대신 공통 `ThumbnailCard`를 사용한다.
+  2. 메타 행도 밈플릿 상세 리믹스 카드와 동일하게 `작성자 + 조회/좋아요/댓글` 패턴으로 맞춘다.
+- **이유**:
+  1. 사용자 요청대로 밈플릿 목록/밈플릿 상세와 시각 언어를 일치시켜 페이지 간 이질감을 줄이기 위함.
+  2. 공통 컴포넌트를 재사용해 썸네일/로딩/hover 동작 규칙을 한 곳에서 유지하기 위함.
+- **구현 요약**:
+  - `apps/web/src/pages/ImageShareDetailPage.tsx`
+    - `다른 리믹스` 렌더를 커스텀 `<button>` 카드에서 `<ThumbnailCard>`로 교체
+    - 아이콘 메타를 `mdiEyeOutline`, `mdiHeartOutline`, `mdiCommentOutline` 조합으로 정렬
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 스크린샷
+    - `docs/ai-context/screenshots/2026-02-25_remix_detail_related_remix_thumbnailcard_match_v3_desktop.png`
+
+## [2026-02-25] `다른 리믹스`는 개수 텍스트를 제거하고 썸네일 프레임을 고정한다
+- **결정**:
+  1. `다른 리믹스` 섹션 헤더에서 `N개` 텍스트는 제거한다.
+  2. 목록 카드는 공통 썸네일 프레임(`h-28`)과 `object-cover` 렌더를 적용해 시각 규격을 통일한다.
+- **이유**:
+  1. 사용자 요청대로 사이드 목록은 수량보다 탐색 카드 자체 집중도가 더 중요하다.
+  2. 이미지 비율이 다양한 리믹스 데이터에서 `object-contain` 기반 렌더는 카드 인상이 제각각 보일 수 있다.
+- **구현 요약**:
+  - `apps/web/src/pages/ImageShareDetailPage.tsx`
+    - `다른 리믹스` 헤더 개수 텍스트 제거
+    - 사이드 목록 렌더를 `ThumbnailCard` 기반에서 고정 프레임 커스텀 카드로 전환
+    - 썸네일 이미지 `h-28 w-full object-cover` 적용
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 스크린샷
+    - `docs/ai-context/screenshots/2026-02-25_remix_detail_related_remix_thumb_uniform_v2_desktop.png`
+
+## [2026-02-25] 리믹스 상세를 `원본/탐색 + 본문` 2영역 구조로 재배치
+- **결정**:
+  1. 리믹스 상세의 메인 콘텐츠는 `이미지(좌) + 메타/액션(우)`로 통합한다.
+  2. 기존 상세정보 사이드 영역은 `원본 밈플릿 카드`와 `다른 리믹스 목록`으로 전환한다.
+  3. 원본 카드 렌더를 위해 상세 응답에 `sourceTemplate` 요약 정보를 포함한다.
+- **이유**:
+  1. 사용자 요청대로 상세 메타를 이미지 섹션과 결합해 핵심 정보 인지 흐름을 단순화하기 위함.
+  2. 커뮤니티 탐색 동선(원본 보기/리믹스/다른 리믹스 이동)을 상세 첫 화면에서 바로 제공하기 위함.
+  3. 원본 카드에 필요한 공개 템플릿 정보(제목/썸네일/shareSlug)를 안정적으로 제공하기 위함.
+- **구현 요약**:
+  - API
+    - `apps/api/src/modules/images/repository.ts`
+      - `SourceTemplateSummary` 타입 및 `getPublicSourceTemplateById` 메서드 추가
+    - `apps/api/src/modules/images/supabaseRepository.ts`
+      - 공개 템플릿 요약 조회 구현(`templates`에서 id/제목/share_slug/content/작성자명)
+    - `apps/api/src/modules/images/routes.ts`
+      - `GET /api/v1/remixes/s/:shareSlug` 응답에 `sourceTemplate` 포함
+    - `apps/api/README.md`
+      - 상세 응답 필드에 `sourceTemplate` 문서화
+  - Web
+    - `apps/web/src/types/image.ts`
+      - `SourceTemplateSummary` 및 `MemeImageResponse.sourceTemplate` 타입 추가
+    - `apps/web/src/pages/ImageShareDetailPage.tsx`
+      - 레이아웃을 `좌측(원본/다른 리믹스) + 우측(이미지/메타/댓글)`로 재구성
+      - 원본 카드 버튼(`원본 보기`, `리믹스`) 동선 추가
+      - `templateId` 기준 `다른 리믹스` 목록 로드/렌더 추가
+- **검증**:
+  - `pnpm --filter memeplate-api build`
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 스크린샷
+    - `docs/ai-context/screenshots/2026-02-25_remix_detail_layout_source_and_related_v1_desktop.png`
+    - `docs/ai-context/screenshots/2026-02-25_remix_detail_layout_source_and_related_v1_mobile.png`
+
 ## [2026-02-24] 리믹스 상세는 이미지/좋아요 상태/댓글을 단일 응답으로 제공
 - **결정**:
   1. `GET /api/v1/remixes/s/:shareSlug`에서 `image`, `likedByMe`와 함께 `comments`, `commentsTotalCount`를 같이 응답한다.

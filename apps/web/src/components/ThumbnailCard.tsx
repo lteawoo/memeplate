@@ -65,7 +65,6 @@ const ThumbnailCard: React.FC<ThumbnailCardProps> = ({
               key={imageUrl}
               src={imageUrl}
               alt={title}
-              crossOrigin="anonymous"
               loading="lazy"
               decoding="async"
               fetchPriority="low"

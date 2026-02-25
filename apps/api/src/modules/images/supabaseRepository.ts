@@ -1,7 +1,12 @@
 import { randomBytes } from 'node:crypto';
 import { getSupabaseAdminClient } from '../../lib/supabaseAdmin.js';
 import type { CreateMemeImageInput, UpdateMemeImageInput } from '../../types/image.js';
-import type { MemeImageRecord, MemeImageRepository, RemixCommentRecord } from './repository.js';
+import type {
+  MemeImageRecord,
+  MemeImageRepository,
+  RemixCommentRecord,
+  SourceTemplateSummary
+} from './repository.js';
 
 type MemeImageRow = {
   id: string;
@@ -36,6 +41,21 @@ type RemixCommentRow = {
   body: string;
   created_at: string;
   updated_at: string;
+  users?: {
+    display_name: string | null;
+  } | Array<{
+    display_name: string | null;
+  }> | null;
+};
+
+type SourceTemplateRow = {
+  id: string;
+  owner_id: string;
+  title: string;
+  share_slug: string;
+  view_count: number | null;
+  like_count: number | null;
+  content?: Record<string, unknown>;
   users?: {
     display_name: string | null;
   } | Array<{
@@ -83,6 +103,40 @@ const toCommentRecord = (
   body: row.body,
   createdAt: row.created_at,
   updatedAt: row.updated_at
+});
+
+const resolveTemplateThumbnail = (content?: Record<string, unknown>) => {
+  const objects = Array.isArray(content?.objects) ? (content.objects as unknown[]) : [];
+  for (const candidate of objects) {
+    if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)) continue;
+    const obj = candidate as Record<string, unknown>;
+    if (obj.type !== 'image') continue;
+    const src = typeof obj.src === 'string' ? obj.src.trim() : '';
+    if (!src) continue;
+    if (obj.name === 'background') return src;
+  }
+  for (const candidate of objects) {
+    if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)) continue;
+    const obj = candidate as Record<string, unknown>;
+    if (obj.type !== 'image') continue;
+    const src = typeof obj.src === 'string' ? obj.src.trim() : '';
+    if (src) return src;
+  }
+  return undefined;
+};
+
+const toSourceTemplateSummary = (
+  row: SourceTemplateRow,
+  ownerDisplayName?: string | null
+): SourceTemplateSummary => ({
+  id: row.id,
+  title: row.title,
+  ownerId: row.owner_id,
+  ownerDisplayName: ownerDisplayName ?? undefined,
+  shareSlug: row.share_slug,
+  thumbnailUrl: resolveTemplateThumbnail(row.content),
+  viewCount: row.view_count ?? 0,
+  likeCount: row.like_count ?? 0
 });
 
 const extractDisplayName = (users: MemeImageRow['users']) => {
@@ -304,6 +358,20 @@ export const createSupabaseMemeImageRepository = (): MemeImageRepository => {
       if (!data) return null;
       const row = data as MemeImageRow;
       return toRecord(row, extractDisplayName(row.users));
+    },
+
+    async getPublicSourceTemplateById(templateId) {
+      const { data, error } = await supabase
+        .from('templates')
+        .select('id, owner_id, title, share_slug, view_count, like_count, content, users!templates_owner_id_fkey(display_name)')
+        .eq('id', templateId)
+        .eq('visibility', 'public')
+        .is('deleted_at', null)
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) return null;
+      const row = data as SourceTemplateRow;
+      return toSourceTemplateSummary(row, extractDisplayName(row.users));
     },
 
     async listPublicCommentsByShareSlug(shareSlug, limit, imageId) {

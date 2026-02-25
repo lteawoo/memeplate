@@ -34,9 +34,21 @@ export type MemeImageRecord = {
   updatedAt?: string;
 };
 
+export type SourceTemplateSummary = {
+  id: string;
+  title: string;
+  ownerId: string;
+  ownerDisplayName?: string;
+  shareSlug: string;
+  thumbnailUrl?: string;
+  viewCount?: number;
+  likeCount?: number;
+};
+
 export type MemeImageResponse = {
   image: MemeImageRecord;
   likedByMe?: boolean;
+  sourceTemplate?: SourceTemplateSummary | null;
   comments?: RemixCommentRecord[];
   commentsTotalCount?: number;
 };

@@ -34,11 +34,23 @@ export interface RemixCommentRecord {
   updatedAt: string;
 }
 
+export interface SourceTemplateSummary {
+  id: string;
+  title: string;
+  ownerId: string;
+  ownerDisplayName?: string;
+  shareSlug: string;
+  thumbnailUrl?: string;
+  viewCount: number;
+  likeCount: number;
+}
+
 export interface MemeImageRepository {
   listMine(userId: string): Promise<MemeImageRecord[]>;
   getMineById(userId: string, imageId: string): Promise<MemeImageRecord | null>;
   listPublic(limit: number, templateId?: string): Promise<MemeImageRecord[]>;
   getPublicByShareSlug(shareSlug: string): Promise<MemeImageRecord | null>;
+  getPublicSourceTemplateById(templateId: string): Promise<SourceTemplateSummary | null>;
   listPublicCommentsByShareSlug(shareSlug: string, limit: number, imageId?: string): Promise<{
     comments: RemixCommentRecord[];
     totalCount: number;

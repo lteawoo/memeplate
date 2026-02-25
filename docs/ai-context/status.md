@@ -1,6 +1,71 @@
 # 프로젝트 상태 (Status)
 
 ## 현재 진행 상황
+- [x] **리믹스 상세 로드 상태 안정화(완료 - 2026-02-25)**
+  - [x] 상세 fetch에 `AbortController + requestSeq` 가드를 추가해 slug 전환 시 응답 역전(race) 차단
+  - [x] 상세 로드 시작 시 `setIsLoading(true)`, `setError(null)`, `setImage(null)`으로 실패 고착/구 데이터 잔존 방지
+  - [x] 언마운트 시 상세 요청 abort 정리
+  - [x] 검증
+    - [x] `pnpm --filter memeplate-web lint`
+    - [x] `pnpm --filter memeplate-web build`
+    - [x] 강제 실패 후 browser back 복귀 시 정상 렌더 재개 확인
+- [x] **리믹스 상세 사이드 스켈레톤 패턴 정렬(완료 - 2026-02-25)**
+  - [x] `원본 밈플릿`/`다른 리믹스` 로딩 카드를 목록 공통 패턴(`thumb-card-surface`, `h-52`, 본문 2줄)으로 통일
+  - [x] 페이지 내 `SidebarThumbnailSkeleton` 공통 블록으로 중복 스켈레톤 마크업 정리
+  - [x] 검증
+    - [x] `pnpm --filter memeplate-web lint`
+    - [x] `pnpm --filter memeplate-web build`
+    - [x] 스크린샷: `docs/ai-context/screenshots/2026-02-25_remix_detail_sidebar_skeleton_match_v1_loading.png`
+- [x] **리믹스 상세 `원본 밈플릿` 카드 메타 정렬(완료 - 2026-02-25)**
+  - [x] 원본 요약 응답(`sourceTemplate`)에 `viewCount`, `likeCount` 포함
+  - [x] 원본 카드 메타를 `작성자 + 조회/좋아요` 행으로 확장
+  - [x] 검증
+    - [x] `pnpm --filter memeplate-api build`
+    - [x] `pnpm --filter memeplate-web lint`
+    - [x] `pnpm --filter memeplate-web build`
+    - [x] `/remixes/s/img_F7J3d4Ek` 원본 카드에 조회/좋아요 노출 확인
+- [x] **썸네일/프리뷰 이미지 로드 안정화 (완료 - 2026-02-25)**
+  - [x] `ThumbnailCard`, `PreviewFrame`의 `img crossOrigin="anonymous"` 제거
+  - [x] CDN CORS 헤더 미구성 케이스에서 `net::ERR_FAILED`로 이미지가 사라지는 현상 방지
+  - [x] 검증
+    - [x] `pnpm --filter memeplate-web lint`
+    - [x] `pnpm --filter memeplate-web build`
+    - [x] `/remixes/s/img_F7J3d4Ek` 원본 썸네일 노출 확인
+    - [x] 스크린샷: `docs/ai-context/screenshots/2026-02-25_remix_detail_source_thumbnail_cors_fix_v5_desktop.png`
+    - [x] 스크린샷: `docs/ai-context/screenshots/2026-02-25_remix_detail_source_thumbnail_cors_fix_v5_mobile.png`
+- [x] **리믹스 상세 `원본 밈플릿` 카드 CTA 정리(완료 - 2026-02-25)**
+  - [x] `원본 보기` 버튼 제거
+  - [x] 원본 섹션을 공통 `ThumbnailCard` 클릭 진입 패턴으로 통일(카드 클릭 시 원본 밈플릿 상세 이동)
+  - [x] `리믹스` 버튼만 보조 CTA로 유지
+  - [x] 검증
+    - [x] `pnpm --filter memeplate-web lint`
+    - [x] 스크린샷: `docs/ai-context/screenshots/2026-02-25_remix_detail_source_thumbnail_click_only_v4_desktop.png`
+    - [x] 스크린샷: `docs/ai-context/screenshots/2026-02-25_remix_detail_source_thumbnail_click_only_v4_mobile.png`
+- [x] **리믹스 상세 `다른 리믹스` 썸네일 컴포넌트 정렬(완료 - 2026-02-25)**
+  - [x] `다른 리믹스` 카드 렌더를 커스텀 버튼 카드에서 공통 `ThumbnailCard`로 교체
+  - [x] 메타 행을 밈플릿 상세 리믹스 카드와 동일한 `작성자 + 조회/좋아요/댓글` 패턴으로 정렬
+  - [x] 검증
+    - [x] `pnpm --filter memeplate-web lint`
+    - [x] `pnpm --filter memeplate-web build`
+    - [x] 스크린샷: `docs/ai-context/screenshots/2026-02-25_remix_detail_related_remix_thumbnailcard_match_v3_desktop.png`
+- [x] **리믹스 상세 `다른 리믹스` 카드 정리(완료 - 2026-02-25)**
+  - [x] `다른 리믹스` 헤더의 개수 텍스트 제거
+  - [x] 리스트 썸네일 렌더를 고정 높이(`h-28`) + `object-cover` 카드로 통일해 모양 편차 완화
+  - [x] 검증
+    - [x] `pnpm --filter memeplate-web lint`
+    - [x] `pnpm --filter memeplate-web build`
+    - [x] 스크린샷: `docs/ai-context/screenshots/2026-02-25_remix_detail_related_remix_thumb_uniform_v2_desktop.png`
+- [x] **리믹스 상세 레이아웃 2차 개편(완료 - 2026-02-25)**
+  - [x] 메인 섹션을 `이미지(좌) + 메타/액션(우)` 2열로 통합
+  - [x] 기존 좌측 상세정보 영역을 `원본 밈플릿 카드 + 다른 리믹스 목록`으로 전환
+  - [x] 상세 API 응답에 `sourceTemplate` 요약을 추가해 원본 카드 데이터 제공
+  - [x] `다른 리믹스`는 `templateId` 기준 공개 목록 API(`remixes/public`)로 로드
+  - [x] 검증
+    - [x] `pnpm --filter memeplate-api build`
+    - [x] `pnpm --filter memeplate-web lint`
+    - [x] `pnpm --filter memeplate-web build`
+    - [x] 스크린샷: `docs/ai-context/screenshots/2026-02-25_remix_detail_layout_source_and_related_v1_desktop.png`
+    - [x] 스크린샷: `docs/ai-context/screenshots/2026-02-25_remix_detail_layout_source_and_related_v1_mobile.png`
 - [x] **리믹스 상세 응답에 댓글 동봉(완료 - 2026-02-24)**
   - [x] `GET /api/v1/remixes/s/:shareSlug` 응답에 `comments`, `commentsTotalCount` 필드 추가
   - [x] 프론트 `ImageShareDetailPage`에서 별도 댓글 조회 호출 제거(상세 1회 호출로 초기 렌더 데이터 구성)

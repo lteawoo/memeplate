@@ -62,7 +62,6 @@ const PreviewFrame: React.FC<PreviewFrameProps> = ({
             key={imageKey}
             src={imageUrl}
             alt={alt}
-            crossOrigin="anonymous"
             loading={loading}
             decoding="async"
             fetchPriority={fetchPriority}
