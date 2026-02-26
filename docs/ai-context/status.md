@@ -1,6 +1,51 @@
 # 프로젝트 상태 (Status)
 
 ## 현재 진행 상황
+- [x] **썸네일 카드 블러 배경 제거 및 원본 비율 보존 표시(완료 - 2026-02-26)**
+  - [x] `ThumbnailCard`의 블러 배경 레이어 없이 단일 원본 이미지 렌더만 유지
+  - [x] 이미지 렌더를 `w-full` 강제 확장에서 `h-auto w-auto max-w-full max-h-full object-contain`으로 조정해 업스케일 왜곡 방지
+  - [x] 로딩 스켈레톤을 썸네일 위에 안정적으로 덮도록 `z-20` 보정
+  - [x] 검증
+    - [x] `pnpm --filter memeplate-web lint`
+    - [x] `pnpm --filter memeplate-web build`
+    - [x] 스크린샷: `docs/ai-context/screenshots/2026-02-26_thumbnailcard_no_blur_intrinsic_fit_home_desktop.png`
+    - [x] 스크린샷: `docs/ai-context/screenshots/2026-02-26_thumbnailcard_no_blur_intrinsic_fit_home_mobile.png`
+    - [x] 스크린샷: `docs/ai-context/screenshots/2026-02-26_thumbnailcard_no_blur_intrinsic_fit_remix_detail_desktop.png`
+    - [x] 스크린샷: `docs/ai-context/screenshots/2026-02-26_thumbnailcard_no_blur_intrinsic_fit_remix_detail_mobile.png`
+- [x] **리믹스 상세 원본 섹션 문구 정리(완료 - 2026-02-25)**
+  - [x] `원본 밈플릿` 표기를 `밈플릿`으로 통일
+  - [x] 빈 상태 안내 문구를 `밈플릿 정보를 찾을 수 없습니다.`로 정렬
+  - [x] 검증
+    - [x] `pnpm --filter memeplate-web lint`
+- [x] **템플릿/리믹스 상세 메타 노출 정리(완료 - 2026-02-25)**
+  - [x] 템플릿 상세 정보에서 `공개 상태` 표시 행 제거(관리 기능/권한 로직은 유지)
+  - [x] 리믹스 상세 생성일 표기를 `생성일시`가 아닌 `생성일` 기준으로 변경
+  - [x] API `MemeImageRecord`에 `createdDate(YYYY-MM-DD)` 필드 추가 후 프론트 타입/상세 UI와 일치
+  - [x] 검증
+    - [x] `pnpm --filter memeplate-api build`
+    - [x] `pnpm --filter memeplate-web lint`
+    - [x] `pnpm --filter memeplate-web build`
+- [x] **리믹스 상세 설명 위치 재배치(완료 - 2026-02-25)**
+  - [x] 상단 헤더(제목/작성자)에서 설명 노출 제거
+  - [x] 설명을 우측 `리믹스 정보` 블록 바로 위로 이동
+  - [x] 로딩 스켈레톤도 설명 자리(`w-4/5`)를 정보 블록 위로 정렬
+  - [x] 검증
+    - [x] `pnpm --filter memeplate-web lint`
+    - [x] `/remixes/s/img_C2u_rzxd` 스냅샷에서 `설명 -> 리믹스 정보` 순서 확인
+- [x] **리믹스 상세 메인 이미지 좌우 기준선 정렬(완료 - 2026-02-25)**
+  - [x] 리믹스 상세의 `PreviewFrame` 내부 패딩(`p-4`)을 제거(`p-0`)해 제목/댓글 섹션과 좌우 기준선 정렬
+  - [x] 로딩 placeholder도 동일하게 `p-0` 적용
+  - [x] 검증
+    - [x] `pnpm --filter memeplate-web lint`
+    - [x] `/remixes/s/img_F7J3d4Ek` 스냅샷 기준 메인 이미지와 제목/댓글 섹션의 좌우 여백 정렬 확인
+- [x] **리믹스 상세 헤더 정보 재배치(완료 - 2026-02-25)**
+  - [x] 제목을 이미지 상단 헤더로 이동
+  - [x] 제목 하단에 만든 사람 이름 배치
+  - [x] 우측 상세정보 목록에서 `만든 사람` 항목 제거
+  - [x] 검증
+    - [x] `pnpm --filter memeplate-web lint`
+    - [x] `pnpm --filter memeplate-web build`
+    - [x] `/remixes/s/img_F7J3d4Ek` 스냅샷에서 `heading -> author -> image` 순서 확인
 - [x] **리믹스 상세 로드 상태 안정화(완료 - 2026-02-25)**
   - [x] 상세 fetch에 `AbortController + requestSeq` 가드를 추가해 slug 전환 시 응답 역전(race) 차단
   - [x] 상세 로드 시작 시 `setIsLoading(true)`, `setError(null)`, `setImage(null)`으로 실패 고착/구 데이터 잔존 방지

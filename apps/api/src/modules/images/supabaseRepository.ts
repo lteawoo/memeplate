@@ -63,6 +63,16 @@ type SourceTemplateRow = {
   }> | null;
 };
 
+const toDateOnly = (value: string) => {
+  const trimmed = value.trim();
+  if (!trimmed) return '';
+  const match = /^(\d{4}-\d{2}-\d{2})/.exec(trimmed);
+  if (match?.[1]) return match[1];
+  const parsed = new Date(trimmed);
+  if (Number.isNaN(parsed.getTime())) return trimmed;
+  return parsed.toISOString().slice(0, 10);
+};
+
 const toRecord = (
   row: MemeImageRow,
   ownerDisplayName?: string | null,
@@ -85,6 +95,7 @@ const toRecord = (
   likeCount: row.like_count ?? 0,
   commentCount: Math.max(0, Math.floor(commentCount ?? 0)),
   createdAt: row.created_at,
+  createdDate: toDateOnly(row.created_at),
   updatedAt: row.updated_at
 });
 
