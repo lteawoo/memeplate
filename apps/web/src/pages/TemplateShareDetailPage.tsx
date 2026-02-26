@@ -607,10 +607,6 @@ const TemplateShareDetailPage: React.FC = () => {
                     <span className="text-muted-foreground">조회수</span>
                     <span className="text-right font-medium text-foreground">{(template.viewCount ?? 0).toLocaleString()}</span>
                   </div>
-                  <div className="flex items-start justify-between gap-3">
-                    <span className="text-muted-foreground">공개 상태</span>
-                    <span className="text-right font-medium text-foreground">{template.visibility === 'public' ? '공개' : '비공개'}</span>
-                  </div>
                 </div>
                 <div className="mt-5 flex items-center gap-2">
                   <Button

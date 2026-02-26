@@ -18,6 +18,7 @@ export interface MemeImageRecord {
   likeCount: number;
   commentCount: number;
   createdAt: string;
+  createdDate?: string;
   updatedAt: string;
 }
 

@@ -1,5 +1,113 @@
 # 결정 로그 (Decision Log)
 
+## [2026-02-26] 썸네일 카드는 블러 배경 없이 원본 비율 우선 렌더를 유지
+- **결정**:
+  1. `ThumbnailCard`는 블러 배경을 다시 도입하지 않고, 단일 원본 이미지 레이어만 사용한다.
+  2. 썸네일 이미지는 `w-full` 강제 확장을 제거하고 `h-auto w-auto max-w-full max-h-full object-contain` 조합으로 렌더한다.
+  3. 로딩 스켈레톤은 이미지 위 오버레이가 항상 보이도록 `z-20`을 적용한다.
+- **이유**:
+  1. 사용자 요청대로 흐릿한 배경을 제거해 카드 내 시각적 노이즈를 줄이기 위함.
+  2. 이미지 원본 해상도/비율을 가능한 한 보존해 가로/세로 편차가 있는 썸네일의 강제 업스케일을 피하기 위함.
+  3. 로딩 중 이미지 페이드인 구간에서 스켈레톤이 뒤로 가려지는 케이스를 방지하기 위함.
+- **구현 요약**:
+  - `apps/web/src/components/ThumbnailCard.tsx`
+    - 이미지 클래스: `max-h-full w-full object-contain` -> `h-auto w-auto max-h-full max-w-full object-contain`
+    - 로딩 스켈레톤: `absolute inset-0` -> `absolute inset-0 z-20`
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 스크린샷
+    - `docs/ai-context/screenshots/2026-02-26_thumbnailcard_no_blur_intrinsic_fit_home_desktop.png`
+    - `docs/ai-context/screenshots/2026-02-26_thumbnailcard_no_blur_intrinsic_fit_home_mobile.png`
+    - `docs/ai-context/screenshots/2026-02-26_thumbnailcard_no_blur_intrinsic_fit_remix_detail_desktop.png`
+    - `docs/ai-context/screenshots/2026-02-26_thumbnailcard_no_blur_intrinsic_fit_remix_detail_mobile.png`
+
+## [2026-02-25] 리믹스 상세 원본 섹션 명칭은 `밈플릿`으로 단순화
+- **결정**:
+  1. 리믹스 상세 좌측 원본 섹션 타이틀을 `원본 밈플릿`에서 `밈플릿`으로 변경한다.
+  2. 원본 부재 안내 문구도 `밈플릿 정보를 찾을 수 없습니다.`로 맞춘다.
+- **이유**:
+  1. 사용자 요청대로 라벨 길이를 줄여 화면 텍스트 밀도를 낮추기 위함.
+  2. 섹션 타이틀과 빈 상태 문구의 용어를 동일하게 유지해 인지 부하를 줄이기 위함.
+- **구현 요약**:
+  - `apps/web/src/pages/ImageShareDetailPage.tsx`
+    - 섹션 제목: `원본 밈플릿 -> 밈플릿`
+    - 빈 상태 문구: `원본 밈플릿 정보를 찾을 수 없습니다. -> 밈플릿 정보를 찾을 수 없습니다.`
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+
+## [2026-02-25] 상세 생성일 표기는 API `createdDate`로 정렬하고 `createdAt`은 유지
+- **결정**:
+  1. 템플릿 상세 정보 패널에서 `공개 상태` 노출 행은 제거한다.
+  2. 리믹스 상세의 생성일 표기는 API가 제공하는 `createdDate(YYYY-MM-DD)`를 우선 사용한다.
+  3. 기존 `createdAt`은 댓글 정렬/시간 표시 등 다른 로직 호환을 위해 유지한다.
+- **이유**:
+  1. 사용자 요청대로 상세 메타에서 불필요한 공개 상태 텍스트를 줄이고 핵심 정보만 남기기 위함.
+  2. 화면 라벨(`생성일`)과 데이터 계약(API)을 일치시켜 프론트 포맷 의존을 줄이기 위함.
+  3. `createdAt` 제거 시 목록/정렬/기존 소비 지점 회귀 위험이 커서 호환 필드 전략이 안전하다.
+- **구현 요약**:
+  - API
+    - `apps/api/src/modules/images/repository.ts`: `MemeImageRecord.createdDate` 필드 추가
+    - `apps/api/src/modules/images/supabaseRepository.ts`: `created_at`에서 `createdDate` 파생 매핑 추가
+  - Web
+    - `apps/web/src/types/image.ts`: `MemeImageRecord.createdDate` 필드 추가
+    - `apps/web/src/pages/ImageShareDetailPage.tsx`: 생성일 렌더를 `createdDate -> createdAt.toLocaleDateString()` 순 폴백으로 변경
+    - `apps/web/src/pages/TemplateShareDetailPage.tsx`: 상세 정보의 `공개 상태` 행 제거
+- **검증**:
+  - `pnpm --filter memeplate-api build`
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+
+## [2026-02-25] 리믹스 설명은 헤더가 아닌 `리믹스 정보` 바로 위에 배치
+- **결정**:
+  1. 리믹스 설명은 상단 헤더(제목/작성자)에서 노출하지 않는다.
+  2. 설명은 우측 상세 메타(`생성일/포맷/해상도/파일사이즈/조회수`) 블록의 바로 위에 배치한다.
+- **이유**:
+  1. 상단 헤더는 `제목 + 작성자`만 남겨 밀도를 낮추고, 설명은 정보 블록과 가까운 위치에서 읽히게 하기 위함.
+  2. 사용자 요청대로 `리믹스 설명 -> 리믹스 정보` 순서의 읽기 흐름을 만들기 위함.
+- **구현 요약**:
+  - `apps/web/src/pages/ImageShareDetailPage.tsx`
+    - 헤더 섹션의 설명 렌더 제거
+    - 우측 컬럼 `space-y-6` 내 정보 블록 앞에 설명 렌더 추가
+    - 로딩 스켈레톤 설명 라인도 정보 블록 위로 이동
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `/remixes/s/img_C2u_rzxd`에서 `설명`이 `리믹스 정보` 위에 노출되는 것 확인
+
+## [2026-02-25] 리믹스 상세 메인 이미지의 내부 패딩은 제거해 섹션 기준선을 맞춘다
+- **결정**:
+  1. 리믹스 상세 메인 이미지 `PreviewFrame`는 내부 패딩을 `p-0`으로 사용한다.
+  2. 로딩 placeholder도 동일하게 `p-0`을 적용한다.
+- **이유**:
+  1. 사용자 피드백대로 이미지 블록만 추가 inset(`p-4`)이 있어 제목/댓글 섹션과 좌우 기준선이 어긋났다.
+  2. 동일 카드 내부 섹션은 같은 좌우 기준선을 유지하는 것이 정보 스캔에 유리하다.
+- **구현 요약**:
+  - `apps/web/src/pages/ImageShareDetailPage.tsx`
+    - 로딩 `PreviewFrame`: `contentClassName=\"h-[480px] p-0\"`
+    - 본문 `PreviewFrame`: `contentClassName=\"p-0\"`
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `/remixes/s/img_F7J3d4Ek`에서 제목/댓글 섹션과 이미지 좌우 기준선 정렬 확인
+
+## [2026-02-25] 리믹스 상세의 제목/작성자 정보는 메인 이미지 상단 헤더로 배치
+- **결정**:
+  1. 리믹스 상세 제목은 우측 메타 컬럼이 아니라 메인 이미지 영역 상단 헤더에 배치한다.
+  2. 제목 바로 아래에 작성자명을 노출한다.
+  3. 우측 상세정보 목록에서는 `만든 사람` 행을 제거한다.
+- **이유**:
+  1. 사용자 요청대로 콘텐츠의 1차 식별 정보(제목/작성자)를 이미지 소비 흐름 앞단에 배치하기 위함.
+  2. 동일 정보의 중복 노출(헤더 + 상세정보)을 줄여 상세 패널 밀도를 낮추기 위함.
+- **구현 요약**:
+  - `apps/web/src/pages/ImageShareDetailPage.tsx`
+    - 메인 카드 상단에 `제목 + 작성자` 헤더 섹션 추가
+    - 우측 컬럼의 기존 제목/설명 블록 제거
+    - 상세정보 목록의 `만든 사람` 항목 제거
+    - 로딩 스켈레톤도 동일 헤더 구조로 보정
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - `/remixes/s/img_F7J3d4Ek`에서 `제목 -> 작성자 -> 이미지` 순서 및 상세정보 `만든 사람` 제거 확인
+
 ## [2026-02-25] 리믹스 상세 로드는 `Abort + requestSeq` 가드로 일관성 보장
 - **결정**:
   1. `ImageShareDetailPage` 상세 로드 fetch에 `AbortController`와 요청 시퀀스(ref) 가드를 적용한다.

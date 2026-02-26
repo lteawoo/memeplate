@@ -660,17 +660,19 @@ const ImageShareDetailPage: React.FC = () => {
               </div>
             </aside>
             <div className="order-1 rounded-2xl bg-card p-6 lg:order-2">
+              <section className="mb-3">
+                <Skeleton className="mb-2 h-8 w-3/5 rounded bg-border/80" />
+                <Skeleton className="h-4 w-32 rounded bg-border/70" />
+              </section>
               <section className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
-                <PreviewFrame alt="공유 이미지 로딩" loadingPlaceholder contentClassName="h-[480px]" />
+                <PreviewFrame alt="공유 이미지 로딩" loadingPlaceholder contentClassName="h-[480px] p-0" />
                 <div className="space-y-4">
-                  <Skeleton className="h-7 w-4/5 rounded bg-border/80" />
-                  <Skeleton className="h-4 w-full rounded bg-border/70" />
-                  <Skeleton className="h-4 w-3/4 rounded bg-border/70" />
                   <div className="flex gap-2">
                     <Skeleton className="h-9 w-24 rounded bg-border/70" />
                     <Skeleton className="h-9 w-24 rounded bg-border/70" />
                   </div>
-                  <div className="space-y-3 border-t border-border/70 pt-4">
+                  <Skeleton className="h-4 w-4/5 rounded bg-border/70" />
+                  <div className="space-y-3">
                     {Array.from({ length: 6 }, (_, idx) => (
                       <div key={idx} className="flex items-center justify-between gap-3">
                         <Skeleton className="h-4 w-16 rounded bg-border/70" />
@@ -696,7 +698,7 @@ const ImageShareDetailPage: React.FC = () => {
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-[320px_minmax(0,1fr)] lg:items-start">
             <aside className="order-2 rounded-2xl bg-card p-6 lg:order-1 lg:self-start">
               <section>
-                <h3 className="mb-3 text-base font-semibold text-foreground">원본 밈플릿</h3>
+                <h3 className="mb-3 text-base font-semibold text-foreground">밈플릿</h3>
                 {sourceTemplate ? (
                   <div className="space-y-3">
                     <ThumbnailCard
@@ -736,7 +738,7 @@ const ImageShareDetailPage: React.FC = () => {
                   </div>
                 ) : (
                   <div className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
-                    원본 밈플릿 정보를 찾을 수 없습니다.
+                    밈플릿 정보를 찾을 수 없습니다.
                   </div>
                 )}
               </section>
@@ -799,6 +801,10 @@ const ImageShareDetailPage: React.FC = () => {
             </aside>
 
             <div className="order-1 rounded-2xl bg-card p-6 lg:order-2">
+              <section className="mb-3">
+                <h2 className="mb-1 text-3xl font-bold text-foreground">{image.title}</h2>
+                <p className="text-sm text-muted-foreground">{image.ownerDisplayName || image.ownerId || '-'}</p>
+              </section>
               <section className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
                 <PreviewFrame
                   imageUrl={image.imageUrl}
@@ -807,6 +813,7 @@ const ImageShareDetailPage: React.FC = () => {
                   imageKey={image.imageUrl}
                   isImageLoaded={isMainImageLoaded}
                   isImageError={isMainImageError}
+                  contentClassName="p-0"
                   maxImageHeightClassName="max-h-[800px] max-w-[800px]"
                   onLoad={() => {
                     setIsMainImageError(false);
@@ -819,11 +826,34 @@ const ImageShareDetailPage: React.FC = () => {
                 />
 
                 <div className="space-y-6">
-                  <div>
-                    <h2 className="mb-2 text-3xl font-bold text-foreground">{image.title}</h2>
-                    {image.description ? (
-                      <div className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground">{image.description}</div>
-                    ) : null}
+                  {image.description ? (
+                    <div className="whitespace-pre-wrap text-sm text-muted-foreground">{image.description}</div>
+                  ) : null}
+                  <div className="space-y-3 text-sm">
+                    <div className="flex items-start justify-between gap-3">
+                      <span className="text-muted-foreground">생성일</span>
+                      <span className="text-right font-medium text-foreground">
+                        {image.createdDate ?? (image.createdAt ? new Date(image.createdAt).toLocaleDateString() : '-')}
+                      </span>
+                    </div>
+                    <div className="flex items-start justify-between gap-3">
+                      <span className="text-muted-foreground">이미지 포맷</span>
+                      <span className="text-right font-medium text-foreground">{image.imageMime || '-'}</span>
+                    </div>
+                    <div className="flex items-start justify-between gap-3">
+                      <span className="text-muted-foreground">해상도</span>
+                      <span className="text-right font-medium text-foreground">
+                        {image.imageWidth && image.imageHeight ? `${image.imageWidth} x ${image.imageHeight}` : '-'}
+                      </span>
+                    </div>
+                    <div className="flex items-start justify-between gap-3">
+                      <span className="text-muted-foreground">파일 사이즈</span>
+                      <span className="text-right font-medium text-foreground">{formatBytes(image.imageBytes ?? 0)}</span>
+                    </div>
+                    <div className="flex items-start justify-between gap-3">
+                      <span className="text-muted-foreground">조회수</span>
+                      <span className="text-right font-medium text-foreground">{(image.viewCount ?? 0).toLocaleString()}</span>
+                    </div>
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2">
@@ -852,37 +882,6 @@ const ImageShareDetailPage: React.FC = () => {
                     {isOwner ? (
                       <Button type="button" variant="outline" onClick={handleOpenEditDialog}>수정</Button>
                     ) : null}
-                  </div>
-
-                  <div className="space-y-3 border-t border-border/70 pt-4 text-sm">
-                    <div className="flex items-start justify-between gap-3">
-                      <span className="text-muted-foreground">만든 사람</span>
-                      <span className="text-right font-medium text-foreground">{image.ownerDisplayName || image.ownerId || '-'}</span>
-                    </div>
-                    <div className="flex items-start justify-between gap-3">
-                      <span className="text-muted-foreground">생성일</span>
-                      <span className="text-right font-medium text-foreground">
-                        {image.createdAt ? new Date(image.createdAt).toLocaleString() : '-'}
-                      </span>
-                    </div>
-                    <div className="flex items-start justify-between gap-3">
-                      <span className="text-muted-foreground">이미지 포맷</span>
-                      <span className="text-right font-medium text-foreground">{image.imageMime || '-'}</span>
-                    </div>
-                    <div className="flex items-start justify-between gap-3">
-                      <span className="text-muted-foreground">해상도</span>
-                      <span className="text-right font-medium text-foreground">
-                        {image.imageWidth && image.imageHeight ? `${image.imageWidth} x ${image.imageHeight}` : '-'}
-                      </span>
-                    </div>
-                    <div className="flex items-start justify-between gap-3">
-                      <span className="text-muted-foreground">파일 사이즈</span>
-                      <span className="text-right font-medium text-foreground">{formatBytes(image.imageBytes ?? 0)}</span>
-                    </div>
-                    <div className="flex items-start justify-between gap-3">
-                      <span className="text-muted-foreground">조회수</span>
-                      <span className="text-right font-medium text-foreground">{(image.viewCount ?? 0).toLocaleString()}</span>
-                    </div>
                   </div>
                 </div>
               </section>

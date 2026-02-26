@@ -58,7 +58,7 @@ const ThumbnailCard: React.FC<ThumbnailCardProps> = ({
         {imageUrl && !hasImageError ? (
           <div className="thumb-card-media-surface relative flex h-full items-center justify-center overflow-hidden rounded-lg bg-transparent">
             {!hasImageLoaded ? (
-              <Skeleton className="absolute inset-0 rounded-lg bg-border/70" />
+              <Skeleton className="absolute inset-0 z-20 rounded-lg bg-border/70" />
             ) : null}
             <img
               ref={imageRef}
@@ -76,7 +76,7 @@ const ThumbnailCard: React.FC<ThumbnailCardProps> = ({
                 setHasImageLoaded(false);
                 setHasImageError(true);
               }}
-              className={`max-h-full w-full object-contain transition-opacity duration-200 ${hasImageLoaded ? 'opacity-100' : 'opacity-0'}`}
+              className={`h-auto w-auto max-h-full max-w-full object-contain transition-opacity duration-200 ${hasImageLoaded ? 'opacity-100' : 'opacity-0'}`}
               draggable={false}
               onDragStart={(e) => e.preventDefault()}
             />
