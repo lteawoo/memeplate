@@ -1,6 +1,14 @@
 # 프로젝트 상태 (Status)
 
 ## 현재 진행 상황
+- [x] **홈 히어로/가이드 섹션 제거(완료 - 2026-02-27)**
+  - [x] `HomePage` 상단 히어로(2열 카드) 섹션 제거
+  - [x] 하단 가이드(quick actions 3카드) 섹션 제거
+  - [x] 홈 메인 구성은 `추천 밈플릿` + `최근 리믹스 활동` 2섹션만 유지
+  - [x] 검증
+    - [x] `pnpm --filter memeplate-web lint`
+    - [x] `pnpm --filter memeplate-web build`
+    - [x] 스크린샷: `docs/ai-context/screenshots/2026-02-27_home_without_hero_guide_v1.png`
 - [x] **밈플릿 목록/상세/리믹스 상세 상단 패딩 정렬(완료 - 2026-02-27)**
   - [x] `TemplatesPage`, `TemplateShareDetailPage`, `ImageShareDetailPage`의 `PageContainer` 상단 패딩을 `pt-6(24px)`로 통일
   - [x] 상세/리믹스 상세 하단 여백은 기존 볼륨을 유지하기 위해 `pb-10` 유지, 목록은 `pb-8` 유지
