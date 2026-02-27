@@ -1,10 +1,11 @@
 import React from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import Icon from '@mdi/react';
-import { mdiCommentOutline, mdiEyeOutline, mdiHeartOutline } from '@mdi/js';
+import { mdiCommentOutline, mdiDownload, mdiEyeOutline, mdiHeartOutline, mdiLinkVariant, mdiShareVariant } from '@mdi/js';
 import { toast } from 'sonner';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Dialog,
   DialogContent,
@@ -21,6 +22,7 @@ import { apiFetch } from '@/lib/apiFetch';
 import { formatDateLabel, formatDateTimeLabel } from '@/lib/dateFormat';
 import { formatImageFormatLabel } from '@/lib/imageFormat';
 import { buildLoginPath, getPathWithSearchAndHash } from '@/lib/loginNavigation';
+import { handoffDownloadToBrowser } from '@/lib/shareActions';
 import MainHeader from '../components/layout/MainHeader';
 import MainFooter from '../components/layout/MainFooter';
 import PageContainer from '../components/layout/PageContainer';
@@ -381,6 +383,30 @@ const ImageShareDetailPage: React.FC = () => {
       block: 'start'
     });
   }, []);
+
+  const handleDownloadRemixImage = React.useCallback(() => {
+    if (!image?.imageUrl || !image.shareSlug) {
+      toast.error('다운로드할 이미지가 없습니다.');
+      return;
+    }
+
+    handoffDownloadToBrowser(`/api/v1/remixes/s/${image.shareSlug}/download`);
+  }, [image?.imageUrl, image?.shareSlug]);
+
+  const handleCopyRemixLink = React.useCallback(async () => {
+    if (!image?.shareSlug) {
+      toast.error('공유 링크를 생성할 수 없습니다.');
+      return;
+    }
+
+    const shareUrl = `${window.location.origin}/remixes/s/${image.shareSlug}`;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      toast.success('공유 링크를 복사했습니다.');
+    } catch {
+      toast.error('공유 링크 복사에 실패했습니다.');
+    }
+  }, [image?.shareSlug]);
 
   const handleOpenSourceTemplate = React.useCallback(() => {
     if (!sourceTemplate?.shareSlug) return;
@@ -883,6 +909,36 @@ const ImageShareDetailPage: React.FC = () => {
                       <Icon path={mdiCommentOutline} size={0.75} />
                       {displayCommentCount.toLocaleString()}
                     </Button>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button type="button" variant="outline" className="gap-1.5" aria-label="공유">
+                          <Icon path={mdiShareVariant} size={0.75} />
+                          공유
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent align="start" className="w-44 p-2">
+                        <div className="grid gap-1">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            className="h-9 justify-start gap-2"
+                            onClick={() => { void handleDownloadRemixImage(); }}
+                          >
+                            <Icon path={mdiDownload} size={0.75} />
+                            다운로드
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            className="h-9 justify-start gap-2"
+                            onClick={() => { void handleCopyRemixLink(); }}
+                          >
+                            <Icon path={mdiLinkVariant} size={0.75} />
+                            링크 복사
+                          </Button>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
                     {isOwner ? (
                       <Button type="button" variant="outline" onClick={handleOpenEditDialog}>수정</Button>
                     ) : null}

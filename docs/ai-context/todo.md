@@ -1,6 +1,14 @@
 # Memeplate 개발 TODO
 
 ## 최근 완료 (2026-02-27)
+- [x] 공유 다운로드를 API attachment 엔드포인트(`GET /api/v1/memeplates/s/:shareSlug/download`, `GET /api/v1/remixes/s/:shareSlug/download`)로 전환
+- [x] API 공통 유틸(`replyWithAttachmentFromRemoteImage`) 추가 및 `Content-Disposition: attachment` 헤더 적용
+- [x] 프론트 다운로드를 브라우저 기본 처리로 위임(`/download` 링크 클릭)하고 성공 토스트 제거
+- [x] 검증(`memeplate-api build`, `memeplate-web lint/build`, download 헤더/네트워크 확인, v2 스크린샷)
+- [x] 템플릿 상세 좋아요 우측/리믹스 상세 댓글 우측에 `공유` 버튼 추가
+- [x] 공유 팝오버에 `다운로드`, `링크 복사` 액션 추가
+- [x] 공통 다운로드 유틸(`downloadImageWithFallback`) 추가 및 cross-origin fallback 적용
+- [x] 검증(`memeplate-web lint`, `memeplate-web build`, 템플릿/리믹스 상세 공유 팝오버 스크린샷)
 - [x] 홈 히어로(상단 2열 카드) 섹션 제거
 - [x] 홈 가이드(quick actions 3카드) 섹션 제거
 - [x] 홈은 `추천 밈플릿`, `최근 리믹스 활동` 2섹션 구성으로 단순화

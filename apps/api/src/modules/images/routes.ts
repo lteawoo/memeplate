@@ -11,6 +11,7 @@ import {
 import { uploadMemeImageDataUrl } from '../../lib/r2.js';
 import { createSupabaseMemeImageRepository } from './supabaseRepository.js';
 import { buildMetricActorKey } from '../../lib/metricActorKey.js';
+import { replyWithAttachmentFromRemoteImage } from '../../lib/attachmentDownload.js';
 
 export const memeImageRoutes: FastifyPluginAsync = async (app) => {
   const repository = createSupabaseMemeImageRepository();
@@ -79,6 +80,28 @@ export const memeImageRoutes: FastifyPluginAsync = async (app) => {
         sourceTemplate,
         comments: commentResult?.comments ?? [],
         commentsTotalCount: commentResult?.totalCount ?? 0
+      });
+    });
+
+    app.get(`${basePath}/s/:shareSlug/download`, async (req, reply) => {
+      const paramsParsed = MemeImageShareSlugParamSchema.safeParse(req.params);
+      if (!paramsParsed.success) {
+        return reply.code(400).send({
+          message: 'Invalid share slug',
+          issues: paramsParsed.error.issues
+        });
+      }
+
+      const image = await repository.getPublicByShareSlug(paramsParsed.data.shareSlug);
+      if (!image) {
+        return reply.code(404).send({ message: 'Image not found.' });
+      }
+
+      return replyWithAttachmentFromRemoteImage(reply, {
+        imageUrl: image.imageUrl,
+        fileBaseName: image.title || 'memeplate-remix',
+        fallbackBaseName: 'memeplate-remix',
+        mimeType: image.imageMime
       });
     });
 
