@@ -66,7 +66,7 @@ const TemplatesPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-app-surface">
       <MainHeader />
-      <PageContainer className="py-8">
+      <PageContainer className="pt-6 pb-8">
         <div className="mb-4 flex flex-wrap items-center justify-end gap-3">
           <div className="flex items-center gap-2">
             <div className="flex items-center rounded-xl bg-muted p-1">

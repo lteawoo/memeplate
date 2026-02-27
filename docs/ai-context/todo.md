@@ -1,6 +1,12 @@
 # Memeplate 개발 TODO
 
 ## 최근 완료 (2026-02-27)
+- [x] 밈플릿 목록/상세/리믹스 상세 `PageContainer` 상단 패딩을 `24px(pt-6)`로 정렬
+- [x] 목록 `pt-6 pb-8`, 상세/리믹스 상세 `pt-6 pb-10`으로 상단 일관성 + 하단 볼륨 유지
+- [x] 검증(`memeplate-web lint`, `memeplate-web build`, 변경 전/후 스크린샷)
+- [x] 날짜 포맷 공통화: 상세/카드는 `YYYY-MM-DD`, 댓글/업데이트 일시는 `YYYY-MM-DD HH:mm`로 통일
+- [x] 공통 유틸(`formatDateLabel`, `formatDateTimeLabel`) 추가 및 렌더 교체
+- [x] 검증(`memeplate-web lint`, `memeplate-web build`)
 - [x] 밈플릿/리믹스 상세의 이미지 포맷 표시 규칙을 공통 유틸(`formatImageFormatLabel`)로 통일
 - [x] 규칙: `mime subtype 우선 -> URL 확장자 fallback -> '-'`, `jpeg`는 `JPG`로 정규화
 - [x] 검증(`memeplate-web lint`)

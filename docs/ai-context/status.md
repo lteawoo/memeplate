@@ -1,6 +1,27 @@
 # 프로젝트 상태 (Status)
 
 ## 현재 진행 상황
+- [x] **밈플릿 목록/상세/리믹스 상세 상단 패딩 정렬(완료 - 2026-02-27)**
+  - [x] `TemplatesPage`, `TemplateShareDetailPage`, `ImageShareDetailPage`의 `PageContainer` 상단 패딩을 `pt-6(24px)`로 통일
+  - [x] 상세/리믹스 상세 하단 여백은 기존 볼륨을 유지하기 위해 `pb-10` 유지, 목록은 `pb-8` 유지
+  - [x] 검증
+    - [x] `pnpm --filter memeplate-web lint`
+    - [x] `pnpm --filter memeplate-web build`
+    - [x] 스크린샷(변경 전)
+      - [x] `docs/ai-context/screenshots/2026-02-27_top_padding_before_memeplates_list.png`
+      - [x] `docs/ai-context/screenshots/2026-02-27_top_padding_before_memeplates_detail.png`
+      - [x] `docs/ai-context/screenshots/2026-02-27_top_padding_before_remix_detail.png`
+    - [x] 스크린샷(변경 후)
+      - [x] `docs/ai-context/screenshots/2026-02-27_top_padding_after_memeplates_list.png`
+      - [x] `docs/ai-context/screenshots/2026-02-27_top_padding_after_memeplates_detail.png`
+      - [x] `docs/ai-context/screenshots/2026-02-27_top_padding_after_remix_detail.png`
+- [x] **상세/카드 날짜 포맷 규칙 통일(완료 - 2026-02-27)**
+  - [x] 날짜 표시는 `YYYY-MM-DD`, 일시 표시는 `YYYY-MM-DD HH:mm`로 통일
+  - [x] 공통 유틸 `formatDateLabel`, `formatDateTimeLabel` 추가
+  - [x] 템플릿 상세/리믹스 상세(생성일, 댓글 일시)/템플릿 카드 업데이트 일시 렌더에 공통 유틸 적용
+  - [x] 검증
+    - [x] `pnpm --filter memeplate-web lint`
+    - [x] `pnpm --filter memeplate-web build`
 - [x] **이미지 포맷 URL fallback 파싱 오검출 수정(완료 - 2026-02-27)**
   - [x] `formatImageFormatLabel`의 URL 파싱을 파일명 기반으로 보정해 도메인 문자열 오검출 차단
   - [x] 확장자 없는 URL은 `-`로 폴백되도록 처리
