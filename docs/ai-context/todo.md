@@ -1,6 +1,10 @@
 # Memeplate 개발 TODO
 
 ## 최근 완료 (2026-02-27)
+- [x] 홈 히어로(상단 2열 카드) 섹션 제거
+- [x] 홈 가이드(quick actions 3카드) 섹션 제거
+- [x] 홈은 `추천 밈플릿`, `최근 리믹스 활동` 2섹션 구성으로 단순화
+- [x] 검증(`memeplate-web lint`, `memeplate-web build`, 홈 스크린샷)
 - [x] 밈플릿 목록/상세/리믹스 상세 `PageContainer` 상단 패딩을 `24px(pt-6)`로 정렬
 - [x] 목록 `pt-6 pb-8`, 상세/리믹스 상세 `pt-6 pb-10`으로 상단 일관성 + 하단 볼륨 유지
 - [x] 검증(`memeplate-web lint`, `memeplate-web build`, 변경 전/후 스크린샷)

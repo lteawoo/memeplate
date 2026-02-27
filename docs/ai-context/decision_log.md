@@ -1,5 +1,23 @@
 # 결정 로그 (Decision Log)
 
+## [2026-02-27] 홈 화면은 히어로/가이드 없이 콘텐츠 섹션 중심으로 단순화
+- **결정**:
+  1. 홈 상단 히어로 섹션(카피 + CTA + 추천 카드)은 제거한다.
+  2. 홈 하단 가이드 섹션(quick actions 3카드)도 제거한다.
+  3. 홈 메인은 `추천 밈플릿`, `최근 리믹스 활동` 두 섹션만 유지한다.
+- **이유**:
+  1. 사용자 요청대로 홈 상단/하단의 부가 섹션을 제거해 정보 밀도를 낮추기 위함.
+  2. 핵심 탐색 동선(밈플릿 탐색, 리믹스 탐색)을 콘텐츠 카드 중심으로 단순화하기 위함.
+- **구현 요약**:
+  - `apps/web/src/pages/HomePage.tsx`
+    - 히어로 관련 상태/렌더(`latestTemplates`, `heroTemplate`, `sideTemplates`) 제거
+    - 가이드 관련 타입/상태/렌더(`QuickAction`, `quickActions`) 제거
+    - 미사용 UI import(`Card`, `Skeleton`, 관련 icon) 정리
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 스크린샷: `docs/ai-context/screenshots/2026-02-27_home_without_hero_guide_v1.png`
+
 ## [2026-02-27] 밈플릿 목록/상세/리믹스 상세의 상단 패딩은 `24px`로 통일
 - **결정**:
   1. `TemplatesPage`, `TemplateShareDetailPage`, `ImageShareDetailPage`의 `PageContainer` 상단 패딩을 `pt-6(24px)`으로 통일한다.
