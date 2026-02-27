@@ -1,6 +1,17 @@
 # 프로젝트 상태 (Status)
 
 ## 현재 진행 상황
+- [x] **이미지 포맷 URL fallback 파싱 오검출 수정(완료 - 2026-02-27)**
+  - [x] `formatImageFormatLabel`의 URL 파싱을 파일명 기반으로 보정해 도메인 문자열 오검출 차단
+  - [x] 확장자 없는 URL은 `-`로 폴백되도록 처리
+  - [x] 검증
+    - [x] `pnpm --filter memeplate-web lint`
+    - [x] `pnpm --filter memeplate-web build`
+- [x] **밈플릿/리믹스 상세 이미지 포맷 라벨 규칙 통일(완료 - 2026-02-27)**
+  - [x] 공통 유틸 `formatImageFormatLabel` 추가 (`mime -> subtype`, URL 확장자 fallback, `jpeg -> JPG` 정규화)
+  - [x] 밈플릿 상세(`TemplateShareDetailPage`)와 리믹스 상세(`ImageShareDetailPage`) 모두 공통 포맷 유틸 사용
+  - [x] 검증
+    - [x] `pnpm --filter memeplate-web lint`
 - [x] **썸네일 카드 블러 배경 제거 및 원본 비율 보존 표시(완료 - 2026-02-26)**
   - [x] `ThumbnailCard`의 블러 배경 레이어 없이 단일 원본 이미지 렌더만 유지
   - [x] 이미지 렌더를 `w-full` 강제 확장에서 `h-auto w-auto max-w-full max-h-full object-contain`으로 조정해 업스케일 왜곡 방지

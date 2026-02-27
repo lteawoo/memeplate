@@ -1,5 +1,39 @@
 # 결정 로그 (Decision Log)
 
+## [2026-02-27] 이미지 포맷 라벨 URL fallback은 파일명 기반으로 파싱한다
+- **결정**:
+  1. `formatImageFormatLabel`의 URL fallback 파싱은 URL 전체 문자열이 아니라 `pathname`의 마지막 파일명 기준으로 수행한다.
+  2. 파일명에 확장자가 없거나 비정상 토큰이면 포맷 라벨은 `-`로 처리한다.
+- **이유**:
+  1. 기존 구현은 URL 전체를 `.` 기준 split해 확장자를 추정하여 `https://cdn.example.com/path/noext`에서 `com/path/noext`를 반환하는 오검출이 있었다.
+  2. 상세 화면 메타의 `이미지 포맷`은 잘못된 문자열보다 `-` 폴백이 안전하고 사용자 혼란이 적다.
+- **구현 요약**:
+  - `apps/web/src/lib/imageFormat.ts`
+    - `parseFormatTokenFromUrl`을 `new URL(...).pathname -> filename -> ext` 순서로 변경
+    - 상대경로 URL은 기존 split fallback 유지
+    - 확장자 정규식(`^[a-z0-9.+-]{1,12}$`) 검증 추가
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+
+## [2026-02-27] 밈플릿/리믹스 상세의 이미지 포맷 표기는 공통 라벨 규칙으로 통일
+- **결정**:
+  1. 상세 화면의 `이미지 포맷` 표시는 공통 유틸 `formatImageFormatLabel`을 사용한다.
+  2. 라벨 규칙은 `mime subtype 우선 -> URL 확장자 fallback -> '-'` 순으로 적용한다.
+  3. `jpeg` 표기는 사용자 가독성을 위해 `JPG`로 정규화한다.
+- **이유**:
+  1. 기존에는 밈플릿 상세는 `WEBP`, 리믹스 상세는 `image/webp`처럼 표기 기준이 달라 UI 일관성이 깨졌다.
+  2. DB/API 스키마 변경 없이 프론트 표시 규칙만 통일하는 방식이 가장 안전하고 회귀 위험이 낮다.
+- **구현 요약**:
+  - `apps/web/src/lib/imageFormat.ts`
+    - `formatImageFormatLabel(mimeType, fallbackUrl)` 추가
+  - `apps/web/src/pages/TemplateShareDetailPage.tsx`
+    - 기존 로컬 포맷 함수 제거 후 공통 유틸 사용
+  - `apps/web/src/pages/ImageShareDetailPage.tsx`
+    - `image.imageMime || '-'` 렌더를 공통 유틸 기반 렌더로 교체
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+
 ## [2026-02-26] 썸네일 카드는 블러 배경 없이 원본 비율 우선 렌더를 유지
 - **결정**:
   1. `ThumbnailCard`는 블러 배경을 다시 도입하지 않고, 단일 원본 이미지 레이어만 사용한다.

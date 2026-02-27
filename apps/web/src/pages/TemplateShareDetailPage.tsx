@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/dialog';
 import { buildLoginPath } from '@/lib/loginNavigation';
 import { apiFetch } from '@/lib/apiFetch';
+import { formatImageFormatLabel } from '@/lib/imageFormat';
 import MainHeader from '../components/layout/MainHeader';
 import MainFooter from '../components/layout/MainFooter';
 import PageContainer from '../components/layout/PageContainer';
@@ -47,15 +48,6 @@ const formatBytes = (bytes: number) => {
     unitIndex += 1;
   }
   return `${value.toFixed(unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`;
-};
-
-const formatMimeToLabel = (contentType: string | null, fallbackUrl?: string) => {
-  if (contentType?.includes('/')) {
-    return contentType.split('/')[1].toUpperCase();
-  }
-  if (!fallbackUrl) return '-';
-  const ext = fallbackUrl.split('?')[0].split('.').pop();
-  return ext ? ext.toUpperCase() : '-';
 };
 
 type SegmentedOption = {
@@ -242,7 +234,7 @@ const TemplateShareDetailPage: React.FC = () => {
         ]);
 
         const blob = await response.blob();
-        const format = formatMimeToLabel(response.headers.get('content-type'), thumbnailUrl);
+        const format = formatImageFormatLabel(response.headers.get('content-type'), thumbnailUrl);
         setImageMeta({
           format,
           resolution: `${imageInfo.width} x ${imageInfo.height}`,
@@ -250,7 +242,7 @@ const TemplateShareDetailPage: React.FC = () => {
         });
       } catch {
         setImageMeta({
-          format: formatMimeToLabel(null, thumbnailUrl),
+          format: formatImageFormatLabel(null, thumbnailUrl),
           resolution: '-',
           fileSize: '-',
         });

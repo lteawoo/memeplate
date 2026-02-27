@@ -18,6 +18,7 @@ import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
 import { apiFetch } from '@/lib/apiFetch';
+import { formatImageFormatLabel } from '@/lib/imageFormat';
 import { buildLoginPath, getPathWithSearchAndHash } from '@/lib/loginNavigation';
 import MainHeader from '../components/layout/MainHeader';
 import MainFooter from '../components/layout/MainFooter';
@@ -838,7 +839,9 @@ const ImageShareDetailPage: React.FC = () => {
                     </div>
                     <div className="flex items-start justify-between gap-3">
                       <span className="text-muted-foreground">이미지 포맷</span>
-                      <span className="text-right font-medium text-foreground">{image.imageMime || '-'}</span>
+                      <span className="text-right font-medium text-foreground">
+                        {formatImageFormatLabel(image.imageMime, image.imageUrl)}
+                      </span>
                     </div>
                     <div className="flex items-start justify-between gap-3">
                       <span className="text-muted-foreground">해상도</span>

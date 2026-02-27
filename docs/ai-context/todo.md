@@ -1,5 +1,12 @@
 # Memeplate 개발 TODO
 
+## 최근 완료 (2026-02-27)
+- [x] 밈플릿/리믹스 상세의 이미지 포맷 표시 규칙을 공통 유틸(`formatImageFormatLabel`)로 통일
+- [x] 규칙: `mime subtype 우선 -> URL 확장자 fallback -> '-'`, `jpeg`는 `JPG`로 정규화
+- [x] 검증(`memeplate-web lint`)
+- [x] URL fallback 파싱 보정: 도메인 문자열(`com/path/...`)이 확장자로 오인되지 않도록 파일명 기준 확장자 추출로 수정
+- [x] 검증(`memeplate-web lint`, `memeplate-web build`)
+
 ## 최근 완료 (2026-02-26)
 - [x] `ThumbnailCard` 블러 배경 레이어 제거 유지 + 원본 비율 보존(`h-auto w-auto max-w/max-h`) 렌더 정렬
 - [x] 썸네일 로딩 스켈레톤 `z-20` 보정
