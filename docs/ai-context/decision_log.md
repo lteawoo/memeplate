@@ -1,5 +1,80 @@
 # 결정 로그 (Decision Log)
 
+## [2026-02-27] 다운로드 UX는 성공 토스트 없이 브라우저 기본 동작으로 위임
+- **결정**:
+  1. 공유 팝오버의 `다운로드` 액션은 프론트 fetch/Blob 처리 없이 `/download` 링크 클릭으로 브라우저에 위임한다.
+  2. 다운로드 성공 토스트(`이미지 다운로드를 시작했습니다.`)는 제거한다.
+- **이유**:
+  1. 사용자는 다운로드 시작 메시지보다 브라우저 기본 다운로드 UX를 원했다.
+  2. JS가 성공/실패를 판단해 개입할수록 실제 브라우저 다운로드 동작과 인식이 어긋날 수 있다.
+- **구현 요약**:
+  - `apps/web/src/lib/shareActions.ts`
+    - `handoffDownloadToBrowser(downloadUrl)` 추가(링크 클릭 위임)
+  - `apps/web/src/pages/TemplateShareDetailPage.tsx`
+    - 템플릿 다운로드 핸들러를 브라우저 위임 방식으로 교체
+    - 다운로드 성공 토스트 제거
+  - `apps/web/src/pages/ImageShareDetailPage.tsx`
+    - 리믹스 다운로드 핸들러를 브라우저 위임 방식으로 교체
+    - 다운로드 성공 토스트 제거
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 브라우저 네트워크에서 `/api/v1/remixes/s/:shareSlug/download` 200 호출 확인
+  - 다운로드 클릭 후 토스트 영역에 성공 문구 미노출 확인
+
+## [2026-02-27] 공유 다운로드는 direct-link fallback 대신 API attachment 응답으로 고정
+- **결정**:
+  1. 템플릿/리믹스 다운로드는 각각 `GET /api/v1/memeplates/s/:shareSlug/download`, `GET /api/v1/remixes/s/:shareSlug/download`를 사용한다.
+  2. 서버가 원격 이미지를 가져와 `Content-Disposition: attachment`로 응답한다.
+  3. 프론트 다운로드 유틸은 새창을 여는 direct-link fallback을 제거하고, fetch blob 다운로드만 수행한다.
+- **이유**:
+  1. 기존 cross-origin fallback(`target=_blank`) 경로에서 사용자 클릭 시 새창으로 이미지가 열리는 문제가 재현되었다.
+  2. 브라우저/스토리지 CORS 상태와 무관하게 다운로드 UX를 일관되게 유지하려면 same-origin attachment 응답이 가장 안정적이다.
+- **구현 요약**:
+  - `apps/api/src/lib/attachmentDownload.ts`
+    - `replyWithAttachmentFromRemoteImage` 추가
+  - `apps/api/src/modules/templates/routes.ts`
+    - `GET /memeplates/s/:shareSlug/download` 추가
+  - `apps/api/src/modules/images/routes.ts`
+    - `GET /remixes/s/:shareSlug/download` 추가
+  - `apps/web/src/lib/shareActions.ts`
+    - (초기안) `downloadUrl` 우선 fetch + blob 저장, direct-link 새창 fallback 제거
+  - `apps/web/src/pages/TemplateShareDetailPage.tsx`
+    - 템플릿 다운로드를 `/api/v1/memeplates/s/${shareSlug}/download`로 호출
+  - `apps/web/src/pages/ImageShareDetailPage.tsx`
+    - 리믹스 다운로드를 `/api/v1/remixes/s/${shareSlug}/download`로 호출
+- **검증**:
+  - `pnpm --filter memeplate-api build`
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - `curl -I`로 두 `/download` 엔드포인트의 `content-disposition: attachment` 확인
+  - 브라우저에서 다운로드 클릭 시 새 페이지 생성 없음 + `/download` 네트워크 200 확인
+  - 스크린샷
+    - `docs/ai-context/screenshots/2026-02-27_template_detail_share_download_fix_v2.png`
+    - `docs/ai-context/screenshots/2026-02-27_remix_detail_share_download_fix_v2.png`
+
+## [2026-02-27] 템플릿/리믹스 상세 액션 행의 공유 기능은 팝오버 2액션으로 통일
+- **결정**:
+  1. 템플릿 상세는 `좋아요` 버튼 우측에 `공유` 버튼을 배치한다.
+  2. 리믹스 상세는 `댓글` 버튼 우측에 `공유` 버튼을 배치한다.
+  3. 공유 버튼 클릭 시 팝오버에서 `다운로드`, `링크 복사` 두 액션을 제공한다.
+- **이유**:
+  1. 상세 화면의 핵심 인터랙션(좋아요/댓글/공유)을 동일 레벨 액션 행에서 바로 실행하도록 하기 위함.
+  2. 별도 모달/페이지 이동 없이 공유 관련 액션을 한 번에 노출해 클릭 동선을 줄이기 위함.
+- **구현 요약**:
+  - `apps/web/src/lib/shareActions.ts`
+    - `downloadImageWithFallback` 추가 (fetch blob 다운로드, 실패 시 direct-link fallback)
+  - `apps/web/src/pages/TemplateShareDetailPage.tsx`
+    - 공유 팝오버 및 `다운로드/링크 복사` 핸들러 추가
+  - `apps/web/src/pages/ImageShareDetailPage.tsx`
+    - 공유 팝오버 및 `다운로드/링크 복사` 핸들러 추가
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 스크린샷
+    - `docs/ai-context/screenshots/2026-02-27_template_detail_share_popover_v1.png`
+    - `docs/ai-context/screenshots/2026-02-27_remix_detail_share_popover_v1.png`
+
 ## [2026-02-27] 홈 화면은 히어로/가이드 없이 콘텐츠 섹션 중심으로 단순화
 - **결정**:
   1. 홈 상단 히어로 섹션(카피 + CTA + 추천 카드)은 제거한다.

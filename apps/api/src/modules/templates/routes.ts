@@ -15,6 +15,7 @@ import { createSupabaseTemplateRepository } from './supabaseRepository.js';
 import { uploadTemplateBackgroundDataUrl } from '../../lib/r2.js';
 import { sanitizeTemplateContent } from './sanitizeTemplateContent.js';
 import { buildMetricActorKey } from '../../lib/metricActorKey.js';
+import { replyWithAttachmentFromRemoteImage } from '../../lib/attachmentDownload.js';
 
 const applyBackgroundUrlToTemplateContent = (content: Record<string, unknown>, backgroundUrl: string) => {
   const nextContent = structuredClone(content) as Record<string, unknown>;
@@ -105,6 +106,31 @@ export const templateRoutes: FastifyPluginAsync = async (app) => {
         reply.header('Cache-Control', 'private, no-store');
       }
       return reply.send({ template, isOwner, likedByMe });
+    });
+
+    app.get(`${basePath}/s/:shareSlug/download`, async (req, reply) => {
+      const paramsParsed = TemplateShareSlugParamSchema.safeParse(req.params);
+      if (!paramsParsed.success) {
+        return reply.code(400).send({
+          message: 'Invalid share slug',
+          issues: paramsParsed.error.issues
+        });
+      }
+
+      const viewerUserId = resolveAuthUser(req)?.id ?? null;
+      const template = await repository.getDetailByShareSlug(paramsParsed.data.shareSlug, viewerUserId);
+      if (!template) {
+        return reply.code(404).send({ message: 'Template not found.' });
+      }
+      if (!template.thumbnailUrl) {
+        return reply.code(404).send({ message: 'Template image not found.' });
+      }
+
+      return replyWithAttachmentFromRemoteImage(reply, {
+        imageUrl: template.thumbnailUrl,
+        fileBaseName: template.title || 'memeplate-template',
+        fallbackBaseName: 'memeplate-template'
+      });
     });
 
     app.post(`${basePath}/s/:shareSlug/view`, {

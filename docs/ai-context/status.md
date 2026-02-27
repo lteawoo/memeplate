@@ -1,6 +1,29 @@
 # 프로젝트 상태 (Status)
 
 ## 현재 진행 상황
+- [x] **공유 팝오버 다운로드의 새창 오픈 이슈 수정(완료 - 2026-02-27)**
+  - [x] 템플릿/리믹스 공유 다운로드를 API attachment 엔드포인트(`.../s/:shareSlug/download`) 경유로 전환
+  - [x] API 공통 유틸 `replyWithAttachmentFromRemoteImage` 추가 (`Content-Disposition: attachment`)
+  - [x] 프론트 다운로드를 JS fetch/Blob 처리 대신 브라우저 기본 다운로드로 위임(`/download` 링크 클릭)
+  - [x] 다운로드 성공 토스트(`이미지 다운로드를 시작했습니다.`) 제거
+  - [x] 검증
+    - [x] `pnpm --filter memeplate-api build`
+    - [x] `pnpm --filter memeplate-web lint`
+    - [x] `pnpm --filter memeplate-web build`
+    - [x] 헤더 확인: `/api/v1/memeplates/s/:shareSlug/download`, `/api/v1/remixes/s/:shareSlug/download`가 `content-disposition: attachment` 반환
+    - [x] 브라우저 확인: 다운로드 클릭 시 새 페이지 미생성 + `/download` 네트워크 요청 200 확인
+    - [x] 스크린샷: `docs/ai-context/screenshots/2026-02-27_template_detail_share_download_fix_v2.png`
+    - [x] 스크린샷: `docs/ai-context/screenshots/2026-02-27_remix_detail_share_download_fix_v2.png`
+- [x] **템플릿/리믹스 상세 액션 행에 공유 팝오버 추가(완료 - 2026-02-27)**
+  - [x] 템플릿 상세: `좋아요` 버튼 우측에 `공유` 버튼 추가
+  - [x] 리믹스 상세: `댓글` 버튼 우측에 `공유` 버튼 추가
+  - [x] 공유 팝오버 액션: `다운로드`, `링크 복사`
+  - [x] 공통 다운로드 유틸 `downloadImageWithFallback` 추가(Blob 다운로드 + direct-link fallback)
+  - [x] 검증
+    - [x] `pnpm --filter memeplate-web lint`
+    - [x] `pnpm --filter memeplate-web build`
+    - [x] 스크린샷: `docs/ai-context/screenshots/2026-02-27_template_detail_share_popover_v1.png`
+    - [x] 스크린샷: `docs/ai-context/screenshots/2026-02-27_remix_detail_share_popover_v1.png`
 - [x] **홈 히어로/가이드 섹션 제거(완료 - 2026-02-27)**
   - [x] `HomePage` 상단 히어로(2열 카드) 섹션 제거
   - [x] 하단 가이드(quick actions 3카드) 섹션 제거

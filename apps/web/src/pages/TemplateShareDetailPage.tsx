@@ -1,7 +1,16 @@
 import React from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Icon from '@mdi/react';
-import { mdiCommentOutline, mdiEyeOutline, mdiHeartOutline, mdiImageOffOutline, mdiThumbUpOutline } from '@mdi/js';
+import {
+  mdiCommentOutline,
+  mdiDownload,
+  mdiEyeOutline,
+  mdiHeartOutline,
+  mdiImageOffOutline,
+  mdiLinkVariant,
+  mdiShareVariant,
+  mdiThumbUpOutline
+} from '@mdi/js';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -9,6 +18,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Dialog,
   DialogContent,
@@ -21,6 +31,7 @@ import { buildLoginPath } from '@/lib/loginNavigation';
 import { apiFetch } from '@/lib/apiFetch';
 import { formatDateLabel } from '@/lib/dateFormat';
 import { formatImageFormatLabel } from '@/lib/imageFormat';
+import { handoffDownloadToBrowser } from '@/lib/shareActions';
 import MainHeader from '../components/layout/MainHeader';
 import MainFooter from '../components/layout/MainFooter';
 import PageContainer from '../components/layout/PageContainer';
@@ -398,6 +409,30 @@ const TemplateShareDetailPage: React.FC = () => {
     }
   }, [likedTemplateByMe, template?.shareSlug, template?.visibility]);
 
+  const handleDownloadTemplateImage = React.useCallback(() => {
+    if (!template?.thumbnailUrl || !template.shareSlug) {
+      toast.error('다운로드할 이미지가 없습니다.');
+      return;
+    }
+
+    handoffDownloadToBrowser(`/api/v1/memeplates/s/${template.shareSlug}/download`);
+  }, [template?.shareSlug, template?.thumbnailUrl]);
+
+  const handleCopyTemplateLink = React.useCallback(async () => {
+    if (!template?.shareSlug) {
+      toast.error('공유 링크를 생성할 수 없습니다.');
+      return;
+    }
+
+    const shareUrl = `${window.location.origin}/memeplates/s/${template.shareSlug}`;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      toast.success('공유 링크를 복사했습니다.');
+    } catch {
+      toast.error('공유 링크 복사에 실패했습니다.');
+    }
+  }, [template?.shareSlug]);
+
   const handleChangeVisibility = React.useCallback(async (nextVisibility: TemplateVisibility) => {
     if (!template || !isOwner || template.visibility === nextVisibility) return;
     if (template.visibility === 'public' && nextVisibility === 'private' && hasRelatedRemixes) {
@@ -614,6 +649,36 @@ const TemplateShareDetailPage: React.FC = () => {
                     <Icon path={mdiThumbUpOutline} size={0.75} />
                     {(template.likeCount ?? 0).toLocaleString()}
                   </Button>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button type="button" variant="outline" className="gap-1.5" aria-label="공유">
+                        <Icon path={mdiShareVariant} size={0.75} />
+                        공유
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent align="start" className="w-44 p-2">
+                      <div className="grid gap-1">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          className="h-9 justify-start gap-2"
+                          onClick={() => { void handleDownloadTemplateImage(); }}
+                        >
+                          <Icon path={mdiDownload} size={0.75} />
+                          다운로드
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          className="h-9 justify-start gap-2"
+                          onClick={() => { void handleCopyTemplateLink(); }}
+                        >
+                          <Icon path={mdiLinkVariant} size={0.75} />
+                          링크 복사
+                        </Button>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
                   {isOwner ? (
                     <Button type="button" variant="outline" onClick={handleOpenManageDialog}>
                       수정
