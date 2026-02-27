@@ -1,4 +1,5 @@
 import React from 'react';
+import { formatDateTimeLabel } from '@/lib/dateFormat';
 import type { TemplateRecord } from '../types/template';
 import ThumbnailCard from './ThumbnailCard';
 
@@ -34,7 +35,7 @@ const TemplateThumbnailCard: React.FC<TemplateThumbnailCardProps> = ({
         <div className="space-y-1">
           <div className="line-clamp-1 text-sm font-semibold text-foreground">{template.title}</div>
           {template.updatedAt ? (
-            <p className="text-xs text-muted-foreground">업데이트: {new Date(template.updatedAt).toLocaleString()}</p>
+            <p className="text-xs text-muted-foreground">업데이트: {formatDateTimeLabel(template.updatedAt)}</p>
           ) : null}
         </div>
       ) : null}

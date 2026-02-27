@@ -1,5 +1,52 @@
 # 결정 로그 (Decision Log)
 
+## [2026-02-27] 밈플릿 목록/상세/리믹스 상세의 상단 패딩은 `24px`로 통일
+- **결정**:
+  1. `TemplatesPage`, `TemplateShareDetailPage`, `ImageShareDetailPage`의 `PageContainer` 상단 패딩을 `pt-6(24px)`으로 통일한다.
+  2. 하단 여백은 화면 밀도 유지를 위해 목록 `pb-8`, 상세/리믹스 상세 `pb-10`을 유지한다.
+- **이유**:
+  1. 기존에는 목록이 `32px`, 상세/리믹스 상세가 `40px`로 상단 간격이 서로 달라 화면 전환 시 기준선이 어색했다.
+  2. 사용자가 지적한 “메인 화면 상단 패딩 이질감”을 최소 변경으로 해소하려면 상단 기준선 통일이 우선이다.
+- **구현 요약**:
+  - `apps/web/src/pages/TemplatesPage.tsx`
+    - `PageContainer className`: `py-8` -> `pt-6 pb-8`
+  - `apps/web/src/pages/TemplateShareDetailPage.tsx`
+    - `PageContainer className`: `py-10` -> `pt-6 pb-10`
+  - `apps/web/src/pages/ImageShareDetailPage.tsx`
+    - `PageContainer className`: `py-10` -> `pt-6 pb-10`
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 스크린샷(변경 전/후)
+    - `docs/ai-context/screenshots/2026-02-27_top_padding_before_memeplates_list.png`
+    - `docs/ai-context/screenshots/2026-02-27_top_padding_before_memeplates_detail.png`
+    - `docs/ai-context/screenshots/2026-02-27_top_padding_before_remix_detail.png`
+    - `docs/ai-context/screenshots/2026-02-27_top_padding_after_memeplates_list.png`
+    - `docs/ai-context/screenshots/2026-02-27_top_padding_after_memeplates_detail.png`
+    - `docs/ai-context/screenshots/2026-02-27_top_padding_after_remix_detail.png`
+
+## [2026-02-27] 날짜 렌더 포맷은 화면 공통 규칙으로 통일
+- **결정**:
+  1. 날짜만 노출하는 필드는 `YYYY-MM-DD` 규칙을 사용한다.
+  2. 날짜+시간을 노출하는 필드는 `YYYY-MM-DD HH:mm` 규칙을 사용한다.
+  3. 로케일 의존 `toLocaleDateString`, `toLocaleString` 직접 호출 대신 공통 유틸을 사용한다.
+- **이유**:
+  1. 밈플릿 상세/리믹스 상세/댓글/카드 메타에서 서로 다른 날짜 포맷이 혼재되어 사용자 인지가 깨졌다.
+  2. 브라우저 로케일/OS 설정에 따라 표기가 달라지는 불확실성을 줄여 UI 일관성을 확보하기 위함.
+- **구현 요약**:
+  - `apps/web/src/lib/dateFormat.ts`
+    - `formatDateLabel`, `formatDateTimeLabel` 추가
+  - `apps/web/src/pages/TemplateShareDetailPage.tsx`
+    - `생성일` 렌더를 `formatDateLabel(template.createdAt)`로 교체
+  - `apps/web/src/pages/ImageShareDetailPage.tsx`
+    - `생성일` 렌더를 `formatDateLabel(image.createdDate ?? image.createdAt)`로 교체
+    - 댓글/대댓글 시간 렌더를 `formatDateTimeLabel(createdAt)`로 교체
+  - `apps/web/src/components/TemplateThumbnailCard.tsx`
+    - `업데이트` 렌더를 `formatDateTimeLabel(template.updatedAt)`로 교체
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+
 ## [2026-02-27] 이미지 포맷 라벨 URL fallback은 파일명 기반으로 파싱한다
 - **결정**:
   1. `formatImageFormatLabel`의 URL fallback 파싱은 URL 전체 문자열이 아니라 `pathname`의 마지막 파일명 기준으로 수행한다.

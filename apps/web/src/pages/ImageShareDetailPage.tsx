@@ -18,6 +18,7 @@ import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
 import { apiFetch } from '@/lib/apiFetch';
+import { formatDateLabel, formatDateTimeLabel } from '@/lib/dateFormat';
 import { formatImageFormatLabel } from '@/lib/imageFormat';
 import { buildLoginPath, getPathWithSearchAndHash } from '@/lib/loginNavigation';
 import MainHeader from '../components/layout/MainHeader';
@@ -642,7 +643,7 @@ const ImageShareDetailPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-app-surface">
       <MainHeader />
-      <PageContainer className="py-10">
+      <PageContainer className="pt-6 pb-10">
         {isLoading ? (
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-[320px_minmax(0,1fr)] lg:items-start">
             <aside className="order-2 rounded-2xl bg-card p-6 lg:order-1 lg:self-start">
@@ -834,7 +835,7 @@ const ImageShareDetailPage: React.FC = () => {
                     <div className="flex items-start justify-between gap-3">
                       <span className="text-muted-foreground">생성일</span>
                       <span className="text-right font-medium text-foreground">
-                        {image.createdDate ?? (image.createdAt ? new Date(image.createdAt).toLocaleDateString() : '-')}
+                        {formatDateLabel(image.createdDate ?? image.createdAt)}
                       </span>
                     </div>
                     <div className="flex items-start justify-between gap-3">
@@ -990,7 +991,7 @@ const ImageShareDetailPage: React.FC = () => {
                                 <div className="mb-1 flex flex-wrap items-center gap-x-2 gap-y-1">
                                   <span className="text-sm font-semibold text-foreground">{authorName}</span>
                                   <span className="text-xs text-muted-foreground">
-                                    {comment.createdAt ? new Date(comment.createdAt).toLocaleString() : '-'}
+                                    {formatDateTimeLabel(comment.createdAt)}
                                   </span>
                                 </div>
                                 <p className="whitespace-pre-wrap text-sm text-foreground">{comment.body}</p>
@@ -1016,7 +1017,7 @@ const ImageShareDetailPage: React.FC = () => {
                                           <div className="mb-1 flex flex-wrap items-center gap-x-2 gap-y-1">
                                             <span className="text-sm font-medium text-foreground">{replyAuthorName}</span>
                                             <span className="text-xs text-muted-foreground">
-                                              {reply.createdAt ? new Date(reply.createdAt).toLocaleString() : '-'}
+                                              {formatDateTimeLabel(reply.createdAt)}
                                             </span>
                                           </div>
                                           {reply.replyToAuthorDisplayName ? (
@@ -1055,7 +1056,7 @@ const ImageShareDetailPage: React.FC = () => {
                               <div className="mb-1 flex flex-wrap items-center gap-x-2 gap-y-1">
                                 <span className="text-sm font-medium text-foreground">{replyAuthorName}</span>
                                 <span className="text-xs text-muted-foreground">
-                                  {reply.createdAt ? new Date(reply.createdAt).toLocaleString() : '-'}
+                                  {formatDateTimeLabel(reply.createdAt)}
                                 </span>
                               </div>
                               {reply.replyToAuthorDisplayName ? (

@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/dialog';
 import { buildLoginPath } from '@/lib/loginNavigation';
 import { apiFetch } from '@/lib/apiFetch';
+import { formatDateLabel } from '@/lib/dateFormat';
 import { formatImageFormatLabel } from '@/lib/imageFormat';
 import MainHeader from '../components/layout/MainHeader';
 import MainFooter from '../components/layout/MainFooter';
@@ -511,7 +512,7 @@ const TemplateShareDetailPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-app-surface">
       <MainHeader />
-      <PageContainer className="py-10">
+      <PageContainer className="pt-6 pb-10">
         {isLoading ? (
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-[340px_minmax(0,1fr)] lg:items-start">
             <div className="rounded-2xl bg-card p-6">
@@ -581,7 +582,7 @@ const TemplateShareDetailPage: React.FC = () => {
                   </div>
                   <div className="flex items-start justify-between gap-3">
                     <span className="text-muted-foreground">생성일</span>
-                    <span className="text-right font-medium text-foreground">{template.createdAt ? new Date(template.createdAt).toLocaleDateString() : '-'}</span>
+                    <span className="text-right font-medium text-foreground">{formatDateLabel(template.createdAt)}</span>
                   </div>
                   <div className="flex items-start justify-between gap-3">
                     <span className="text-muted-foreground">이미지 포맷</span>
