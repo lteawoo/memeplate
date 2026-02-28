@@ -1,6 +1,9 @@
 # Memeplate 개발 TODO
 
 ## 최근 완료 (2026-02-27)
+- [x] 리믹스 상세 댓글 작성자명 좌측 이니셜 아바타 제거
+- [x] orphan reply의 아바타 기준 좌측 오프셋(`ml-11`) 제거
+- [x] 검증(`memeplate-web lint/build`, 댓글 영역 스크린샷)
 - [x] 공유 다운로드를 API attachment 엔드포인트(`GET /api/v1/memeplates/s/:shareSlug/download`, `GET /api/v1/remixes/s/:shareSlug/download`)로 전환
 - [x] API 공통 유틸(`replyWithAttachmentFromRemoteImage`) 추가 및 `Content-Disposition: attachment` 헤더 적용
 - [x] 프론트 다운로드를 브라우저 기본 처리로 위임(`/download` 링크 클릭)하고 성공 토스트 제거

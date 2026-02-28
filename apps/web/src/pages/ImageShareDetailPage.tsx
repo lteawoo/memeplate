@@ -1034,72 +1034,66 @@ const ImageShareDetailPage: React.FC = () => {
                     <div className="divide-y divide-border/70 border-y border-border/70">
                       {threadedComments.topLevel.map((comment) => {
                         const authorName = comment.authorDisplayName || comment.authorId || '익명';
-                        const authorInitial = authorName.trim().charAt(0) || '?';
                         const replies = threadedComments.repliesByRoot.get(comment.id) ?? [];
 
                         return (
                           <article key={comment.id} className="py-4">
-                            <div className="flex items-start gap-3">
-                              <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border/80 bg-muted text-xs font-semibold text-foreground">
-                                {authorInitial}
-                              </span>
-                              <div className="min-w-0 flex-1">
-                                <div className="mb-1 flex flex-wrap items-center gap-x-2 gap-y-1">
-                                  <span className="text-sm font-semibold text-foreground">{authorName}</span>
-                                  <span className="text-xs text-muted-foreground">
-                                    {formatDateTimeLabel(comment.createdAt)}
-                                  </span>
-                                </div>
-                                <p className="whitespace-pre-wrap text-sm text-foreground">{comment.body}</p>
-                                <div className="mt-2">
-                                  <Button
-                                    type="button"
-                                    size="sm"
-                                    variant="ghost"
-                                    className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
-                                    onClick={() => handleStartReply(comment)}
-                                  >
-                                    답글
-                                  </Button>
-                                </div>
-                                {renderInlineReplyComposer(comment.id)}
-
-                                {replies.length > 0 ? (
-                                  <div className="mt-3 space-y-3 border-l border-border/70 pl-3">
-                                    {replies.map((reply) => {
-                                      const replyAuthorName = reply.authorDisplayName || reply.authorId || '익명';
-                                      return (
-                                        <div key={reply.id} className="min-w-0">
-                                          <div className="mb-1 flex flex-wrap items-center gap-x-2 gap-y-1">
-                                            <span className="text-sm font-medium text-foreground">{replyAuthorName}</span>
-                                            <span className="text-xs text-muted-foreground">
-                                              {formatDateTimeLabel(reply.createdAt)}
-                                            </span>
-                                          </div>
-                                          {reply.replyToAuthorDisplayName ? (
-                                            <p className="mb-1 text-xs text-muted-foreground">
-                                              {reply.replyToAuthorDisplayName}님에게 답글
-                                            </p>
-                                          ) : null}
-                                          <p className="whitespace-pre-wrap text-sm text-foreground">{reply.body}</p>
-                                          <div className="mt-1">
-                                            <Button
-                                              type="button"
-                                              size="sm"
-                                              variant="ghost"
-                                              className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
-                                              onClick={() => handleStartReply(reply)}
-                                            >
-                                              답글
-                                            </Button>
-                                          </div>
-                                          {renderInlineReplyComposer(reply.id)}
-                                        </div>
-                                      );
-                                    })}
-                                  </div>
-                                ) : null}
+                            <div className="min-w-0">
+                              <div className="mb-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+                                <span className="text-sm font-semibold text-foreground">{authorName}</span>
+                                <span className="text-xs text-muted-foreground">
+                                  {formatDateTimeLabel(comment.createdAt)}
+                                </span>
                               </div>
+                              <p className="whitespace-pre-wrap text-sm text-foreground">{comment.body}</p>
+                              <div className="mt-2">
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+                                  onClick={() => handleStartReply(comment)}
+                                >
+                                  답글
+                                </Button>
+                              </div>
+                              {renderInlineReplyComposer(comment.id)}
+
+                              {replies.length > 0 ? (
+                                <div className="mt-3 space-y-3 border-l border-border/70 pl-3">
+                                  {replies.map((reply) => {
+                                    const replyAuthorName = reply.authorDisplayName || reply.authorId || '익명';
+                                    return (
+                                      <div key={reply.id} className="min-w-0">
+                                        <div className="mb-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+                                          <span className="text-sm font-medium text-foreground">{replyAuthorName}</span>
+                                          <span className="text-xs text-muted-foreground">
+                                            {formatDateTimeLabel(reply.createdAt)}
+                                          </span>
+                                        </div>
+                                        {reply.replyToAuthorDisplayName ? (
+                                          <p className="mb-1 text-xs text-muted-foreground">
+                                            {reply.replyToAuthorDisplayName}님에게 답글
+                                          </p>
+                                        ) : null}
+                                        <p className="whitespace-pre-wrap text-sm text-foreground">{reply.body}</p>
+                                        <div className="mt-1">
+                                          <Button
+                                            type="button"
+                                            size="sm"
+                                            variant="ghost"
+                                            className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+                                            onClick={() => handleStartReply(reply)}
+                                          >
+                                            답글
+                                          </Button>
+                                        </div>
+                                        {renderInlineReplyComposer(reply.id)}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              ) : null}
                             </div>
                           </article>
                         );
@@ -1108,7 +1102,7 @@ const ImageShareDetailPage: React.FC = () => {
                         const replyAuthorName = reply.authorDisplayName || reply.authorId || '익명';
                         return (
                           <article key={reply.id} className="py-4">
-                            <div className="ml-11 min-w-0 border-l border-border/70 pl-3">
+                            <div className="min-w-0 border-l border-border/70 pl-3">
                               <div className="mb-1 flex flex-wrap items-center gap-x-2 gap-y-1">
                                 <span className="text-sm font-medium text-foreground">{replyAuthorName}</span>
                                 <span className="text-xs text-muted-foreground">
