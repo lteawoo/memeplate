@@ -1,5 +1,21 @@
 # 결정 로그 (Decision Log)
 
+## [2026-02-27] 리믹스 댓글 작성자 아바타는 제거하고 텍스트 메타만 유지
+- **결정**:
+  1. 리믹스 상세 댓글 목록에서 작성자명 좌측 이니셜 원형 아바타를 제거한다.
+  2. 아바타 폭 기준으로 적용되던 orphan reply의 좌측 오프셋(`ml-11`)도 제거한다.
+- **이유**:
+  1. 사용자 요청대로 댓글 가독성을 높이기 위해 작성자 정보는 `이름 + 시간` 텍스트만 유지한다.
+  2. 아바타 제거 후 기존 오프셋을 유지하면 댓글 계층 정렬이 과하게 오른쪽으로 밀려 보인다.
+- **구현 요약**:
+  - `apps/web/src/pages/ImageShareDetailPage.tsx`
+    - 상위 댓글 렌더에서 아바타 span 및 `authorInitial` 계산 제거
+    - orphan reply 컨테이너 클래스 `ml-11` 제거
+- **검증**:
+  - `pnpm --filter memeplate-web lint`
+  - `pnpm --filter memeplate-web build`
+  - 스크린샷: `docs/ai-context/screenshots/2026-02-27_remix_detail_comment_avatar_removed_v1.png`
+
 ## [2026-02-27] 다운로드 UX는 성공 토스트 없이 브라우저 기본 동작으로 위임
 - **결정**:
   1. 공유 팝오버의 `다운로드` 액션은 프론트 fetch/Blob 처리 없이 `/download` 링크 클릭으로 브라우저에 위임한다.

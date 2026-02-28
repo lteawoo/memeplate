@@ -1,6 +1,13 @@
 # 프로젝트 상태 (Status)
 
 ## 현재 진행 상황
+- [x] **리믹스 상세 댓글 작성자 아바타 제거(완료 - 2026-02-27)**
+  - [x] 상위 댓글 작성자명 좌측 이니셜 원형 아바타 제거
+  - [x] 아바타 기준 여백(`ml-11`)을 사용하던 orphan reply 오프셋 제거
+  - [x] 검증
+    - [x] `pnpm --filter memeplate-web lint`
+    - [x] `pnpm --filter memeplate-web build`
+    - [x] 스크린샷: `docs/ai-context/screenshots/2026-02-27_remix_detail_comment_avatar_removed_v1.png`
 - [x] **공유 팝오버 다운로드의 새창 오픈 이슈 수정(완료 - 2026-02-27)**
   - [x] 템플릿/리믹스 공유 다운로드를 API attachment 엔드포인트(`.../s/:shareSlug/download`) 경유로 전환
   - [x] API 공통 유틸 `replyWithAttachmentFromRemoteImage` 추가 (`Content-Disposition: attachment`)
