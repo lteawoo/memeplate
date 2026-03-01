@@ -1,5 +1,34 @@
 # 결정 로그 (Decision Log)
 
+## [2026-03-01] #166 1차: 상세 페이지는 프레젠테이션/데이터 액션 경계를 훅으로 분리
+- **결정**:
+  1. `TemplateShareDetailPage`, `ImageShareDetailPage`는 렌더링 중심으로 두고, 데이터 로딩/액션 핸들러는 전용 훅으로 이동한다.
+  2. `useMemeEditor`는 히스토리/줌 책임을 서브 훅(`useEditorHistory`, `useEditorZoom`)으로 분리한다.
+  3. 경계 의도는 별도 문서(`issue166_module_boundaries.md`)로 기록한다.
+- **이유**:
+  1. 기존 파일은 로딩/상태 전이/UI가 혼재되어 변경 영향 추적과 리뷰 난이도가 높았다.
+  2. 기능 동작을 유지한 채 구조만 정리하려면 페이지와 액션 로직을 분리하는 접근이 회귀 리스크가 낮다.
+  3. 에디터 훅에서 변경 빈도가 높은 히스토리/줌을 독립 모듈로 분리하면 후속 개선 범위를 국소화할 수 있다.
+- **구현 요약**:
+  - `apps/web/src/pages/TemplateShareDetailPage.tsx`
+    - 화면 렌더링/컴포지션 중심으로 정리
+  - `apps/web/src/features/template-detail/hooks/useTemplateShareDetail.ts`
+    - 상세/연관 리믹스 로드, 조회수, 좋아요, 공유, 관리 액션 분리
+  - `apps/web/src/pages/ImageShareDetailPage.tsx`
+    - 화면 렌더링 및 댓글 렌더 중심으로 정리
+  - `apps/web/src/features/remix-detail/hooks/useImageShareDetail.ts`
+    - 상세/연관 리믹스 로드, 조회수, 좋아요, 공유, 댓글/답글, 수정 액션 분리
+  - `apps/web/src/hooks/meme-editor/useEditorHistory.ts`
+    - Undo/Redo, 히스토리 스냅샷, 히스토리 단축키 분리
+  - `apps/web/src/hooks/meme-editor/useEditorZoom.ts`
+    - 줌 상태/단축키 분리
+  - `docs/ai-context/architecture/issue166_module_boundaries.md`
+    - 모듈 경계 및 역할 문서화
+- **검증**:
+  - `pnpm --filter memeplate-web lint` 통과
+  - `pnpm --filter memeplate-web build` 통과
+  - 빌드 시 `500kB` 초과 청크 경고는 기존과 동일하게 남아 있음(기능 실패 아님)
+
 ## [2026-02-27] 리믹스 댓글 작성자 아바타는 제거하고 텍스트 메타만 유지
 - **결정**:
   1. 리믹스 상세 댓글 목록에서 작성자명 좌측 이니셜 원형 아바타를 제거한다.

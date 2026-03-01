@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Canvas, CanvasObject, Rect, Circle, Textbox, CanvasImage } from '../core/canvas';
 import type { ToolType } from '../components/editor/MemeToolbar';
 import { toast } from 'sonner';
@@ -7,6 +7,8 @@ import { apiFetch } from '../lib/apiFetch';
 import { MAX_WORKSPACE_AREA_PX, MAX_WORKSPACE_EDGE_PX } from '../constants/canvasLimits';
 import { ensureAuthSession, getAuthUser } from '../stores/authStore';
 import { redirectToLoginWithNext } from '../lib/loginNavigation';
+import { useEditorHistory } from './meme-editor/useEditorHistory';
+import { useEditorZoom } from './meme-editor/useEditorZoom';
 
 const CANVAS_MARGIN = 0;
 const EXPORT_IMAGE_LONG_EDGE = MAX_WORKSPACE_EDGE_PX;
@@ -14,14 +16,6 @@ const TEMPLATE_BACKGROUND_QUALITY = 0.98;
 const PUBLISH_IMAGE_QUALITY = 0.98;
 const EXPORT_IMAGE_MULTIPLIER = 1;
 const BACKGROUND_LOADING_MIN_MS = 180;
-const ZOOM_MIN = 0.25;
-const ZOOM_MAX = 4;
-const ZOOM_STEP = 0.1;
-
-interface HistoryItem {
-  json: string;
-  selectedId: string | null;
-}
 
 interface CanvasDoubleClickEvent {
   target?: CanvasObject;
@@ -162,9 +156,6 @@ const estimateDataUrlBytes = (dataUrl: string) => {
   return Math.max(0, Math.floor((base64.length * 3) / 4) - padding);
 };
 
-const clampZoom = (value: number) => Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, value));
-const roundZoom = (value: number) => Math.round(value * 100) / 100;
-
 const normalizeWorkspaceSize = (width: number, height: number) => {
   const safeWidth = Number.isFinite(width) && width > 0 ? Math.round(width) : 1;
   const safeHeight = Number.isFinite(height) && height > 0 ? Math.round(height) : 1;
@@ -280,7 +271,7 @@ export const useMemeEditor = (options?: UseMemeEditorOptions) => {
   const [color, setColor] = useState('#ffffff');
   const [hasBackground, setHasBackground] = useState(false);
   const [workspaceSize, setWorkspaceSize] = useState({ width: 0, height: 0 });
-  const [zoom, setZoom] = useState(1);
+  const { zoom, setZoom, zoomIn, zoomOut, resetZoom, zoomByWheelDelta } = useEditorZoom();
   const workspaceSizeRef = useRef({ width: 0, height: 0 });
   const [savedTemplate, setSavedTemplate] = useState<SavedTemplateMeta | null>(null);
   const [isTemplateSaving, setIsTemplateSaving] = useState(false);
@@ -293,175 +284,24 @@ export const useMemeEditor = (options?: UseMemeEditorOptions) => {
   const linkedTemplateId = savedTemplate?.id ?? initialTemplate?.id;
   const canPublishRemix = Boolean(linkedTemplateId);
 
-  // History State
-  const [history, setHistory] = useState<HistoryItem[]>([]);
-  const [historyIndex, setHistoryIndex] = useState(-1);
-  const isHistoryLocked = useRef(false);
-  const historyRef = useRef<HistoryItem[]>([]);
-  const indexRef = useRef(-1);
-  const historyDebounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isBackgroundDirtyRef = useRef(false);
   const loadedTemplateKeyRef = useRef<string | null>(null);
   const [isCanvasReady, setIsCanvasReady] = useState(false);
-
-  const updateZoom = useCallback((updater: (prev: number) => number) => {
-    setZoom((prev) => roundZoom(clampZoom(updater(prev))));
-  }, []);
-
-  const zoomIn = useCallback(() => {
-    updateZoom((prev) => prev + ZOOM_STEP);
-  }, [updateZoom]);
-
-  const zoomOut = useCallback(() => {
-    updateZoom((prev) => prev - ZOOM_STEP);
-  }, [updateZoom]);
-
-  const resetZoom = useCallback(() => {
-    setZoom(1);
-  }, []);
-
-  const zoomByWheelDelta = useCallback((deltaY: number) => {
-    if (!Number.isFinite(deltaY) || deltaY === 0) return;
-    if (deltaY < 0) {
-      zoomIn();
-      return;
-    }
-    zoomOut();
-  }, [zoomIn, zoomOut]);
-
-  const saveHistoryNow = useCallback(() => {
-    if (isHistoryLocked.current || !canvasInstanceRef.current) return;
-    
-    const canvas = canvasInstanceRef.current;
-    const json = JSON.stringify(canvas.toJSON(false)); // Exclude background
-    const activeObj = canvas.getActiveObject();
-    const selectedId = activeObj ? activeObj.id : null;
-    
-    if (historyRef.current.length > 0 && indexRef.current > -1) {
-        // Compare only JSON content to avoid duplicate saves on selection change only
-        if (historyRef.current[indexRef.current].json === json) return;
-    }
-
-    const newItem: HistoryItem = { json, selectedId };
-    const newHistory = historyRef.current.slice(0, indexRef.current + 1);
-    newHistory.push(newItem);
-    
-    if (newHistory.length > 50) newHistory.shift();
-    
-    // Update refs immediately to prevent race conditions in rapid updates
-    historyRef.current = newHistory;
-    indexRef.current = newHistory.length - 1;
-
-    setHistory(newHistory);
-    setHistoryIndex(newHistory.length - 1);
-  }, []);
-
-  const saveHistoryDebounced = useCallback((delayMs = 200) => {
-    if (historyDebounceTimerRef.current) {
-      clearTimeout(historyDebounceTimerRef.current);
-    }
-    historyDebounceTimerRef.current = setTimeout(() => {
-      historyDebounceTimerRef.current = null;
-      saveHistoryNow();
-    }, delayMs);
-  }, [saveHistoryNow]);
-
-  const loadHistoryItem = (item: HistoryItem, newIndex: number) => {
-    if (!canvasInstanceRef.current) return;
-    
-    isHistoryLocked.current = true;
-    canvasInstanceRef.current.loadFromJSON(JSON.parse(item.json), true).then(() => { // Preserve background
-        if (!canvasInstanceRef.current) return;
-        
-        // Restore selection
-        if (item.selectedId) {
-            const obj = canvasInstanceRef.current.getObjectById(item.selectedId);
-            if (obj) {
-                canvasInstanceRef.current.setActiveObject(obj);
-            }
-        } else {
-            canvasInstanceRef.current.discardActiveObject();
-        }
-
-        // Update refs immediately
-        indexRef.current = newIndex;
-        setHistoryIndex(newIndex);
-        setLayers([...canvasInstanceRef.current.getObjects()]);
-        
-        isHistoryLocked.current = false;
-    }).catch((err) => {
-        console.error('Failed to load history item:', err);
-        isHistoryLocked.current = false;
-    });
-  };
-
-  const undo = useCallback(() => {
-    if (isHistoryLocked.current) return;
-    if (indexRef.current <= 0 || !canvasInstanceRef.current) return;
-    
-    const newIndex = indexRef.current - 1;
-    const prevState = historyRef.current[newIndex];
-    loadHistoryItem(prevState, newIndex);
-  }, []);
-
-  const redo = useCallback(() => {
-    if (isHistoryLocked.current) return;
-    if (indexRef.current >= historyRef.current.length - 1 || !canvasInstanceRef.current) return;
-    
-    const newIndex = indexRef.current + 1;
-    const nextState = historyRef.current[newIndex];
-    loadHistoryItem(nextState, newIndex);
-  }, []);
-
-  useEffect(() => {
-      const handleKeyDown = (e: KeyboardEvent) => {
-          if ((e.metaKey || e.ctrlKey) && e.key === 'z') {
-              e.preventDefault();
-              if (e.shiftKey) redo();
-              else undo();
-          }
-          if ((e.metaKey || e.ctrlKey) && e.key === 'y') {
-              e.preventDefault();
-              redo();
-          }
-      };
-      window.addEventListener('keydown', handleKeyDown);
-      return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [redo, undo]);
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (!(e.metaKey || e.ctrlKey)) return;
-
-      const target = e.target as HTMLElement | null;
-      if (target) {
-        const tagName = target.tagName;
-        if (tagName === 'INPUT' || tagName === 'TEXTAREA' || target.isContentEditable) {
-          return;
-        }
-      }
-
-      if (e.key === '=' || e.key === '+') {
-        e.preventDefault();
-        zoomIn();
-        return;
-      }
-
-      if (e.key === '-') {
-        e.preventDefault();
-        zoomOut();
-        return;
-      }
-
-      if (e.key === '0') {
-        e.preventDefault();
-        resetZoom();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [resetZoom, zoomIn, zoomOut]);
+  const {
+    history,
+    historyIndex,
+    isHistoryLockedRef,
+    resetHistory,
+    saveHistoryNow,
+    saveHistoryDebounced,
+    undo,
+    redo,
+    clearPendingHistorySave,
+  } = useEditorHistory({
+    canvasInstanceRef,
+    setLayers,
+  });
+  const isHistoryLocked = isHistoryLockedRef;
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -472,15 +312,8 @@ export const useMemeEditor = (options?: UseMemeEditorOptions) => {
     canvasInstanceRef.current = canvas;
     setIsCanvasReady(true);
 
-    const initialJson = JSON.stringify(canvas.toJSON(false)); // Exclude background
-    const initialItem: HistoryItem = { json: initialJson, selectedId: null };
-    
-    setHistory([initialItem]);
-    setHistoryIndex(0);
-    
-    // Initialize refs
-    historyRef.current = [initialItem];
-    indexRef.current = 0;
+    const initialJson = JSON.stringify(canvas.toJSON(false));
+    resetHistory(initialJson, null);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const handleSelection = (e: any) => {
@@ -537,10 +370,7 @@ export const useMemeEditor = (options?: UseMemeEditorOptions) => {
     canvas.on('object:removed', handleUpdate);
     
     return () => {
-      if (historyDebounceTimerRef.current) {
-        clearTimeout(historyDebounceTimerRef.current);
-        historyDebounceTimerRef.current = null;
-      }
+      clearPendingHistorySave();
       if (backgroundApplyEndTimerRef.current) {
         clearTimeout(backgroundApplyEndTimerRef.current);
         backgroundApplyEndTimerRef.current = null;
@@ -549,7 +379,7 @@ export const useMemeEditor = (options?: UseMemeEditorOptions) => {
       canvasInstanceRef.current = null;
       setIsCanvasReady(false);
     };
-  }, [saveHistoryNow]);
+  }, [clearPendingHistorySave, resetHistory, saveHistoryNow]);
 
   useEffect(() => {
     const canvas = canvasInstanceRef.current;
@@ -591,11 +421,7 @@ export const useMemeEditor = (options?: UseMemeEditorOptions) => {
       setZoom(1);
 
       const initialJson = JSON.stringify(canvas.toJSON(false));
-      const initialItem: HistoryItem = { json: initialJson, selectedId: null };
-      historyRef.current = [initialItem];
-      indexRef.current = 0;
-      setHistory([initialItem]);
-      setHistoryIndex(0);
+      resetHistory(initialJson, null);
 
       if (initialTemplateMode === 'mine') {
         setSavedTemplate({
@@ -615,7 +441,7 @@ export const useMemeEditor = (options?: UseMemeEditorOptions) => {
       console.error('Failed to load template content:', err);
       isHistoryLocked.current = false;
     });
-  }, [initialTemplate, initialTemplateMode, isCanvasReady]);
+  }, [initialTemplate, initialTemplateMode, isCanvasReady, isHistoryLocked, resetHistory, setZoom]);
 
   const setBackgroundImage = (url: string) => {
     if (!canvasInstanceRef.current) return;
