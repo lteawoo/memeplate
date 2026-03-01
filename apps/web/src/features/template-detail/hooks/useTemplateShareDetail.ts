@@ -63,6 +63,12 @@ export const useTemplateShareDetail = () => {
   const templateLikeLockRef = React.useRef(false);
   const templateLikeRequestSeqRef = React.useRef(0);
   const templateLikeAbortRef = React.useRef<AbortController | null>(null);
+  const detailRequestSeqRef = React.useRef(0);
+  const detailAbortRef = React.useRef<AbortController | null>(null);
+  const imageMetaRequestSeqRef = React.useRef(0);
+  const imageMetaAbortRef = React.useRef<AbortController | null>(null);
+  const relatedRequestSeqRef = React.useRef(0);
+  const relatedAbortRef = React.useRef<AbortController | null>(null);
   const [likedTemplateByMe, setLikedTemplateByMe] = React.useState(false);
 
   const [isManageDialogOpen, setIsManageDialogOpen] = React.useState(false);
@@ -115,9 +121,22 @@ export const useTemplateShareDetail = () => {
   }, [authInitialized, syncSession]);
 
   React.useEffect(() => {
+    const requestSeq = detailRequestSeqRef.current + 1;
+    detailRequestSeqRef.current = requestSeq;
+    imageMetaRequestSeqRef.current += 1;
+    relatedRequestSeqRef.current += 1;
+    const controller = new AbortController();
+    detailAbortRef.current?.abort();
+    detailAbortRef.current = controller;
+    imageMetaAbortRef.current?.abort();
+    imageMetaAbortRef.current = null;
+    relatedAbortRef.current?.abort();
+    relatedAbortRef.current = null;
+
     setIsLoading(true);
     setError(null);
     setTemplate(null);
+    setImageMeta({ format: '-', resolution: '-', fileSize: '-' });
     setRelatedImages([]);
     setRelatedError(null);
     setIsRelatedLoading(false);
@@ -138,41 +157,73 @@ export const useTemplateShareDetail = () => {
 
     const load = async () => {
       if (!shareSlug) {
+        if (detailRequestSeqRef.current !== requestSeq) return;
         setError('잘못된 공유 링크입니다.');
         setIsLoading(false);
         return;
       }
       try {
-        const res = await fetch(`/api/v1/memeplates/s/${shareSlug}`);
+        const res = await fetch(`/api/v1/memeplates/s/${shareSlug}`, {
+          signal: controller.signal,
+        });
         if (!res.ok) {
           const payload = (await res.json().catch(() => ({}))) as { message?: string };
           throw new Error(payload.message || '밈플릿을 불러오지 못했습니다.');
         }
         const payload = (await res.json()) as TemplateResponse;
+        if (detailRequestSeqRef.current !== requestSeq) return;
         setTemplate(payload.template);
         setIsOwnerFromDetail(typeof payload.isOwner === 'boolean' ? payload.isOwner : null);
         setLikedTemplateByMe(payload.likedByMe === true);
       } catch (err) {
+        if (detailRequestSeqRef.current !== requestSeq) return;
+        if (err instanceof DOMException && err.name === 'AbortError') return;
         setError(err instanceof Error ? err.message : '밈플릿을 불러오지 못했습니다.');
       } finally {
-        setIsLoading(false);
+        if (detailAbortRef.current === controller) {
+          detailAbortRef.current = null;
+        }
+        if (detailRequestSeqRef.current === requestSeq) {
+          setIsLoading(false);
+        }
       }
     };
 
     void load();
+
+    return () => {
+      controller.abort();
+      if (detailAbortRef.current === controller) {
+        detailAbortRef.current = null;
+      }
+    };
   }, [shareSlug]);
 
   React.useEffect(() => {
     return () => {
+      detailAbortRef.current?.abort();
+      detailAbortRef.current = null;
+      imageMetaAbortRef.current?.abort();
+      imageMetaAbortRef.current = null;
+      relatedAbortRef.current?.abort();
+      relatedAbortRef.current = null;
       templateLikeAbortRef.current?.abort();
       templateLikeAbortRef.current = null;
     };
   }, []);
 
   React.useEffect(() => {
+    const requestSeq = imageMetaRequestSeqRef.current + 1;
+    imageMetaRequestSeqRef.current = requestSeq;
+    const controller = new AbortController();
+    imageMetaAbortRef.current?.abort();
+    imageMetaAbortRef.current = controller;
+    let probeImage: HTMLImageElement | null = null;
+
     const loadImageMeta = async () => {
       const thumbnailUrl = template?.thumbnailUrl;
       if (!thumbnailUrl) {
+        if (imageMetaRequestSeqRef.current !== requestSeq) return;
         setImageMeta({ format: '-', resolution: '-', fileSize: '-' });
         return;
       }
@@ -180,39 +231,68 @@ export const useTemplateShareDetail = () => {
       try {
         const [imageInfo, response] = await Promise.all([
           new Promise<{ width: number; height: number }>((resolve, reject) => {
-            const image = new Image();
-            image.onload = () => resolve({ width: image.naturalWidth, height: image.naturalHeight });
-            image.onerror = reject;
-            image.src = thumbnailUrl;
+            probeImage = new Image();
+            probeImage.onload = () => resolve({ width: probeImage?.naturalWidth ?? 0, height: probeImage?.naturalHeight ?? 0 });
+            probeImage.onerror = reject;
+            probeImage.src = thumbnailUrl;
           }),
-          fetch(thumbnailUrl),
+          fetch(thumbnailUrl, { signal: controller.signal }),
         ]);
+        if (imageMetaRequestSeqRef.current !== requestSeq) return;
 
         const blob = await response.blob();
+        if (imageMetaRequestSeqRef.current !== requestSeq) return;
         const format = formatImageFormatLabel(response.headers.get('content-type'), thumbnailUrl);
         setImageMeta({
           format,
           resolution: `${imageInfo.width} x ${imageInfo.height}`,
           fileSize: formatBytes(blob.size),
         });
-      } catch {
+      } catch (err) {
+        if (imageMetaRequestSeqRef.current !== requestSeq) return;
+        if (err instanceof DOMException && err.name === 'AbortError') return;
         setImageMeta({
           format: formatImageFormatLabel(null, thumbnailUrl),
           resolution: '-',
           fileSize: '-',
         });
+      } finally {
+        if (imageMetaAbortRef.current === controller) {
+          imageMetaAbortRef.current = null;
+        }
       }
     };
 
     void loadImageMeta();
-  }, [template]);
+
+    return () => {
+      controller.abort();
+      if (imageMetaAbortRef.current === controller) {
+        imageMetaAbortRef.current = null;
+      }
+      if (probeImage) {
+        probeImage.onload = null;
+        probeImage.onerror = null;
+        probeImage.src = '';
+      }
+    };
+  }, [template?.thumbnailUrl]);
 
   React.useEffect(() => {
+    const requestSeq = relatedRequestSeqRef.current + 1;
+    relatedRequestSeqRef.current = requestSeq;
+    const controller = new AbortController();
+    relatedAbortRef.current?.abort();
+    relatedAbortRef.current = controller;
+
     const loadRelatedImages = async () => {
-      if (!template?.id) {
+      const templateId = template?.id;
+      if (!templateId) {
+        if (relatedRequestSeqRef.current !== requestSeq) return;
         setRelatedImages([]);
         setIsRelatedLoading(false);
         setIsRelatedLoaded(false);
+        setRelatedError(null);
         return;
       }
 
@@ -220,21 +300,38 @@ export const useTemplateShareDetail = () => {
       setIsRelatedLoaded(false);
       setRelatedError(null);
       try {
-        const res = await fetch(`/api/v1/remixes/public?limit=30&templateId=${template.id}`);
+        const res = await fetch(`/api/v1/remixes/public?limit=30&templateId=${templateId}`, {
+          signal: controller.signal,
+        });
         if (!res.ok) {
           throw new Error('연관 이미지를 불러오지 못했습니다.');
         }
         const payload = (await res.json()) as MemeImagesResponse;
+        if (relatedRequestSeqRef.current !== requestSeq) return;
         setRelatedImages(payload.images ?? []);
       } catch (err) {
+        if (relatedRequestSeqRef.current !== requestSeq) return;
+        if (err instanceof DOMException && err.name === 'AbortError') return;
         setRelatedError(err instanceof Error ? err.message : '연관 이미지를 불러오지 못했습니다.');
       } finally {
-        setIsRelatedLoading(false);
-        setIsRelatedLoaded(true);
+        if (relatedAbortRef.current === controller) {
+          relatedAbortRef.current = null;
+        }
+        if (relatedRequestSeqRef.current === requestSeq) {
+          setIsRelatedLoading(false);
+          setIsRelatedLoaded(true);
+        }
       }
     };
 
     void loadRelatedImages();
+
+    return () => {
+      controller.abort();
+      if (relatedAbortRef.current === controller) {
+        relatedAbortRef.current = null;
+      }
+    };
   }, [template?.id]);
 
   React.useEffect(() => {
