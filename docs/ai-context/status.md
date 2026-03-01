@@ -1,6 +1,18 @@
 # 프로젝트 상태 (Status)
 
 ## 현재 진행 상황
+- [ ] **#166 상세/에디터 대형 파일 분해 리팩터링 진행 중 (2026-03-01)**
+  - [x] `TemplateShareDetailPage` 데이터/액션 로직을 `useTemplateShareDetail` 훅으로 분리
+  - [x] `ImageShareDetailPage` 데이터/액션 로직을 `useImageShareDetail` 훅으로 분리
+  - [x] `useMemeEditor`의 히스토리/줌 책임을 보조 훅으로 분리
+    - [x] `useEditorHistory` (Undo/Redo, 히스토리 스냅샷, 단축키)
+    - [x] `useEditorZoom` (줌 상태/단축키)
+  - [x] 모듈 경계 문서 추가
+    - [x] `docs/ai-context/architecture/issue166_module_boundaries.md`
+  - [x] 자동 검증
+    - [x] `pnpm --filter memeplate-web lint`
+    - [x] `pnpm --filter memeplate-web build`
+  - [ ] 수동 회귀 확인(좋아요/댓글/공유/저장/게시/Undo-Redo/줌)
 - [x] **리믹스 상세 댓글 작성자 아바타 제거(완료 - 2026-02-27)**
   - [x] 상위 댓글 작성자명 좌측 이니셜 원형 아바타 제거
   - [x] 아바타 기준 여백(`ml-11`)을 사용하던 orphan reply 오프셋 제거

@@ -1,5 +1,14 @@
 # Memeplate 개발 TODO
 
+## 진행 중 (2026-03-01)
+- [ ] #166 상세 페이지/에디터 대형 파일 분해 리팩터링
+  - [x] `TemplateShareDetailPage`의 데이터 로딩/액션 핸들러를 `useTemplateShareDetail`로 분리
+  - [x] `ImageShareDetailPage`의 데이터 로딩/액션 핸들러를 `useImageShareDetail`로 분리
+  - [x] `useMemeEditor` 책임 분리 1차(`useEditorHistory`, `useEditorZoom`)
+  - [x] 모듈 경계 문서 추가 (`docs/ai-context/architecture/issue166_module_boundaries.md`)
+  - [x] 자동 검증 (`pnpm --filter memeplate-web lint`, `pnpm --filter memeplate-web build`)
+  - [ ] 수동 회귀 검증(좋아요/댓글/공유/저장/게시/Undo-Redo/줌)
+
 ## 최근 완료 (2026-02-27)
 - [x] 리믹스 상세 댓글 작성자명 좌측 이니셜 아바타 제거
 - [x] orphan reply의 아바타 기준 좌측 오프셋(`ml-11`) 제거
