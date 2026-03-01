@@ -45,5 +45,13 @@ blob-report/
 .playwright-mcp/
 .serena
 
-# AI context screenshots
-docs/ai-context/screenshots/
+.claude
+.codex
+.gemini
+AGENTS.md
+CLAUDE.md
+GEMINI.md
+docs/ai-context
+docs/sql
+docs/master_rule_v2.md
+openspec/
